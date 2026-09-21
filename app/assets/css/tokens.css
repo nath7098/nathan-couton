@@ -210,9 +210,33 @@
   --tech-illustrator-accent: #ff9a00;
   --tech-illustrator-bg: rgb(255 154 0 / 35%);
 
-  /* Timeline dot accents (v1 dot colours). */
+  /* Timeline dot accents (v1 dot colours). These are for dots and borders —
+     non-text UI, where 3:1 is the bar. */
   --accent-green: var(--c-green);
   --accent-polytech: var(--c-polytech);
   --accent-acii: var(--c-acii);
   --accent-iut-red: var(--c-iut-red);
+}
+
+/* Text variants of the same accents.
+   The raw hues fail AA as text: on black, iut-red is 3.44:1; on white, green
+   is 2.5:1, polytech 2.97:1, acii 3.14:1. Mixing 60% toward the surface colour
+   clears 4.5:1 for all four in both themes, measured. */
+:root,
+[data-theme='dark'] {
+  --accent-green-text: color-mix(in oklab, var(--c-green) 60%, #f5f5f5);
+  --accent-polytech-text: color-mix(in oklab, var(--c-polytech) 60%, #f5f5f5);
+  --accent-acii-text: color-mix(in oklab, var(--c-acii) 60%, #f5f5f5);
+  --accent-iut-red-text: color-mix(in oklab, var(--c-iut-red) 60%, #f5f5f5);
+  /* Text laid over a filled accent. Dark reads on both hues (4.7:1 on the
+     orange, 6.2:1 on the green) where --background did not. */
+  --on-accent: var(--c-black);
+}
+
+[data-theme='light'] {
+  --accent-green-text: color-mix(in oklab, var(--c-green) 60%, #101314);
+  --accent-polytech-text: color-mix(in oklab, var(--c-polytech) 60%, #101314);
+  --accent-acii-text: color-mix(in oklab, var(--c-acii) 60%, #101314);
+  --accent-iut-red-text: color-mix(in oklab, var(--c-iut-red) 60%, #101314);
+  --on-accent: var(--c-black);
 }

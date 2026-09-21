@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const head = useLocaleHead({ seo: true })
-const config = useRuntimeConfig()
 
 useMotionPreference()
 providePointer()
@@ -20,15 +19,6 @@ useHead(() => ({
     tagPosition: 'head',
   }],
 }))
-
-useSeoMeta({
-  titleTemplate: title => (title ? `${title} — Nathan Couton` : 'Nathan Couton'),
-  ogSiteName: 'Nathan Couton',
-  ogType: 'website',
-  ogImage: `${config.public.siteUrl}/nc_logo_static.png`,
-  twitterCard: 'summary',
-  twitterSite: '@nath7098',
-})
 </script>
 
 <template>

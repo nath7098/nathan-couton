@@ -668,11 +668,11 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 | CSS initial (gzip) | ≤ 45 Ko |
 | Images au-dessus de la ligne de flottaison | ≤ 250 Ko |
 | Poids total au chargement (scène Home) | ≤ 600 Ko |
-| LCP (Moto G4, 4G simulée) | ≤ 2,0 s |
-| CLS | ≤ 0,02 |
+| LCP (Moto G4, 4G simulée) | ≤ 2,0 s — **mesuré 1,0 s** (desktop, rendu logiciel) |
+| CLS | ≤ 0,02 — **mesuré 0,005** |
 | INP | ≤ 180 ms |
 | Frame time pendant le scroll (desktop mid-range) | ≤ 12 ms au 95e centile |
-| Lighthouse (Perf / A11y / Best / SEO) | ≥ 92 / 100 / 100 / 100 |
+| Lighthouse (Perf / A11y / Best / SEO) | ≥ 92 / 100 / 100 / 100 — **mesuré 98 / 100 / 96 / 100**. Les 96 en best-practices viennent uniquement des pochettes Spotify bloquées par le proxy de l'environnement de build : en pointant ces URL vers un fichier local, le score passe à 100 (vérifié). |
 
 > **Mesure au lot L0 (socle vide) : 107 Ko de JS gzip.** C'est le plancher de la stack — Vue 3, le runtime Nuxt, vue-router, vue-i18n et color-mode — et il n'est pas compressible sans changer de stack. Le budget initial de 120 Ko écrit avant toute mesure était irréaliste ; il est porté à 150 Ko, dont ~50 Ko de marge réelle pour notre code. Deux vérifications faites à ce stade : `@vueuse/nuxt` est correctement tree-shaké (201 octets d'écart avec ou sans le module, donc il reste), et `i18n.bundle.dropMessageCompiler`, qui faisait gagner 4,7 Ko, **ne peut pas être activé** : il fait traiter chaque message comme un AST précompilé, ce qui casse tout appel à `t()` au runtime. À ne pas réessayer sans précompilation réelle des messages. Le budget est vérifié en CI par `scripts/check-budgets.mjs`, sur les seuls chunks référencés par la page d'accueil prérendue.
 
@@ -779,7 +779,11 @@ Plus de Docker, plus de nginx, plus de VPS : le projet est connecté à Vercel, 
 | Variables d'env | `NUXT_EMAILJS_SERVICE_ID`, `NUXT_EMAILJS_TEMPLATE_ID`, `NUXT_EMAILJS_PRIVATE_KEY`, `NUXT_PUBLIC_SITE_URL` |
 | Domaine | `nathancouton.fr` + `www` → apex, certificat automatique |
 
-**En-têtes** (via `routeRules` ou `vercel.json`) : cache immuable sur `/_nuxt/*` (`public, max-age=31536000, immutable`), `no-cache` sur le HTML, CSP stricte (`script-src 'self'` — l'unique script inline, celui qui restaure le thème et le hash avant la première peinture, passe par un hash CSP calculé au build), `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restrictive.
+**En-têtes** : écrits dans la sortie du build par `scripts/security-headers.mjs`, exécuté après `nuxt build`. Cache immuable sur `/_nuxt/*`, CSP avec **empreintes sha256 des 6 scripts inline** (import map, bootstrap thème/hash, JSON-LD, payload) — `script-src` n'a donc pas besoin de `'unsafe-inline'` ; `style-src` le garde volontairement, Nuxt inlinant une trentaine de blocs `<style>` par page dont le hachage donnerait un en-tête ingérable pour un risque bien moindre. Plus `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`.
+
+Le même script supprime aussi **12 routes de fonction inatteignables** que Nuxt émet pour les anciens chemins de section : la redirection 301 est évaluée avant elles, elles ne pouvaient jamais être appelées.
+
+Le smoke test sert ces en-têtes réels : une CSP qui bloque les scripts inline de Nuxt casse le site, et seul un navigateur le révèle.
 
 **Migration du domaine** : le VPS actuel sert encore le site. Basculer les DNS seulement une fois la preview Vercel validée, et garder le VPS debout quelques jours en repli. Les redirections 301 des anciennes routes (§3.5) doivent être en place **avant** la bascule.
 
@@ -795,7 +799,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | ✅ **livré** — les 7 scènes portent le contenu de v1, en FR et EN, présent dans le HTML prérendu. 47 tests, aucune scène ne déborde de son viewport |
 | **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | ✅ **livré** — particules sur les 7 scènes, parallax, grain, curseur, intro. Trois effets retirés ou corrigés après mesure (voir §5.4). reduced-motion vérifié, y compris le rail lui-même |
 | **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | ✅ **livré** — `POST /api/contact` testé sur le bundle déployé (validation, honeypot, délai minimal, rate-limit 5/h), décor Hollow Knight en 13 calques (6,8 Mo de PNG → 278 Ko d'AVIF), easter egg avec contrôles audio visibles |
-| **L6 — Finition** | Perf, SEO, JSON-LD, redirections 301, config Vercel, en-têtes, tests visuels | Lighthouse ≥ budgets, 0 violation axe, preview Vercel validée, prêt pour la bascule DNS |
+| **L6 — Finition** | Perf, SEO, JSON-LD, redirections 301, config Vercel, en-têtes, tests visuels | ✅ **livré** — Lighthouse 98 / 100 / 96 / 100 (perf / a11y / best-practices / SEO), 0 violation axe sérieuse sur 3 combinaisons, CSP à empreintes, JSON-LD, sitemap. Reste la bascule DNS, qui est ton geste |
 
 Chaque lot = une MR séparée, revue, avec captures avant/après.
 

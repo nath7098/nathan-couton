@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PARALLAX_LAYERS } from '~/data/parallax'
+import { PARALLAX_SIZES } from '~/data/parallax-sizes'
 
 /**
  * The Hollow Knight backdrop and its easter egg (SPEC §6.7).
@@ -115,6 +116,8 @@ onBeforeUnmount(() => {
           >
           <img
             :src="`/img/parallax/${layer.file}.webp`"
+            :width="PARALLAX_SIZES[layer.file]?.width"
+            :height="PARALLAX_SIZES[layer.file]?.height"
             alt=""
             loading="lazy"
             decoding="async"
@@ -127,6 +130,8 @@ onBeforeUnmount(() => {
         v-show="!knightOut"
         class="hollow__sign"
         :src="`/img/parallax/${signFile}.webp`"
+        :width="PARALLAX_SIZES[signFile]?.width"
+        :height="PARALLAX_SIZES[signFile]?.height"
         alt=""
         loading="lazy"
       >
@@ -135,6 +140,8 @@ onBeforeUnmount(() => {
         v-show="knightOut"
         class="hollow__knight"
         src="/img/parallax/knight-sit.webp"
+        :width="PARALLAX_SIZES['knight-sit']?.width"
+        :height="PARALLAX_SIZES['knight-sit']?.height"
         alt=""
         loading="lazy"
       >

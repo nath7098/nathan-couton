@@ -40,7 +40,11 @@ function toggle(entry: TimelineEntry) {
         :key="entry.id"
         class="timeline__item"
         :class="[`is-${index % 2 === 0 ? 'above' : 'below'}`, { 'is-expanded': expanded === entry.id }]"
-        :style="{ '--accent': `var(--accent-${entry.accent})`, '--i': index }"
+        :style="{
+          '--accent': `var(--accent-${entry.accent})`,
+          '--accent-text': `var(--accent-${entry.accent}-text)`,
+          '--i': index,
+        }"
       >
         <div class="timeline__dot-wrap">
           <span
@@ -226,9 +230,10 @@ function toggle(entry: TimelineEntry) {
   margin-block-start: var(--space-s);
 }
 
+/* The dot keeps the raw accent; the date needs the text-safe variant. */
 .timeline__date {
   font-size: var(--step-0);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -290,7 +295,7 @@ function toggle(entry: TimelineEntry) {
 
 .timeline__detail-date {
   font-size: var(--step--1);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .timeline__detail-title {

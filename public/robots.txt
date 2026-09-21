@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /_dev/
+
+Sitemap: https://nathancouton.fr/sitemap.xml

@@ -34,6 +34,7 @@ npm run dev          # http://localhost:3000
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
 | `npm run assets:fetch` | rapatrie les pochettes Spotify / jaquettes IGDB en local |
 | `npm run test:api` | exerce `POST /api/contact` sur le bundle construit |
+| `npm run lighthouse` | audit Lighthouse sur la sortie de build |
 
 `npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
 permet de pointer un binaire Chromium déjà présent.
@@ -98,6 +99,23 @@ Le thème musical (`public/audio/`) pèse 4,4 Mo et est repris tel quel de v1. I
 se charge uniquement quand on le demande (`preload="none"`), mais un réencodage
 autour de 1,5 Mo serait bienvenu.
 
+## Avant la bascule DNS
+
+1. Renseigner `NUXT_EMAILJS_*` dans les variables d'environnement Vercel, sinon
+   le formulaire répond 503.
+2. Lancer `npm run assets:fetch` puis faire pointer `app/data/about.ts` sur
+   `/img/remote/` — les pochettes Spotify dépendent encore d'un CDN tiers.
+3. Réencoder `public/audio/hollow-knight-theme.mp3` (4,4 Mo → ~1,5 Mo).
+4. Valider la preview Vercel, puis basculer les DNS. Garder le VPS quelques
+   jours en repli ; les redirections 301 doivent être en place avant.
+
+## Mesures
+
+Lighthouse desktop sur la sortie de build : **98 perf · 100 a11y · 96 best
+practices · 100 SEO**. LCP 1,0 s, CLS 0,005, TBT 20 ms. Les 96 en best
+practices tiennent aux pochettes Spotify injoignables depuis l'environnement de
+build ; servies localement, le score atteint 100.
+
 ## État d'avancement
 
 | Lot | Contenu | État |
@@ -108,4 +126,4 @@ autour de 1,5 Mo serait bienvenu.
 | L3 | Contenu des sept scènes | ✅ |
 | L4 | Parallax, particules, transitions | ✅ |
 | L5 | Formulaire de contact, scène Hollow Knight | ✅ |
-| L6 | Perf, SEO, finition, bascule DNS | à faire |
+| L6 | Perf, SEO, finition | ✅ (bascule DNS à faire) |

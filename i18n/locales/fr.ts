@@ -1,4 +1,8 @@
 export default {
+  seo: {
+    description: 'Nathan Couton, développeur fullstack Java et Vue.js près de Tours. Expériences, compétences, projets et contact.',
+    keywords: 'développeur web, développeur fullstack, Java, Vue.js, Nuxt, TypeScript, portfolio, Tours, 37, France',
+  },
   navigation: {
     home: 'Accueil',
     about: 'A propos',

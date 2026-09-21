@@ -43,5 +43,8 @@ jobs:
       - name: Runtime smoke test
         run: npm run smoke
 
+      - name: Lighthouse
+        run: npm run lighthouse
+
       - name: Enforce bundle budgets
         run: node scripts/check-budgets.mjs

@@ -115,7 +115,7 @@ const bindings = computed(() => props.href
 
 /* ── solid ── */
 .nc-button--solid {
-  color: var(--background);
+  color: var(--on-accent);
   background: var(--primary);
   border-color: var(--primary);
   font-weight: 700;

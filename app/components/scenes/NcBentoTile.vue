@@ -36,6 +36,8 @@ const failed = ref(false)
       :src="image"
       :alt="name"
       class="tile__image"
+      width="320"
+      height="320"
       loading="lazy"
       decoding="async"
       @error="failed = true"

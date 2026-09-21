@@ -3,12 +3,7 @@
  * The site is one page. NcRail mounts the seven scenes and owns the scroll;
  * L3 fills each scene through the named slots.
  */
-const { t } = useI18n()
-
-useSeoMeta({
-  title: '',
-  description: () => t('home.position'),
-})
+useSiteSeo()
 </script>
 
 <template>
