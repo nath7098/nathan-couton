@@ -651,7 +651,7 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 
 | Métrique | Budget |
 |---|---|
-| JS initial (gzip) | ≤ 120 Ko |
+| JS initial (gzip) | ≤ 150 Ko, dont ≤ 50 Ko de code applicatif |
 | CSS initial (gzip) | ≤ 45 Ko |
 | Images au-dessus de la ligne de flottaison | ≤ 250 Ko |
 | Poids total au chargement (scène Home) | ≤ 600 Ko |
@@ -660,6 +660,8 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 | INP | ≤ 180 ms |
 | Frame time pendant le scroll (desktop mid-range) | ≤ 12 ms au 95e centile |
 | Lighthouse (Perf / A11y / Best / SEO) | ≥ 92 / 100 / 100 / 100 |
+
+> **Mesure au lot L0 (socle vide) : 101 Ko de JS gzip.** C'est le plancher de la stack — Vue 3, le runtime Nuxt, vue-router, vue-i18n et color-mode — et il n'est pas compressible sans changer de stack. Le budget initial de 120 Ko écrit avant toute mesure était irréaliste ; il est porté à 150 Ko, dont ~50 Ko de marge réelle pour notre code. Deux vérifications faites à ce stade : `@vueuse/nuxt` est correctement tree-shaké (201 octets d'écart avec ou sans le module, donc il reste), et `i18n.bundle.dropMessageCompiler` fait gagner 4,7 Ko (activé). Le budget est vérifié en CI par `scripts/check-budgets.mjs`, sur les seuls chunks référencés par la page d'accueil prérendue.
 
 **Moyens :** tout le HTML est prérendu et servi depuis le CDN Vercel ; préchargement de la scène Home uniquement ; les scènes 2 à 7 en `defineAsyncComponent` avec hydratation retardée (`hydrate-on-visible` / `<NuxtLazyHydrate>`) ; images AVIF/WebP + `sizes` explicites ; MP3 en `preload="none"` et import dynamique ; sprite SVG unique ; polices self-hostées, 2 graisses, `size-adjust` pour éviter le shift ; pas de polyfill inutile (cible : navigateurs supportant `:has()`, soit ~2023+).
 
@@ -773,7 +775,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 
 | Lot | Contenu | Critère de sortie |
 |---|---|---|
-| **L0 — Socle** | Projet Nuxt 4, tokens, reset, typo, thèmes, i18n, layout `app.vue`, CI | `/` affiche un squelette thémable en FR/EN, lint + typecheck verts |
+| **L0 — Socle** | Projet Nuxt 4, tokens, reset, typo, thèmes, i18n, layout `app.vue`, CI | ✅ **livré** — `/` et `/en` prérendus, squelette thémable, 12 redirections 301 actives, lint + typecheck + 9 tests verts, budgets vérifiés en CI |
 | **L1 — Rail** | `NcRail`, `NcScene`, `NcRailNav`, chemins A/B, snap, deep-link, clavier, mode vertical mobile | Les 7 scènes vides défilent horizontalement, à 60 fps, clavier OK, `/#skills` atterrit au bon endroit |
 | **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | Une page de démo interne (`/_dev/kitchen-sink`, non déployée) montre tous les états |
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | Tout le contenu du site actuel est présent et traduit, SSR complet, a11y OK |

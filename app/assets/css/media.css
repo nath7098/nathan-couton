@@ -1,0 +1,17 @@
+/* Named breakpoints, consumed by postcss-custom-media at build time.
+   Mirrors the palier table in docs/SPEC.md §8. */
+@custom-media --xs (width < 480px);
+@custom-media --sm (width >= 480px);
+@custom-media --md (width >= 768px);
+@custom-media --lg (width >= 1024px);
+@custom-media --xl (width >= 1600px);
+
+@custom-media --below-md (width < 768px);
+@custom-media --below-lg (width < 1024px);
+
+/* The horizontal rail needs room, a fine pointer and an actual viewport height. */
+@custom-media --rail (width >= 1024px) and (height >= 600px) and (pointer: fine);
+
+@custom-media --can-hover (hover: hover) and (pointer: fine);
+@custom-media --motion-ok (prefers-reduced-motion: no-preference);
+@custom-media --motion-reduced (prefers-reduced-motion: reduce);
