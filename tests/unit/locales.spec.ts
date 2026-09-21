@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import en from '../../i18n/locales/en.json'
-import fr from '../../i18n/locales/fr.json'
+import en from '../../i18n/locales/en'
+import fr from '../../i18n/locales/fr'
 import { SCENES } from '~/data/scenes'
 
 type Json = Record<string, unknown>

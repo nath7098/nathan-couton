@@ -38,6 +38,8 @@ useSeoMeta({
     >{{ t('a11y.skipToContent') }}</a>
 
     <NuxtPage />
+
+    <NcToaster />
   </div>
 </template>
 

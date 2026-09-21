@@ -31,6 +31,7 @@ npm run dev          # http://localhost:3000
 
 | `npm run smoke` | charge le build réel dans Chromium et échoue sur toute erreur |
 | `npm run verify` | la séquence complète, comme la CI |
+| `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
 
 `npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
 permet de pointer un binaire Chromium déjà présent.
@@ -48,6 +49,9 @@ i18n/locales/       fr.json (défaut) · en.json
 server/api/         contact.post.ts — unique fonction serverless
 ```
 
+La galerie de composants vit sur `/_dev/kitchen-sink` en développement. Sa route
+est retirée du build de production, elle ne coûte donc rien au bundle livré.
+
 ## Conventions
 
 - **Aucune dépendance de composants UI.** Tout est écrit à la main (SPEC §7).
@@ -60,6 +64,13 @@ server/api/         contact.post.ts — unique fonction serverless
 - **Mouvement** : n'animer que `transform`, `opacity`, `filter` et des custom
   properties. `prefers-reduced-motion` est respecté partout.
 - **Aucun texte en dur** dans un composant : tout passe par les fichiers de locale.
+- **Icônes** : uniquement via `<NcIcon name="…" />`, dont les noms sont générés
+  par `npm run icons`. Ajouter une icône = éditer `scripts/build-sprite.mjs`
+  (logo de marque) ou déposer un SVG dans `app/assets/icons/ui/`.
+- **i18n** : les messages sont importés statiquement dans `i18n/i18n.config.ts`.
+  Ne pas repasser à `langDir` : le serveur de développement répond alors 404 sur
+  les fichiers de locale et chaque `t()` retombe silencieusement sur la clé brute,
+  alors que le build de production reste vert.
 
 ## Déploiement
 
@@ -75,7 +86,7 @@ Variables d'environnement : voir `.env.example`.
 |---|---|---|
 | L0 | Socle : projet, tokens, thèmes, i18n, CI | ✅ |
 | L1 | Rail horizontal, navigation, mode vertical mobile | ✅ |
-| L2 | Bibliothèque de primitives, sprite SVG | à faire |
+| L2 | Bibliothèque de primitives, sprite SVG | ✅ |
 | L3 | Contenu des sept scènes | à faire |
 | L4 | Parallax, particules, transitions | à faire |
 | L5 | Formulaire de contact, scène Hollow Knight | à faire |

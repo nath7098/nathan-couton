@@ -53,6 +53,8 @@ export default defineNuxtConfig({
 
   routeRules: {
     ...legacyRedirects,
+    // The internal component gallery: never indexed, never prerendered.
+    '/_dev/**': { prerender: false, headers: { 'x-robots-tag': 'noindex, nofollow' } },
     '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
   },
   future: { compatibilityVersion: 4 },
@@ -65,6 +67,15 @@ export default defineNuxtConfig({
     prerender: {
       routes: ['/', '/en'],
       crawlLinks: false,
+    },
+  },
+
+  // srcDir is app/, but the locale JSON lives in <rootDir>/i18n/locales where
+  // @nuxtjs/i18n expects it. Without this, the dev server answers 404 to
+  // `?import` on those files and every t() falls back to the raw key.
+  vite: {
+    server: {
+      fs: { allow: ['..', '.'] },
     },
   },
 
@@ -81,6 +92,17 @@ export default defineNuxtConfig({
       'postcss-custom-media': {},
     },
   },
+
+  // The component gallery is a development tool: its route is removed from the
+  // production build entirely, so it costs nothing in the shipped bundle.
+  hooks: {
+    'pages:extend': (pages) => {
+      if (import.meta.env.NODE_ENV === 'production') {
+        const index = pages.findIndex(page => page.path.startsWith('/_dev'))
+        if (index !== -1) pages.splice(index, 1)
+      }
+    },
+  },
   eslint: { config: { stylistic: true } },
 
   fonts: {
@@ -90,10 +112,10 @@ export default defineNuxtConfig({
   i18n: {
     defaultLocale: 'fr',
     strategy: 'prefix_except_default',
-    langDir: 'locales',
+    // Messages come from i18n/i18n.config.ts, imported statically. See there.
     locales: [
-      { code: 'fr', language: 'fr-FR', name: 'Français', file: 'fr.json' },
-      { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' },
+      { code: 'fr', language: 'fr-FR', name: 'Français' },
+      { code: 'en', language: 'en-GB', name: 'English' },
     ],
     baseUrl: 'https://nathancouton.fr',
     // Browser-language detection is OFF on purpose.

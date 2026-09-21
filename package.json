@@ -20,7 +20,8 @@
     "test:watch": "vitest",
     "check": "npm run lint && npm run typecheck && npm run test",
     "smoke": "node scripts/smoke.mjs",
-    "verify": "npm run check && npm run build && npm run smoke && node scripts/check-budgets.mjs"
+    "verify": "npm run check && npm run build && npm run smoke && node scripts/check-budgets.mjs",
+    "icons": "node scripts/build-sprite.mjs"
   },
   "dependencies": {
     "nuxt": "^4.5.2",
@@ -34,10 +35,14 @@
     "@nuxt/test-utils": "^3.19.2",
     "@nuxtjs/color-mode": "^4.0.1",
     "@nuxtjs/i18n": "^10.6.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/test-utils": "^2.5.1",
     "@vueuse/nuxt": "^15.0.0",
     "eslint": "^9.39.1",
+    "happy-dom": "^20.14.5",
     "playwright": "^1.63.0",
     "postcss-custom-media": "^12.0.1",
+    "simple-icons": "^16.32.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4",
     "vue-tsc": "^3.3.11"

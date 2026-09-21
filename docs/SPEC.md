@@ -781,7 +781,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 |---|---|---|
 | **L0 — Socle** | Projet Nuxt 4, tokens, reset, typo, thèmes, i18n, layout `app.vue`, CI | ✅ **livré** — `/` et `/en` prérendus, squelette thémable, 12 redirections 301 actives, lint + typecheck + 9 tests verts, budgets vérifiés en CI |
 | **L1 — Rail** | `NcRail`, `NcScene`, `NcRailNav`, chemins A/B, deep-link, clavier, mode vertical mobile | ✅ **livré** — rail horizontal sur les deux chemins (CSS scroll-driven vérifié, repli rAF vérifié), clavier ←/→/Home/End, `/#skills` atterrit juste, empilement vertical sous 1024 px sans débordement, 33 contrôles runtime verts. Snap doux reporté (cf. note) |
-| **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | Une page de démo interne (`/_dev/kitchen-sink`, non déployée) montre tous les états |
+| **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | ✅ **livré** — 12 primitives, sprite de 56 icônes (16 Ko gzip), galerie `/_dev/kitchen-sink` retirée du build de production, 41 tests |
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | Tout le contenu du site actuel est présent et traduit, SSR complet, a11y OK |
 | **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | Budgets perf §10.1 tenus, reduced-motion complet |
 | **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | Envoi d'e-mail fonctionnel, rate-limit, musique à la demande |
@@ -800,7 +800,7 @@ Chaque lot = une MR séparée, revue, avec captures avant/après.
 | 2 | SCSS ou CSS natif | **CSS natif** + PostCSS (`postcss-custom-media`). Nesting natif, `color-mix()`, custom properties. Pas de `sass` dans le projet. |
 | 3 | Mobile | **Bascule verticale** sous 1024 px. Rail horizontal réservé au desktop avec pointeur fin. |
 | 4 | Police | **JetBrains Mono**, self-hostée via `@nuxt/fonts`, graisses 400 et 700. |
-| 5 | Icônes | **Sprite SVG monochrome maison**, `currentColor`, ~30 glyphes, < 25 Ko. Ni FontAwesome ni devicon. |
+| 5 | Icônes | **Sprite SVG monochrome**, `currentColor`, 56 glyphes, 16 Ko gzip. Ni FontAwesome ni devicon au runtime. Les 19 icônes d'interface sont dessinées à la main ; les logos de marque viennent de `simple-icons` (CC0), lu **au build** par `scripts/build-sprite.mjs` — c'est une devDependency, rien n'atteint le bundle. Les 4 marques que simple-icons ne distribue plus (LinkedIn, Oracle, VS Code, Illustrator) sont dessinées à la main. |
 | 6 | Filtres par techno sur Projects | **Oui.** Rangée de `NcTag` cliquables, mise en retrait des cartes non concernées, sans reflow. |
 | 7 | Easter egg musical | **Conservé.** Chargement à la demande, jamais d'autoplay, contrôles visibles, MP3 réencodé (~1,5 Mo). |
 | 8 | Assets parallax Hollow Knight | **Conservés**, avec crédit discret en pied de scène Contact. |
