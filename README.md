@@ -33,6 +33,7 @@ npm run dev          # http://localhost:3000
 | `npm run verify` | la séquence complète, comme la CI |
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
 | `npm run assets:fetch` | rapatrie les pochettes Spotify / jaquettes IGDB en local |
+| `npm run test:api` | exerce `POST /api/contact` sur le bundle construit |
 
 `npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
 permet de pointer un binaire Chromium déjà présent.
@@ -88,7 +89,14 @@ Vercel, connecté au dépôt. Build `nuxt build` (preset `vercel`), HTML préren
 par le CDN. Les anciennes URL (`/about`, `/projects`…) sont redirigées en 301 vers
 `/#<scène>` via les `routeRules`.
 
-Variables d'environnement : voir `.env.example`.
+Variables d'environnement : voir `.env.example`. **Sans les identifiants
+EmailJS, le formulaire répond 503** et l'utilisateur voit le message d'erreur
+qui rappelle l'adresse directe — c'est le comportement voulu, mais il faut
+renseigner `NUXT_EMAILJS_*` dans Vercel pour que l'envoi fonctionne.
+
+Le thème musical (`public/audio/`) pèse 4,4 Mo et est repris tel quel de v1. Il
+se charge uniquement quand on le demande (`preload="none"`), mais un réencodage
+autour de 1,5 Mo serait bienvenu.
 
 ## État d'avancement
 
@@ -99,5 +107,5 @@ Variables d'environnement : voir `.env.example`.
 | L2 | Bibliothèque de primitives, sprite SVG | ✅ |
 | L3 | Contenu des sept scènes | ✅ |
 | L4 | Parallax, particules, transitions | ✅ |
-| L5 | Formulaire de contact, scène Hollow Knight | à faire |
+| L5 | Formulaire de contact, scène Hollow Knight | ✅ |
 | L6 | Perf, SEO, finition, bascule DNS | à faire |

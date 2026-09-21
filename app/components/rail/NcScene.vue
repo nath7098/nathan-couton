@@ -78,10 +78,14 @@ const titleId = computed(() => `${props.scene.id}-title`)
   transform: translate3d(calc((1 - var(--scene-progress, 1)) * 1.5rem), 0, 0);
 }
 
+/* A single full-height row, so a scene can lay a full-bleed backdrop behind its
+   content. Scenes centre their own content — `align-content: center` here would
+   shrink the row to the text and leave a backdrop covering only that. */
 .scene__body {
   display: grid;
-  align-content: center;
+  grid-template-rows: minmax(0, 1fr);
   min-block-size: 0;
+  block-size: 100%;
 }
 
 .scene__number {

@@ -208,6 +208,7 @@ export default {
     mail_response: {
       ko: 'Une erreur s\'est produite 😞 Vous pouvez toujours me contacter directement par mail : contact@nathancouton.fr',
       ok: 'Votre message a bien été envoyé 😃 Je vous répondrai dès que possible!',
+      tooMany: 'Vous avez envoyé plusieurs messages coup sur coup. Réessayez dans une heure, ou écrivez-moi directement : contact@nathancouton.fr',
     },
     errors: {
       nameRequired: 'Votre nom est requis',

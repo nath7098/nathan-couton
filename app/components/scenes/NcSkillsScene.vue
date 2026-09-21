@@ -17,9 +17,10 @@ import { SKILL_FAMILIES } from '~/data/skills'
 <style scoped>
 .skills {
   display: flex;
+  align-content: center;
   flex-wrap: wrap;
   gap: clamp(2rem, 5vw, 5rem);
-  align-items: start;
+  align-items: center;
   justify-content: center;
 }
 

@@ -4,123 +4,203 @@ import { CONTACT } from '~/data/contact'
 /**
  * Scene 07 — contact.
  *
- * L3 puts the real content in place: heading, contact points and the form
- * shell. The Hollow Knight parallax, the easter egg and the working submit
- * arrive in L5.
+ * The Hollow Knight backdrop sits behind, the contact points and the working
+ * form in front. Submission goes through /api/contact, the site's only
+ * serverless function.
  */
 const { t } = useI18n()
-
-const name = ref('')
-const email = ref('')
-const message = ref('')
+const toast = useToast()
+const { values, company, errors, status, touch, submit } = useContactForm()
 
 const socialIcon = { linkedin: 'linkedin', github: 'github', gitlab: 'gitlab' } as const
+
+const isPhone = ref(false)
+onMounted(() => {
+  isPhone.value = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+})
+
+/**
+ * On a phone the number should dial. On a desktop it should land in the
+ * clipboard — v1 used vue3-clipboard for this; the platform does it now.
+ */
+async function copyPhone() {
+  try {
+    await navigator.clipboard.writeText(CONTACT.phone)
+    toast.success(t('contact.copy_phone.ok'))
+  }
+  catch {
+    toast.error(t('contact.copy_phone.ko'))
+  }
+}
 </script>
 
 <template>
   <div class="contact">
-    <div class="contact__intro">
-      <NcHeading :level="2">
-        {{ t('contact.title') }}
-      </NcHeading>
+    <NcHollowScene />
 
-      <ul class="contact__points">
-        <li
-          v-for="item in CONTACT.social"
-          :key="item.id"
-        >
-          <a
-            class="contact__point"
-            :href="item.href"
-            target="_blank"
-            rel="noopener noreferrer"
-            :aria-label="t('a11y.openExternal', { name: item.label })"
-          >
-            <NcIcon
-              :name="socialIcon[item.id]"
-              size="1.8rem"
-            />
-          </a>
-        </li>
-        <li>
-          <a
-            class="contact__point"
-            :href="`mailto:${CONTACT.email}`"
-            :aria-label="CONTACT.email"
-          >
-            <NcIcon
-              name="mail"
-              size="1.8rem"
-            />
-          </a>
-        </li>
-        <li>
-          <a
-            class="contact__point"
-            :href="`tel:${CONTACT.phone}`"
-            :aria-label="CONTACT.phoneDisplay"
-          >
-            <NcIcon
-              name="phone"
-              size="1.8rem"
-            />
-          </a>
-        </li>
-      </ul>
-    </div>
+    <div class="contact__inner">
+      <div class="contact__intro">
+        <NcHeading :level="2">
+          {{ t('contact.title') }}
+        </NcHeading>
 
-    <form
-      class="contact__form"
-      @submit.prevent
-    >
-      <p class="contact__form-title">
-        {{ t('contact.mail_title') }}
-      </p>
-
-      <div class="contact__fields">
-        <NcField
-          v-model="name"
-          :label="t('contact.name')"
-          name="name"
-          autocomplete="name"
-          required
-        />
-        <NcField
-          v-model="email"
-          :label="t('contact.email')"
-          name="email"
-          type="email"
-          autocomplete="email"
-          required
-        />
+        <ul class="contact__points">
+          <li
+            v-for="item in CONTACT.social"
+            :key="item.id"
+          >
+            <a
+              class="contact__point"
+              :href="item.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="t('a11y.openExternal', { name: item.label })"
+            >
+              <NcIcon
+                :name="socialIcon[item.id]"
+                size="1.8rem"
+              />
+            </a>
+          </li>
+          <li>
+            <a
+              class="contact__point"
+              :href="`mailto:${CONTACT.email}`"
+              :aria-label="CONTACT.email"
+            >
+              <NcIcon
+                name="mail"
+                size="1.8rem"
+              />
+            </a>
+          </li>
+          <li>
+            <a
+              v-if="isPhone"
+              class="contact__point"
+              :href="`tel:${CONTACT.phone}`"
+              :aria-label="CONTACT.phoneDisplay"
+            >
+              <NcIcon
+                name="phone"
+                size="1.8rem"
+              />
+            </a>
+            <button
+              v-else
+              type="button"
+              class="contact__point"
+              :aria-label="CONTACT.phoneDisplay"
+              @click="copyPhone"
+            >
+              <NcIcon
+                name="copy"
+                size="1.8rem"
+              />
+            </button>
+          </li>
+        </ul>
       </div>
 
-      <NcField
-        v-model="message"
-        :label="t('contact.message')"
-        name="message"
-        type="textarea"
-        :maxlength="2000"
-        required
-      />
-
-      <NcButton
-        variant="solid"
-        type="submit"
+      <form
+        class="contact__form"
+        novalidate
+        @submit.prevent="submit"
       >
-        {{ t('contact.send') }}
-      </NcButton>
-    </form>
+        <p class="contact__form-title">
+          {{ t('contact.mail_title') }}
+        </p>
+
+        <div class="contact__fields">
+          <NcField
+            v-model="values.name"
+            :label="t('contact.name')"
+            :error="errors.name"
+            name="name"
+            autocomplete="name"
+            required
+            @blur="touch('name')"
+          />
+          <NcField
+            v-model="values.email"
+            :label="t('contact.email')"
+            :error="errors.email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            @blur="touch('email')"
+          />
+        </div>
+
+        <NcField
+          v-model="values.message"
+          :label="t('contact.message')"
+          :error="errors.message"
+          name="message"
+          type="textarea"
+          :maxlength="2000"
+          required
+          @blur="touch('message')"
+        />
+
+        <!-- Honeypot: off-screen, not hidden, so bots fill it and people never
+           reach it. aria-hidden and tabindex keep it out of the real flow. -->
+        <div
+          class="contact__honeypot"
+          aria-hidden="true"
+        >
+          <label for="contact-company">Company</label>
+          <input
+            id="contact-company"
+            v-model="company"
+            type="text"
+            name="company"
+            tabindex="-1"
+            autocomplete="off"
+          >
+        </div>
+
+        <NcButton
+          variant="solid"
+          type="submit"
+          :loading="status === 'submitting'"
+        >
+          {{ status === 'submitting' ? t('contact.sending') : t('contact.send') }}
+        </NcButton>
+      </form>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* Fills the scene so the backdrop can too. The content starts at the left
+   edge: this scene is two viewports wide, and centring would park it off
+   screen until you had scrolled halfway through. */
 .contact {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  display: grid;
+  place-items: center start;
+}
+
+.contact__inner {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(2rem, 6vw, 6rem);
+  gap: clamp(2rem, 5vw, 5rem);
   align-items: center;
-  inline-size: min(64rem, 100%);
+  /* Fits inside the first viewport, gutters included, so nothing is clipped on
+     arrival; the backdrop keeps travelling for the scene's second viewport. */
+  inline-size: min(78rem, calc(100vw - 2 * var(--gutter)));
+  padding: var(--space-l);
+  /* The artwork is bright in places; this panel keeps the text readable over
+     it without hiding the scene. */
+  background: color-mix(in oklab, var(--background) 72%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in oklab, var(--surface) 12%, transparent);
+  border-radius: var(--radius-l);
 }
 
 .contact__intro {
@@ -158,6 +238,16 @@ const socialIcon = { linkedin: 'linkedin', github: 'github', gitlab: 'gitlab' } 
   }
 }
 
+/* Off-screen rather than display:none — a bot reading the DOM still finds it. */
+.contact__honeypot {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .contact__form {
   display: grid;
   gap: var(--space-m);
@@ -181,7 +271,7 @@ const socialIcon = { linkedin: 'linkedin', github: 'github', gitlab: 'gitlab' } 
 }
 
 @media not all and (min-width: 1024px) {
-  .contact {
+  .contact__inner {
     grid-template-columns: 1fr;
     gap: var(--space-l);
   }

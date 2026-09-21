@@ -208,6 +208,7 @@ export default {
     mail_response: {
       ko: 'Error sending an email 😞 Here is my address : contact@nathancouton.fr',
       ok: 'Message sent 😃 I\'ll get back to your as soon as possible!',
+      tooMany: 'You have sent several messages in a row. Try again in an hour, or write to me directly: contact@nathancouton.fr',
     },
     errors: {
       nameRequired: 'Your name is required',

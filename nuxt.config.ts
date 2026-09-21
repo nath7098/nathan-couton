@@ -46,6 +46,14 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Server-only. Set these in the Vercel project settings; they never reach
+    // the client bundle.
+    emailjs: {
+      serviceId: '',
+      templateId: '',
+      publicKey: '',
+      privateKey: '',
+    },
     public: {
       siteUrl: 'https://nathancouton.fr',
     },

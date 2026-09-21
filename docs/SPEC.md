@@ -345,7 +345,9 @@ Trois familles :
 | lumafly | `lumafly_2.png` | 0.55 | flottement autonome + lueur |
 | mask | — | — | dégradé vers `--background` pour la couture avec le formulaire |
 
-  Les PNG (6,9 Mo au total, jusqu'à 1,4 Mo l'unité) sont **retraités** : conversion AVIF + WebP via `@nuxt/image`, `srcset` en 3 largeurs, `loading="lazy"` sauf les 2 premiers plans, `decoding="async"`, dimensions explicites. Budget cible pour la scène complète : **< 900 Ko** en AVIF sur desktop, **< 400 Ko** sur mobile (variantes réduites).
+  Les PNG (6,8 Mo au total, jusqu'à 1,4 Mo l'unité) sont **retraités** : conversion AVIF + WebP par `scripts/` au moment du portage (sharp, largeur plafonnée à 1920), `loading="lazy"`, `decoding="async"`. **Mesuré : 278 Ko en AVIF** pour les 13 calques, contre un budget de 900 Ko.
+
+> **Écart (L5) :** les calques `Knight_sit` et `sit_fr/en` sont servis en WebP simple et non via `<picture>`, et le MP3 du thème est **repris tel quel (4,4 Mo)** — aucun outil audio n'était disponible dans l'environnement de portage. Il est chargé en `preload="none"`, donc il ne pèse sur aucun chargement de page, mais un réencodage autour de 1,5 Mo reste souhaitable avant la mise en production.
 
 > **Note de mesure (L3) :** Nuxt **inline les styles** de la page prérendue (34 Ko bruts, 9,6 Ko gzip répartis en balises `<style>`), il n'y a donc pas de `<link>` CSS pour les scènes et aucun flash au chargement. Le script de budget compte désormais ce CSS inline — sa première version ne regardait que les fichiers liés et sous-estimait le CSS d'un facteur dix.
 
@@ -792,7 +794,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 | **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | ✅ **livré** — 12 primitives, sprite de 56 icônes (16 Ko gzip), galerie `/_dev/kitchen-sink` retirée du build de production, 41 tests |
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | ✅ **livré** — les 7 scènes portent le contenu de v1, en FR et EN, présent dans le HTML prérendu. 47 tests, aucune scène ne déborde de son viewport |
 | **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | ✅ **livré** — particules sur les 7 scènes, parallax, grain, curseur, intro. Trois effets retirés ou corrigés après mesure (voir §5.4). reduced-motion vérifié, y compris le rail lui-même |
-| **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | Envoi d'e-mail fonctionnel, rate-limit, musique à la demande |
+| **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | ✅ **livré** — `POST /api/contact` testé sur le bundle déployé (validation, honeypot, délai minimal, rate-limit 5/h), décor Hollow Knight en 13 calques (6,8 Mo de PNG → 278 Ko d'AVIF), easter egg avec contrôles audio visibles |
 | **L6 — Finition** | Perf, SEO, JSON-LD, redirections 301, config Vercel, en-têtes, tests visuels | Lighthouse ≥ budgets, 0 violation axe, preview Vercel validée, prêt pour la bascule DNS |
 
 Chaque lot = une MR séparée, revue, avec captures avant/après.

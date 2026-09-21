@@ -42,6 +42,7 @@ const rail = useRail()
 <style scoped>
 .home {
   display: grid;
+  align-content: center;
   gap: var(--space-s);
   justify-items: start;
   /* Wide enough for "{{ Nathan Couton }}" on one line at the top of the type
