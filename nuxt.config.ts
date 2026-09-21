@@ -1,7 +1,3 @@
-import { fileURLToPath } from 'node:url'
-import postcssGlobalData from '@csstools/postcss-global-data'
-import postcssCustomMedia from 'postcss-custom-media'
-
 // Scene ids drive the rail, the nav and the legacy redirects. Single source of truth.
 const SCENES = ['home', 'about', 'experience', 'skills', 'education', 'projects', 'contact'] as const
 
@@ -39,7 +35,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ['~/assets/css/reset.css', '~/assets/css/tokens.css', '~/assets/css/typography.css'],
+  css: ['~/assets/css/reset.css', '~/assets/css/tokens.css', '~/assets/css/typography.css', '~/assets/css/rail.css'],
 
   colorMode: {
     classSuffix: '',
@@ -75,13 +71,14 @@ export default defineNuxtConfig({
   typescript: { strict: true, typeCheck: false },
 
   // postcss-custom-media v12 dropped `importFrom`, so the named breakpoints are
-  // injected globally first (the csstools-recommended pairing) and resolved after.
+  // injected globally first (the csstools-recommended pairing) and resolved
+  // after. Nuxt resolves these by name and passes the value as OPTIONS — giving
+  // it a plugin instance silently does nothing and leaves `@media (--rail)` in
+  // the output.
   postcss: {
     plugins: {
-      '@csstools/postcss-global-data': postcssGlobalData({
-        files: [fileURLToPath(new URL('./app/assets/css/media.css', import.meta.url))],
-      }),
-      'postcss-custom-media': postcssCustomMedia(),
+      '@csstools/postcss-global-data': { files: ['app/assets/css/media.css'] },
+      'postcss-custom-media': {},
     },
   },
   eslint: { config: { stylistic: true } },

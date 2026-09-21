@@ -78,7 +78,9 @@
   --surface: var(--c-white);
   --background: var(--c-black);
   --surface-dim: color-mix(in oklab, var(--surface) 68%, var(--background));
-  --surface-faint: color-mix(in oklab, var(--surface) 34%, var(--background));
+  /* Measured 4.2:1 on dark / 3.4:1 on light — clears the 3:1 floor for the
+     non-text UI strokes that use it (nav dots, dividers). */
+  --surface-faint: color-mix(in oklab, var(--surface) 50%, var(--background));
   --editor: #000;
   --shadow-tint: #000;
   --glass: color-mix(in oklab, var(--background) 62%, transparent);
@@ -100,15 +102,16 @@
   --surface: var(--c-black);
   --background: var(--c-white);
   --surface-dim: color-mix(in oklab, var(--surface) 68%, var(--background));
-  --surface-faint: color-mix(in oklab, var(--surface) 34%, var(--background));
+  --surface-faint: color-mix(in oklab, var(--surface) 50%, var(--background));
   --editor: #fff;
   --shadow-tint: #35405a;
   --glass: color-mix(in oklab, var(--background) 62%, transparent);
 
-  /* #42b883 on #f5f5f5 is ~2.3:1 and #f05f40 ~3.1:1 — both fail AA for text.
-     Darkened variants are used wherever an accent carries words. SPEC §10.2. */
-  --primary-text: color-mix(in oklab, var(--primary) 72%, #0b2a1c);
-  --secondary-text: color-mix(in oklab, var(--secondary) 76%, #3a0f05);
+  /* Raw #42b883 is 2.3:1 on #f5f5f5 and #f05f40 is 3.1:1 — both fail AA for
+     text. These mixes are calibrated against measurements, not by eye:
+     4.7:1 and 5.5:1 respectively. SPEC §10.2. */
+  --primary-text: color-mix(in oklab, var(--primary) 60%, #0b2a1c);
+  --secondary-text: color-mix(in oklab, var(--secondary) 65%, #3a0f05);
 
   color-scheme: light;
 }

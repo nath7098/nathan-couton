@@ -29,7 +29,11 @@ npm run dev          # http://localhost:3000
 | `npm run test` | tests unitaires Vitest |
 | `npm run check` | lint + typecheck + tests, comme la CI |
 
-`node scripts/check-budgets.mjs` vérifie les budgets de poids après un build.
+| `npm run smoke` | charge le build réel dans Chromium et échoue sur toute erreur |
+| `npm run verify` | la séquence complète, comme la CI |
+
+`npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
+permet de pointer un binaire Chromium déjà présent.
 
 ## Architecture
 
@@ -70,7 +74,7 @@ Variables d'environnement : voir `.env.example`.
 | Lot | Contenu | État |
 |---|---|---|
 | L0 | Socle : projet, tokens, thèmes, i18n, CI | ✅ |
-| L1 | Rail horizontal, navigation, mode vertical mobile | à faire |
+| L1 | Rail horizontal, navigation, mode vertical mobile | ✅ |
 | L2 | Bibliothèque de primitives, sprite SVG | à faire |
 | L3 | Contenu des sept scènes | à faire |
 | L4 | Parallax, particules, transitions | à faire |

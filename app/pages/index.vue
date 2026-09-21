@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { SCENES } from '~/data/scenes'
-
 /**
- * L0 skeleton: the seven scenes stacked vertically, themed and translated.
- * L1 wraps them in NcRail and turns this into the horizontal rail (SPEC §3);
- * L3 fills each one with its real content.
+ * The site is one page. NcRail mounts the seven scenes and owns the scroll;
+ * L3 fills each scene through the named slots.
  */
 const { t } = useI18n()
 
@@ -12,8 +9,6 @@ useSeoMeta({
   title: '',
   description: () => t('home.position'),
 })
-
-const sceneNumber = (index: number) => String(index + 1).padStart(2, '0')
 </script>
 
 <template>
@@ -28,32 +23,8 @@ const sceneNumber = (index: number) => String(index + 1).padStart(2, '0')
       </div>
     </header>
 
-    <main
-      id="main"
-      class="rail"
-    >
-      <section
-        v-for="(scene, index) in SCENES"
-        :id="scene.id"
-        :key="scene.id"
-        class="scene"
-        :style="{ '--scene-span': scene.span }"
-        :aria-labelledby="`${scene.id}-title`"
-      >
-        <p class="scene__number">
-          {{ sceneNumber(index) }}
-        </p>
-        <h2
-          :id="`${scene.id}-title`"
-          class="scene__title nc-braces"
-        >
-          {{ t(scene.labelKey) }}
-        </h2>
-        <p class="scene__placeholder">
-          {{ t('a11y.sceneOf', { current: index + 1, total: SCENES.length }) }}
-          · span {{ scene.span }}
-        </p>
-      </section>
+    <main id="main">
+      <NcRail />
     </main>
   </div>
 </template>
@@ -63,7 +34,7 @@ const sceneNumber = (index: number) => String(index + 1).padStart(2, '0')
   position: fixed;
   inset-block-start: 0;
   inset-inline: 0;
-  z-index: 10;
+  z-index: 30;
   display: flex;
   gap: var(--space-m);
   align-items: center;
@@ -83,30 +54,5 @@ const sceneNumber = (index: number) => String(index + 1).padStart(2, '0')
   display: flex;
   gap: var(--space-m);
   align-items: center;
-}
-
-.scene {
-  display: grid;
-  align-content: center;
-  gap: var(--space-s);
-  min-block-size: 100svh;
-  padding-inline: var(--gutter);
-  border-block-end: 1px solid var(--surface-faint);
-}
-
-.scene__number {
-  color: var(--surface-faint);
-  font-size: var(--step-1);
-  font-variant-numeric: tabular-nums;
-}
-
-.scene__title {
-  font-size: var(--step-3);
-  color: var(--primary-text);
-}
-
-.scene__placeholder {
-  color: var(--surface-dim);
-  font-size: var(--step--1);
 }
 </style>

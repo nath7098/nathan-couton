@@ -1,0 +1,115 @@
+/* ============================================================================
+   The horizontal rail — SPEC §3
+   ========================================================================= */
+
+/* Registered so it can be animated and read as a number by scroll-driven CSS. */
+@property --rail-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --scene-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.rail {
+  /* Fallback, replaced per-scene: how many viewports the whole track spans. */
+  --rail-total-span: 11.5;
+  --rail-travel: calc((var(--rail-total-span) - 1) * 100vw);
+}
+
+/* ── Stacked layout (phones, tablets, coarse pointers) ─────────────────────
+   The default. Same DOM, same scenes, ordinary vertical scrolling. */
+.rail__proxy {
+  position: relative;
+}
+
+.rail__viewport {
+  position: relative;
+}
+
+.rail__track {
+  display: flex;
+  flex-direction: column;
+}
+
+.scene {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-block-size: 100svh;
+  padding-inline: var(--gutter);
+  /* Scenes out of view cost nothing to lay out. */
+  content-visibility: auto;
+  contain-intrinsic-size: 100vw 100svh;
+}
+
+/* ── Horizontal rail (desktop) ────────────────────────────────────────────
+   The proxy provides real scroll height; the viewport sticks; the track slides. */
+@media (--rail) {
+  .rail__proxy {
+    block-size: calc(var(--rail-total-span) * 100svh);
+  }
+
+  .rail__viewport {
+    position: sticky;
+    inset-block-start: 0;
+    block-size: 100svh;
+    /* `clip`, not `hidden`: `hidden` makes the box scrollable, and focusing an
+       off-screen element would then scroll it sideways behind our backs. */
+    overflow: clip;
+  }
+
+  .rail__track {
+    flex-direction: row;
+    inline-size: calc(var(--rail-total-span) * 100vw);
+    block-size: 100svh;
+    will-change: transform;
+    /* Path B writes --rail-progress every frame; path A overrides this below. */
+    transform: translate3d(calc(-1 * var(--rail-progress) * var(--rail-travel)), 0, 0);
+  }
+
+  .scene {
+    flex: 0 0 auto;
+    inline-size: calc(var(--scene-span) * 100vw);
+    block-size: 100svh;
+    min-block-size: 0;
+    contain-intrinsic-size: calc(var(--scene-span) * 100vw) 100svh;
+  }
+
+  /* ── Path A: the compositor drives the track, no JS in the scroll loop ── */
+  @supports (animation-timeline: scroll()) {
+    .rail__track {
+      transform: translate3d(0, 0, 0);
+      animation: rail-slide linear both;
+      animation-timeline: scroll(root block);
+    }
+
+    @keyframes rail-slide {
+      to {
+        transform: translate3d(calc(-1 * var(--rail-travel)), 0, 0);
+      }
+    }
+
+    /* Per-scene progress, ranged over the slice of the rail that scene occupies.
+       Scenes read it as --scene-progress; no JS, no observers. */
+    .scene {
+      animation: scene-sweep linear both;
+      animation-timeline: scroll(root block);
+      animation-range:
+        calc(var(--scene-range-start) * 100%)
+        calc(var(--scene-range-end) * 100%);
+    }
+
+    @keyframes scene-sweep {
+      from { --scene-progress: 0; }
+      to { --scene-progress: 1; }
+    }
+  }
+}
+
+/* Reduced motion: no damping, no smoothing — the transform still tracks scroll,
+   it just does so exactly. Handled in JS; nothing to disable here. */

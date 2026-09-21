@@ -9,6 +9,15 @@ useHead(() => ({
   htmlAttrs: head.value.htmlAttrs,
   link: head.value.link,
   meta: head.value.meta,
+  script: [{
+    // Captured before Nuxt boots: by the time a component's setup runs, the
+    // initial hash is already gone from location (the router normalises the URL
+    // against the prerendered route, which has no fragment). NcRail reads this
+    // to restore a deep link.
+    key: 'nc-hash-capture',
+    innerHTML: 'window.__ncHash=(location.hash||"").replace("#","")',
+    tagPosition: 'head',
+  }],
 }))
 
 useSeoMeta({

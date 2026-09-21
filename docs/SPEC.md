@@ -164,6 +164,9 @@ Ces signaux sont aussi miroir**és en CSS** sur `.rail-track` : `--rail-progress
 
 ### 3.4 Snap
 
+> **État L1 :** non implémenté, volontairement. Le rail est confortable en défilement libre et un snap mal réglé se combat avec l'utilisateur. À reprendre au L4, une fois les scènes remplies : c'est à ce moment qu'on saura si le besoin existe vraiment.
+
+
 Scroll libre par défaut, mais **snap doux** : après 120 ms d'inactivité de scroll, si la scène active est à moins de 35 % de décalage, on s'aligne dessus (`scrollTo` smooth). Désactivé si `prefers-reduced-motion: reduce`, si l'utilisateur est en train de saisir dans un champ, et sur la scène Contact (formulaire → l'utilisateur doit pouvoir s'arrêter où il veut).
 
 ### 3.5 Navigation, URL et deep-linking
@@ -777,7 +780,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 | Lot | Contenu | Critère de sortie |
 |---|---|---|
 | **L0 — Socle** | Projet Nuxt 4, tokens, reset, typo, thèmes, i18n, layout `app.vue`, CI | ✅ **livré** — `/` et `/en` prérendus, squelette thémable, 12 redirections 301 actives, lint + typecheck + 9 tests verts, budgets vérifiés en CI |
-| **L1 — Rail** | `NcRail`, `NcScene`, `NcRailNav`, chemins A/B, snap, deep-link, clavier, mode vertical mobile | Les 7 scènes vides défilent horizontalement, à 60 fps, clavier OK, `/#skills` atterrit au bon endroit |
+| **L1 — Rail** | `NcRail`, `NcScene`, `NcRailNav`, chemins A/B, deep-link, clavier, mode vertical mobile | ✅ **livré** — rail horizontal sur les deux chemins (CSS scroll-driven vérifié, repli rAF vérifié), clavier ←/→/Home/End, `/#skills` atterrit juste, empilement vertical sous 1024 px sans débordement, 33 contrôles runtime verts. Snap doux reporté (cf. note) |
 | **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | Une page de démo interne (`/_dev/kitchen-sink`, non déployée) montre tous les états |
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | Tout le contenu du site actuel est présent et traduit, SSR complet, a11y OK |
 | **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | Budgets perf §10.1 tenus, reduced-motion complet |
