@@ -30,35 +30,54 @@ const titleId = computed(() => `${props.scene.id}-title`)
     }"
     :aria-labelledby="titleId"
   >
-    <slot>
-      <!-- Placeholder until L3 fills the scenes with real content. -->
-      <div class="scene__placeholder">
-        <p class="scene__number">
-          {{ number }}
-        </p>
-        <h2
-          :id="titleId"
-          class="scene__title nc-braces"
-        >
-          {{ t(scene.labelKey) }}
-        </h2>
+    <!-- The scene number and title are the landmark's label. The home scene
+         carries the page's only h1, so its title is visually hidden here. -->
+    <header class="scene__head">
+      <p
+        class="scene__number"
+        aria-hidden="true"
+      >
+        {{ number }}
+      </p>
+      <h2
+        :id="titleId"
+        class="scene__title nc-braces"
+        :class="{ 'nc-sr-only': scene.id === 'home' }"
+      >
+        {{ t(scene.labelKey) }}
+      </h2>
+    </header>
+
+    <div class="scene__body">
+      <slot>
         <p class="scene__hint">
           {{ t('a11y.sceneOf', { current: index + 1, total: 7 }) }}
         </p>
-      </div>
-    </slot>
+      </slot>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.scene__placeholder {
+.scene {
+  grid-template-rows: auto 1fr;
+  gap: var(--space-m);
+  align-content: center;
+}
+
+.scene__head {
   display: grid;
-  gap: var(--space-s);
+  gap: var(--space-3xs);
   justify-items: start;
-  /* Tracks this scene's own sweep across the viewport — proof the per-scene
-     timeline is wired before L4 leans on it. */
-  opacity: calc(0.25 + 0.75 * var(--scene-progress));
-  transform: translate3d(calc((1 - var(--scene-progress)) * 2rem), 0, 0);
+  /* Follows this scene's own sweep across the viewport. */
+  opacity: calc(0.3 + 0.7 * var(--scene-progress, 1));
+  transform: translate3d(calc((1 - var(--scene-progress, 1)) * 1.5rem), 0, 0);
+}
+
+.scene__body {
+  display: grid;
+  align-content: center;
+  min-block-size: 0;
 }
 
 .scene__number {
@@ -68,7 +87,7 @@ const titleId = computed(() => `${props.scene.id}-title`)
 }
 
 .scene__title {
-  font-size: var(--step-3);
+  font-size: var(--step-2);
   color: var(--primary-text);
 }
 

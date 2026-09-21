@@ -152,6 +152,49 @@ async function visit(path) {
   await page.close()
 }
 
+// ── No scene overflows its viewport ────────────────────────────────────────
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(500)
+
+  // A scene is exactly one viewport tall and clips what does not fit, so
+  // scrollHeight tells us nothing — measure the children's boxes instead.
+  const overflowing = await page.evaluate(() => {
+    const out = []
+    for (const scene of document.querySelectorAll('[data-scene]')) {
+      const box = scene.getBoundingClientRect()
+      let top = Infinity
+      let bottom = -Infinity
+      for (const child of scene.querySelectorAll('*')) {
+        const rect = child.getBoundingClientRect()
+        if (rect.width === 0 && rect.height === 0) continue
+        top = Math.min(top, rect.top)
+        bottom = Math.max(bottom, rect.bottom)
+      }
+      const over = Math.max(box.top - top, bottom - box.bottom)
+      if (over > 4) out.push(`${scene.dataset.scene} (+${Math.round(over)}px)`)
+    }
+    return out
+  })
+  check(overflowing.length === 0, `no scene overflows vertically${overflowing.length ? ` — ${overflowing.join(', ')}` : ''}`)
+  await page.close()
+}
+
+// ── Content is present in the prerendered HTML ─────────────────────────────
+{
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8')
+  // The point of SSR here: every scene's words ship in the HTML, so the site
+  // reads without JS and search engines see the whole page.
+  const expected = [
+    'Nathan Couton', 'Développeur Fullstack', 'ACII by Audensiel', 'Sopra Steria',
+    'Polytech Tours', 'IUT Angoulême', 'Prévoyance', 'Hololens', 'Sleep Token',
+    'Hollow Knight', 'Tours', 'contact@nathancouton.fr',
+  ]
+  const missing = expected.filter(text => !html.includes(text))
+  check(missing.length === 0, `prerendered HTML carries the content${missing.length ? ` — missing: ${missing.join(', ')}` : ''}`)
+}
+
 // ── Deep link ──────────────────────────────────────────────────────────────
 {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })

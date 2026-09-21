@@ -16,6 +16,8 @@
 }
 
 .rail {
+  --header-h: 4rem;
+  --rail-nav-h: 5rem;
   /* Fallback, replaced per-scene: how many viewports the whole track spans. */
   --rail-total-span: 11.5;
   --rail-travel: calc((var(--rail-total-span) - 1) * 100vw);
@@ -42,6 +44,9 @@
   align-content: center;
   min-block-size: 100svh;
   padding-inline: var(--gutter);
+  /* The header is fixed and the rail nav sits at the bottom: scenes keep clear
+     of both so a title never slides under them. */
+  padding-block: var(--header-h) var(--rail-nav-h);
   /* Scenes out of view cost nothing to lay out. */
   content-visibility: auto;
   contain-intrinsic-size: 100vw 100svh;
@@ -77,6 +82,9 @@
     inline-size: calc(var(--scene-span) * 100vw);
     block-size: 100svh;
     min-block-size: 0;
+    /* A scene never scrolls on its own; content that does not fit is a layout
+       bug, and the smoke test fails on it. */
+    overflow: hidden;
     contain-intrinsic-size: calc(var(--scene-span) * 100vw) 100svh;
   }
 

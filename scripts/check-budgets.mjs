@@ -14,7 +14,9 @@ const ENTRY_HTML = join(STATIC_DIR, 'index.html')
 // Framework floor measured at L0 (Vue + Nuxt + vue-router + vue-i18n +
 // color-mode) is ~101 kB gzip and is not compressible without changing stack.
 // The headroom above it is the app's own budget.
-const BUDGETS = { js: 150 * 1024, css: 45 * 1024, html: 24 * 1024 }
+// html covers the document including the inlined styles, so its budget is the
+// looser one; css is tracked separately to catch style bloat on its own.
+const BUDGETS = { js: 150 * 1024, css: 45 * 1024, html: 40 * 1024 }
 
 if (!existsSync(ENTRY_HTML)) {
   console.error(`✗ ${ENTRY_HTML} not found — run \`npm run build\` first.`)
@@ -29,9 +31,17 @@ const collect = (extension) => {
   return [...new Set(html.match(pattern) ?? [])]
 }
 
+// Nuxt inlines the prerendered page's styles, so most CSS lives in <style>
+// tags rather than behind a <link>. Counting only linked files understated it
+// by an order of magnitude.
+const inlineCss = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+  .map(match => match[1])
+  .join('')
+
 const measured = {
   js: collect('js').reduce((total, file) => total + gzipSize(file), 0),
-  css: collect('css').reduce((total, file) => total + gzipSize(file), 0),
+  css: collect('css').reduce((total, file) => total + gzipSize(file), 0)
+    + (inlineCss ? gzipSync(Buffer.from(inlineCss)).length : 0),
   html: gzipSync(Buffer.from(html)).length,
 }
 

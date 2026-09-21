@@ -21,7 +21,8 @@
     "check": "npm run lint && npm run typecheck && npm run test",
     "smoke": "node scripts/smoke.mjs",
     "verify": "npm run check && npm run build && npm run smoke && node scripts/check-budgets.mjs",
-    "icons": "node scripts/build-sprite.mjs"
+    "icons": "node scripts/build-sprite.mjs",
+    "assets:fetch": "node --experimental-strip-types scripts/fetch-remote-assets.mjs"
   },
   "dependencies": {
     "nuxt": "^4.5.2",

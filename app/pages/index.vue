@@ -24,7 +24,29 @@ useSeoMeta({
     </header>
 
     <main id="main">
-      <NcRail />
+      <NcRail>
+        <template #home>
+          <NcHomeScene />
+        </template>
+        <template #about>
+          <NcAboutScene />
+        </template>
+        <template #experience>
+          <NcExperienceScene />
+        </template>
+        <template #skills>
+          <NcSkillsScene />
+        </template>
+        <template #education>
+          <NcEducationScene />
+        </template>
+        <template #projects>
+          <NcProjectsScene />
+        </template>
+        <template #contact>
+          <NcContactScene />
+        </template>
+      </NcRail>
     </main>
   </div>
 </template>

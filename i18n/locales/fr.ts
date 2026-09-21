@@ -17,6 +17,8 @@ export default {
   about: {
     description: 'Curieux - Esprit d\'équipe',
     pickupline: 'J\'aime les challenges',
+    portraitAlt: 'Photo de Nathan Couton',
+    employerAlt: 'Logo de mon employeur',
     musics: 'Mon top spotify',
     games: 'Mes jeux',
     hobbies: {
@@ -115,6 +117,12 @@ export default {
     experience: 'Expérience',
     exp: 'Aucune | {n} an | {n} ans',
     level: 'Niveau {n} sur 5',
+  },
+  skillFamilies: {
+    front: 'Front-End',
+    back: 'Back-End',
+    database: 'Database',
+    tools: 'Tools',
   },
   education: [
     {
