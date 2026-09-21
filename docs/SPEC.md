@@ -345,6 +345,8 @@ Trois familles :
 
   Les PNG (6,9 Mo au total, jusqu'à 1,4 Mo l'unité) sont **retraités** : conversion AVIF + WebP via `@nuxt/image`, `srcset` en 3 largeurs, `loading="lazy"` sauf les 2 premiers plans, `decoding="async"`, dimensions explicites. Budget cible pour la scène complète : **< 900 Ko** en AVIF sur desktop, **< 400 Ko** sur mobile (variantes réduites).
 
+> **Note de mesure (L3) :** Nuxt **inline les styles** de la page prérendue (34 Ko bruts, 9,6 Ko gzip répartis en balises `<style>`), il n'y a donc pas de `<link>` CSS pour les scènes et aucun flash au chargement. Le script de budget compte désormais ce CSS inline — sa première version ne regardait que les fichiers liés et sous-estimait le CSS d'un facteur dix.
+
 ### 5.3 Système de particules
 
 Composant `NcParticleField` — **canvas 2D maison**, aucune dépendance.
@@ -462,7 +464,9 @@ Conséquences : plus d'`onMounted` asynchrone, plus d'états de chargement, plus
 **Contenu (identique) :** 4 projets principaux (Prévoyance / MDPA, Portfolio, Solveur de TSP, Hololens RGBD) + 4 « autres » (Tirelire virtuelle, SwalloWin Sound, Premier site web, AJL Peinture), avec descriptions FR/EN, tags, et liens (GitLab, « œil » de démo).
 
 **Traitement :**
-- Les cartes défilent **horizontalement dans le sens du rail**, en **deux rangées décalées** qui avancent à des vitesses légèrement différentes (−0.15 / +0.15 de profondeur) : on lit la grille comme une nappe en mouvement.
+- Les cartes défilent **horizontalement dans le sens du rail**.
+
+  > **Écart assumé (L3) :** cette spec prévoyait **deux rangées** décalées. Deux rangées de cartes ne tiennent pas dans la hauteur d'un viewport une fois ajoutés le titre de scène, la rangée de filtres et le volet — mesuré à +540 px de débordement. Le rendu est donc **une seule rangée**, dont une carte sur deux est décalée verticalement et dérive en sens inverse : même sensation de nappe en mouvement, scène lisible.
 - **Carte projet** retravaillée à partir de l'existante (`--editor` en fond, `--radius-l`, ombre au survol) :
   - image en `aspect-ratio: 16/10`, `object-fit: contain` sur fond neutre (les logos actuels sont des PNG à fond variable — **normaliser** en amont) ;
   - au survol : élévation, spotlight curseur, légère **rotation 3D** (`rotateX/rotateY` ≤ 4°, `perspective: 900px`), les tags remontent en cascade ;
@@ -782,7 +786,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 | **L0 — Socle** | Projet Nuxt 4, tokens, reset, typo, thèmes, i18n, layout `app.vue`, CI | ✅ **livré** — `/` et `/en` prérendus, squelette thémable, 12 redirections 301 actives, lint + typecheck + 9 tests verts, budgets vérifiés en CI |
 | **L1 — Rail** | `NcRail`, `NcScene`, `NcRailNav`, chemins A/B, deep-link, clavier, mode vertical mobile | ✅ **livré** — rail horizontal sur les deux chemins (CSS scroll-driven vérifié, repli rAF vérifié), clavier ←/→/Home/End, `/#skills` atterrit juste, empilement vertical sous 1024 px sans débordement, 33 contrôles runtime verts. Snap doux reporté (cf. note) |
 | **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | ✅ **livré** — 12 primitives, sprite de 56 icônes (16 Ko gzip), galerie `/_dev/kitchen-sink` retirée du build de production, 41 tests |
-| **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | Tout le contenu du site actuel est présent et traduit, SSR complet, a11y OK |
+| **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | ✅ **livré** — les 7 scènes portent le contenu de v1, en FR et EN, présent dans le HTML prérendu. 47 tests, aucune scène ne déborde de son viewport |
 | **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | Budgets perf §10.1 tenus, reduced-motion complet |
 | **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | Envoi d'e-mail fonctionnel, rate-limit, musique à la demande |
 | **L6 — Finition** | Perf, SEO, JSON-LD, redirections 301, config Vercel, en-têtes, tests visuels | Lighthouse ≥ budgets, 0 violation axe, preview Vercel validée, prêt pour la bascule DNS |

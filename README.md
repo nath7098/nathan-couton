@@ -32,6 +32,7 @@ npm run dev          # http://localhost:3000
 | `npm run smoke` | charge le build réel dans Chromium et échoue sur toute erreur |
 | `npm run verify` | la séquence complète, comme la CI |
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
+| `npm run assets:fetch` | rapatrie les pochettes Spotify / jaquettes IGDB en local |
 
 `npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
 permet de pointer un binaire Chromium déjà présent.
@@ -67,6 +68,11 @@ est retirée du build de production, elle ne coûte donc rien au bundle livré.
 - **Icônes** : uniquement via `<NcIcon name="…" />`, dont les noms sont générés
   par `npm run icons`. Ajouter une icône = éditer `scripts/build-sprite.mjs`
   (logo de marque) ou déposer un SVG dans `app/assets/icons/ui/`.
+- **Images tierces** : les pochettes Spotify et les jaquettes IGDB pointent encore
+  vers leurs CDN d'origine. Ces URL peuvent expirer ; `npm run assets:fetch` les
+  rapatrie dans `public/img/remote/`, après quoi il faut faire pointer
+  `app/data/about.ts` dessus. En attendant, une tuile dont l'image échoue affiche
+  proprement son nom au lieu d'une image cassée.
 - **i18n** : les messages sont importés statiquement dans `i18n/i18n.config.ts`.
   Ne pas repasser à `langDir` : le serveur de développement répond alors 404 sur
   les fichiers de locale et chaque `t()` retombe silencieusement sur la clé brute,
@@ -87,7 +93,7 @@ Variables d'environnement : voir `.env.example`.
 | L0 | Socle : projet, tokens, thèmes, i18n, CI | ✅ |
 | L1 | Rail horizontal, navigation, mode vertical mobile | ✅ |
 | L2 | Bibliothèque de primitives, sprite SVG | ✅ |
-| L3 | Contenu des sept scènes | à faire |
+| L3 | Contenu des sept scènes | ✅ |
 | L4 | Parallax, particules, transitions | à faire |
 | L5 | Formulaire de contact, scène Hollow Knight | à faire |
 | L6 | Perf, SEO, finition, bascule DNS | à faire |
