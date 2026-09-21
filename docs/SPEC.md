@@ -661,7 +661,7 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 | Frame time pendant le scroll (desktop mid-range) | ≤ 12 ms au 95e centile |
 | Lighthouse (Perf / A11y / Best / SEO) | ≥ 92 / 100 / 100 / 100 |
 
-> **Mesure au lot L0 (socle vide) : 101 Ko de JS gzip.** C'est le plancher de la stack — Vue 3, le runtime Nuxt, vue-router, vue-i18n et color-mode — et il n'est pas compressible sans changer de stack. Le budget initial de 120 Ko écrit avant toute mesure était irréaliste ; il est porté à 150 Ko, dont ~50 Ko de marge réelle pour notre code. Deux vérifications faites à ce stade : `@vueuse/nuxt` est correctement tree-shaké (201 octets d'écart avec ou sans le module, donc il reste), et `i18n.bundle.dropMessageCompiler` fait gagner 4,7 Ko (activé). Le budget est vérifié en CI par `scripts/check-budgets.mjs`, sur les seuls chunks référencés par la page d'accueil prérendue.
+> **Mesure au lot L0 (socle vide) : 107 Ko de JS gzip.** C'est le plancher de la stack — Vue 3, le runtime Nuxt, vue-router, vue-i18n et color-mode — et il n'est pas compressible sans changer de stack. Le budget initial de 120 Ko écrit avant toute mesure était irréaliste ; il est porté à 150 Ko, dont ~50 Ko de marge réelle pour notre code. Deux vérifications faites à ce stade : `@vueuse/nuxt` est correctement tree-shaké (201 octets d'écart avec ou sans le module, donc il reste), et `i18n.bundle.dropMessageCompiler`, qui faisait gagner 4,7 Ko, **ne peut pas être activé** : il fait traiter chaque message comme un AST précompilé, ce qui casse tout appel à `t()` au runtime. À ne pas réessayer sans précompilation réelle des messages. Le budget est vérifié en CI par `scripts/check-budgets.mjs`, sur les seuls chunks référencés par la page d'accueil prérendue.
 
 **Moyens :** tout le HTML est prérendu et servi depuis le CDN Vercel ; préchargement de la scène Home uniquement ; les scènes 2 à 7 en `defineAsyncComponent` avec hydratation retardée (`hydrate-on-visible` / `<NuxtLazyHydrate>`) ; images AVIF/WebP + `sizes` explicites ; MP3 en `preload="none"` et import dynamique ; sprite SVG unique ; polices self-hostées, 2 graisses, `size-adjust` pour éviter le shift ; pas de polyfill inutile (cible : navigateurs supportant `:has()`, soit ~2023+).
 
@@ -743,6 +743,7 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 | A11y | axe-core via Playwright | 0 violation « serious » ou « critical » sur les 7 scènes, ×2 thèmes, ×2 langues |
 | Visuel | Playwright screenshots | 7 scènes × 2 thèmes × 3 viewports, avec `prefers-reduced-motion: reduce` forcé pour la stabilité |
 | Perf | Lighthouse CI | budgets §10.1, bloquant |
+| **Smoke runtime** | **Playwright, `npm run smoke`** | **charge le build réel dans Chromium ; toute erreur console, `pageerror` ou réponse ≥ 400 échoue la CI. Non négociable : au L0, un build a passé lint, typecheck, tests et budgets tout en étant une page 500 dans le navigateur.** |
 
 ### 12.2 Outillage
 

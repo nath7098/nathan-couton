@@ -25,11 +25,15 @@ export default defineNuxtConfig({
     '@nuxtjs/i18n',
     '@vueuse/nuxt',
   ],
+
+  // Components live in folders that describe their role (primitives/, rail/,
+  // effects/, scenes/) but are named Nc* already, so the directory must not be
+  // prefixed onto the tag — <NcThemeToggle>, not <PrimitivesNcThemeToggle>.
+  components: [{ path: '~/components', pathPrefix: false }],
   devtools: { enabled: true },
 
   app: {
     head: {
-      htmlAttrs: { lang: 'fr' },
       link: [{ rel: 'icon', href: '/favicon.ico' }],
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }],
     },
@@ -90,19 +94,19 @@ export default defineNuxtConfig({
     defaultLocale: 'fr',
     strategy: 'prefix_except_default',
     langDir: 'locales',
-    // Messages are static JSON, compiled at build time — the runtime message
-    // compiler is dropped from the bundle (measured: -4.7 kB gzip). SPEC §10.1.
-    bundle: { dropMessageCompiler: true },
-    compilation: { strictMessage: false },
     locales: [
       { code: 'fr', language: 'fr-FR', name: 'Français', file: 'fr.json' },
       { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' },
     ],
-    detectBrowserLanguage: {
-      useCookie: true,
-      cookieKey: 'nc-locale',
-      redirectOn: 'root',
-      alwaysRedirect: false,
-    },
+    baseUrl: 'https://nathancouton.fr',
+    // Browser-language detection is OFF on purpose.
+    //
+    // Every page is prerendered, so `/` is French HTML on the CDN. Letting the
+    // client redirect an English browser to `/en` after hydration guarantees a
+    // markup mismatch (the FR payload hydrates against EN messages) and, in
+    // practice, crashes the app. Accept-Language belongs at the edge, not in
+    // the client — L6 adds a Vercel redirect for it. French stays the default,
+    // which is what v1 fell back to anyway, and the switch works from there.
+    detectBrowserLanguage: false,
   },
 })

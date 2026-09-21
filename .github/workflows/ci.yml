@@ -34,5 +34,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install Chromium for the smoke test
+        run: npx playwright install --with-deps chromium
+
+      - name: Runtime smoke test
+        run: npm run smoke
+
       - name: Enforce bundle budgets
         run: node scripts/check-budgets.mjs

@@ -9,7 +9,11 @@
 const { t } = useI18n()
 const colorMode = useColorMode()
 
-const isDark = computed(() => colorMode.value === 'dark')
+// colorMode.value is the fallback during prerender and the real preference once
+// mounted, so anything derived from it must not be rendered server-side or the
+// markup will not match. `mounted` gates the attributes that would differ.
+const mounted = useMounted()
+const isDark = computed(() => mounted.value && colorMode.value === 'dark')
 
 function toggle() {
   colorMode.preference = isDark.value ? 'light' : 'dark'
@@ -21,7 +25,7 @@ function toggle() {
     type="button"
     class="theme-toggle"
     role="switch"
-    :aria-checked="isDark"
+    :aria-checked="mounted ? isDark : undefined"
     :aria-label="t('a11y.toggleTheme')"
     @click="toggle"
   >
@@ -31,9 +35,10 @@ function toggle() {
     >
       <span class="theme-toggle__thumb" />
     </span>
-    <ClientOnly>
-      <span class="nc-sr-only">{{ isDark ? t('a11y.themeDark') : t('a11y.themeLight') }}</span>
-    </ClientOnly>
+    <span
+      v-if="mounted"
+      class="nc-sr-only"
+    >{{ isDark ? t('a11y.themeDark') : t('a11y.themeLight') }}</span>
   </button>
 </template>
 
