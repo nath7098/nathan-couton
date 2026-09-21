@@ -2,7 +2,7 @@
 
 > **Destinataire** : développeur expert Nuxt 4 (Claude Code / Opus 5).
 > **Source de vérité du contenu** : `https://gitlab.com/nath7098/personal-website` (Vue 3 + Vite, en production sur https://nathancouton.fr).
-> **Statut** : spec à valider avant développement.
+> **Statut** : **validée le 21/09/2026** — arbitrages arrêtés au §13, développement lancé au lot L0.
 > **Langue du code** : anglais (identifiants, commentaires). **Langue du contenu** : FR + EN.
 
 ---
@@ -14,7 +14,8 @@ On refait le portfolio de zéro en **Nuxt 4**, en gardant **exactement les même
 1. la navigation devient **mono-page à défilement horizontal** — on scrolle (molette / trackpad / doigt / clavier) et le contenu **file de gauche à droite** ;
 2. on pousse les **effets visuels** très loin : parallax multi-couches, système de particules canvas, transitions CSS ciselées, animations pilotées par le scroll ;
 3. **zéro framework UI générique** (pas de Bootstrap, Vuetify, PrimeVue, Angular Material, Tailwind UI, shadcn…). Chaque composant est écrit à la main, en reprenant l'ADN visuel des composants actuels mais retravaillé jusqu'à la perfection ;
-4. le site reste **responsive**, **accessible**, **performant** et **SEO-friendly** malgré le parti-pris horizontal.
+4. le site reste **responsive**, **accessible**, **performant** et **SEO-friendly** malgré le parti-pris horizontal ;
+5. tout est **prérendu et déployé sur Vercel**, sans donnée récupérée à l'exécution (§13).
 
 ---
 
@@ -36,7 +37,7 @@ On refait le portfolio de zéro en **Nuxt 4**, en gardant **exactement les même
 | Loaders | `vue3-spinner` (`BounceLoader`, `FadeLoader`) |
 | Formulaire | `@emailjs/browser` (service `service_personal`, template `template_personal`, clé publique `z4ONDSAdpiceLSY_Y`) |
 | Données dynamiques | API Express maison (`https://api.nathancouton.fr`) : `/spotify`, `/games`, `/hobbies`, avec fallbacks JSON locaux |
-| Deploy | Docker multi-stage → nginx alpine → VPS, reverse-proxy nginx, CI GitLab + semantic-release |
+| Deploy | Docker multi-stage → nginx alpine → VPS, reverse-proxy nginx, CI GitLab + semantic-release (**remplacé par Vercel**, §12.3) |
 
 ### 1.2 Cartographie des pages
 
@@ -61,7 +62,7 @@ On refait le portfolio de zéro en **Nuxt 4**, en gardant **exactement les même
 - Le CV PDF téléchargeable.
 - La scène parallax Hollow Knight et son easter egg (clic sur le Chevalier → apparition + thème musical).
 - Le double thème dark/light et le bascule FR/EN.
-- L'intégration Spotify / jeux / hobbies via l'API maison, avec fallbacks.
+- Les contenus Spotify / jeux / hobbies **tels qu'affichés aujourd'hui** — mais figés en dur, l'API maison disparaissant (§13.1).
 
 **On jette :**
 - Toutes les dépendances UI tierces : `vue-final-modal`, `vue3-toastify`, `vue3-spinner`, `vue3-clipboard`, `devicon` (CSS), `@fortawesome/*`. Remplacées par des composants et icônes maison.
@@ -87,7 +88,6 @@ On refait le portfolio de zéro en **Nuxt 4**, en gardant **exactement les même
     "@nuxtjs/color-mode": "latest",  // dark/light + prefers-color-scheme + persistance
     "@vueuse/nuxt": "latest",        // useRafFn, useElementSize, useEventListener, useIdle…
     "@nuxt/eslint": "latest",
-    "sass-embedded": "latest",       // si SCSS conservé (cf. §4.1)
     "typescript": "^5",
     "vitest": "latest",
     "@nuxt/test-utils": "latest",
@@ -98,7 +98,11 @@ On refait le portfolio de zéro en **Nuxt 4**, en gardant **exactement les même
 
 **Interdits explicites** : toute librairie de composants UI (Bootstrap, Vuetify, PrimeVue, Naive, Element, shadcn-vue, Nuxt UI), toute librairie d'icônes packagée en composants génériques, Tailwind. Les seules libs d'animation tolérées sont celles qui n'imposent aucun style : aucune n'est requise — **tout se fait en CSS + un composable rAF maison** (cf. §5). Si une exception devient nécessaire, la justifier en PR avant de l'ajouter.
 
-**Rendu** : `ssr: true`, prérendu statique de la page unique (`nuxt generate` ou `nitro.prerender.routes: ['/', '/en']`). Le site n'a pas besoin de serveur de rendu à l'exécution ; seules les routes Nitro d'API (§9) tournent côté serveur. Deux cibles possibles : (a) statique + les routes Spotify appelées en direct côté client, (b) Node + Nitro. **Recommandation : (b) Node**, pour masquer/mettre en cache l'API maison et éviter le CORS. À valider (§13).
+**Rendu** : `ssr: true` + **prérendu intégral** (`nitro.preset: 'vercel'`, `nitro.prerender.routes: ['/', '/en']`, `crawlLinks: false`). Le HTML des deux locales est généré au build et servi depuis le CDN Vercel — aucun rendu à l'exécution.
+
+Une **seule fonction serverless** subsiste : `POST /api/contact` (§6.7). Le preset `vercel` de Nitro la déploie automatiquement à côté des fichiers statiques, sans configuration ni serveur à administrer. Elle existe pour ne pas exposer les identifiants d'envoi d'e-mail dans le bundle et pour porter le rate-limit. Repli possible si l'on veut *zéro* fonction : EmailJS appelé directement depuis le client avec sa clé publique (c'est son usage prévu), au prix du rate-limit et de la protection anti-spam côté serveur.
+
+**Plus aucune donnée n'est récupérée à l'exécution** : Spotify, jeux et hobbies sont figés en dur (§9.3).
 
 ---
 
@@ -168,7 +172,18 @@ Scroll libre par défaut, mais **snap doux** : après 120 ms d'inactivité de sc
 - chaque scène a un `id` (`home`, `about`, `experience`, `skills`, `education`, `projects`, `contact`) ;
 - l'URL reflète la scène active via **`history.replaceState` sur le hash** (`/#about`), débouncé à 200 ms, sans déclencher de navigation Vue ;
 - à l'arrivée, si `location.hash` correspond à une scène, on saute directement à sa position (sans animation) **avant la première peinture** — via un petit script inline dans `app.vue`/`head` pour éviter le flash ;
-- les anciennes URL (`/about`, `/experience`, …) sont **redirigées 301 vers `/#<scene>`** côté Nitro (`server/middleware/legacy-routes.ts`) pour ne perdre aucun lien entrant ni le jus SEO.
+- les anciennes URL (`/about`, `/experience`, …) sont **redirigées 301 vers `/#<scene>`** via les `routeRules` de Nuxt, que le preset `vercel` traduit en redirections natives de la plateforme (aucune fonction n'est réveillée) :
+
+```ts
+// nuxt.config.ts
+routeRules: {
+  '/about':      { redirect: { to: '/#about',      statusCode: 301 } },
+  '/experience': { redirect: { to: '/#experience', statusCode: 301 } },
+  // … skills, education, projects, contact, et leurs équivalents /en/*
+}
+```
+
+Attention : un fragment n'est pas transmis au serveur, donc la redirection ne peut pas *lire* le hash — elle ne fait que l'imposer. C'est le comportement voulu.
 
 ### 3.6 Entrées clavier / pointeur
 
@@ -196,7 +211,9 @@ Composant `NcRailNav` : rail fin en bas (desktop) ou en haut (tablette), avec :
 
 ### 4.1 Tokens
 
-Le système actuel (SCSS map → custom properties) est conservé dans son **intention** mais réécrit en **CSS natif** : un unique `app/assets/css/tokens.css` définissant tous les tokens sur `:root`, surchargés sous `[data-theme="dark"]` / `[data-theme="light"]`. On garde SCSS **uniquement** pour le nesting et les mixins de media-queries — ou on passe full CSS natif (nesting natif + `@custom-media` via PostCSS). **Recommandation : CSS natif + PostCSS (`postcss-custom-media`)**, SCSS n'apporte plus rien ici. À valider (§13).
+Le système actuel (SCSS map → custom properties) est conservé dans son **intention** mais réécrit en **CSS natif** : un unique `app/assets/css/tokens.css` définissant tous les tokens sur `:root`, surchargés sous `[data-theme="dark"]` / `[data-theme="light"]`.
+
+**Plus de SCSS dans le projet.** Le nesting est natif, les media-queries nommées passent par `postcss-custom-media` (`@custom-media --lg (width >= 1024px)`), et les mélanges de couleurs par `color-mix()`. Le préprocesseur ne servait qu'à générer des custom properties : il n'a plus de raison d'être.
 
 ```css
 :root {
@@ -390,16 +407,20 @@ Un overlay `background-image` SVG `feTurbulence` (généré une fois, inliné en
 
 **Contenu (identique) :** photo de profil, carte météo (Tours, 37, `about.description`, `about.pickupline`), logo employeur, top Spotify (4 artistes + 4 titres, blacklists incluses), jeux, hobbies.
 
-**Données :** `/api/spotify`, `/api/games`, `/api/hobbies` (routes Nitro, §9), avec fallbacks JSON embarqués. Filtres conservés : artistes blacklistés `["Lorenzo"]`, titres blacklistés `["Zorro est arrivé"]`, albums exclus `["Aqua Regia"]`, `slice(0, 4)` de part et d'autre.
+**Données : entièrement statiques.** Le compte Spotify n'existe plus et l'API maison est abandonnée — les trois listes sont figées dans `app/data/about.ts` à partir du dernier état connu (backup du dépôt source, filtres déjà appliqués : artistes exclus `["Lorenzo"]`, titres exclus `["Zorro est arrivé"]`, album exclu `["Aqua Regia"]`, `slice(0, 4)`). Valeurs retenues en annexe A.6.
+
+Conséquences : plus d'`onMounted` asynchrone, plus d'états de chargement, plus de gestion d'erreur, plus de CORS — les tuiles sont rendues en SSG avec le reste de la page. Les liens « ouvrir dans Spotify » restent actifs (`https://open.spotify.com/...`, plus pertinent que l'URI `spotify:` qui exige l'application installée).
+
+**Pochettes et photos d'artistes** : les URLs `i.scdn.co` du backup sont des ressources tierces susceptibles d'expirer. Elles sont donc **rapatriées une fois pour toutes** dans `public/img/spotify/` (8 fichiers, convertis en AVIF/WebP) par le script `scripts/fetch-remote-assets.ts`, à lancer en local au lot L3 — ce téléchargement n'est pas possible depuis l'environnement d'agent (domaine bloqué). Si une image s'avère morte, prendre une capture équivalente ou retirer l'entrée.
 
 **Traitement :**
 - **Bento grid** repensée : plus de `grid-template-rows: repeat(4, 8rem)` rigide en `rem`, mais une grille fluide 12 colonnes × 8 rangées avec `aspect-ratio` sur les tuiles. La composition reste la même (photo ronde en haut-gauche, météo large, logo, gros bloc Spotify, jeux, hobbies).
 - Chaque tuile entre en **cascade horizontale** : elles arrivent décalées en X selon leur colonne, à des vitesses légèrement différentes (parallax intra-scène).
 - **Carte météo** : le dégradé bleu est conservé, les nuages deviennent des **calques animés** (2 couches qui dérivent à des vitesses différentes), le soleil pulse doucement. Icône soleil dessinée à la main en SVG (plus de FontAwesome).
 - **Tuiles Spotify / jeux / hobbies** : on garde l'idée du **voile noir qui monte pour révéler le nom** (`bottom: 100% → 0`), mais réécrit en `clip-path` + `transform` (pas d'animation de `bottom`), avec le libellé qui entre en `translateY` décalé de 120 ms. Correction du bug `opacity: 7`. La pochette scale à `1.06` sous le voile.
-- **États de chargement** : plus de spinner tiers → **skeleton shimmer** maison (dégradé qui balaye, `@keyframes` + `background-position`), aux dimensions exactes de la tuile finale → zéro CLS.
-- **État d'erreur** : si l'API échoue, on sert le fallback **silencieusement** (aucun message d'erreur visible — c'est un portfolio, pas un dashboard).
-- Liens Spotify : `<a target="_blank" rel="noopener">` réels (aujourd'hui `window.open` sur un `div`) → accessibilité + clic milieu.
+- **Pas d'état de chargement** (données statiques). `NcSkeleton` reste au catalogue pour les images lourdes du parallax, mais la scène About n'en a plus besoin — et elle gagne un LCP propre au passage.
+- Liens Spotify : `<a target="_blank" rel="noopener noreferrer">` réels (aujourd'hui `window.open` sur un `div`) → accessibilité, clic milieu, aperçu de l'URL.
+- Le titre de la tuile reste `about.musics` (« Mon top spotify »). Comme la liste est désormais figée, **ne pas** ajouter de mention « en direct » ou « en ce moment » qui serait mensongère.
 
 ### 6.3 Scène 03 — Experience (`#experience`, span 2)
 
@@ -445,7 +466,7 @@ Un overlay `background-image` SVG `feTurbulence` (généré une fois, inliné en
   - `<a>` réels pour les liens, avec `rel="noopener noreferrer"`, `aria-label` explicite (« Voir le dépôt GitLab de X ») ;
   - l'icône « œil » et le logo GitLab redessinés dans le sprite SVG.
 - Le toggle « autres projets » : aujourd'hui c'est un chevron sur une ligne. Devient un **volet latéral** : un clic élargit la scène (son span passe de 2.5 à 4) et les 4 cartes secondaires se déploient à la suite, avec compensation de la position de scroll pour que rien ne saute. Le chevron pointe vers la droite et pivote à l'ouverture. Le libellé est explicite (`projects.other_toggle` — **nouvelle clé i18n à ajouter** : « Autres projets » / « Other projects »), car le chevron seul n'est pas accessible.
-- **Filtres par techno** (amélioration proposée, à valider §13) : une rangée de `NcTag` cliquables qui atténue les cartes non concernées via `filter` + `opacity` et un `transition` sur `order` — ou simple mise en retrait sans reflow.
+- **Filtres par techno** (validé, §13 #6) : une rangée de `NcTag` cliquables qui atténue les cartes non concernées via `filter` + `opacity` et un `transition` sur `order` — ou simple mise en retrait sans reflow.
 
 ### 6.7 Scène 07 — Contact (`#contact`, span 2)
 
@@ -463,7 +484,7 @@ Un overlay `background-image` SVG `feTurbulence` (généré une fois, inliné en
   - libellés flottants conservés (l'implémentation actuelle par `[data-value=""]` est astucieuse mais fragile — la remplacer par `:placeholder-shown` + `:focus-within`, pur CSS, robuste) ;
   - **validation** : nom requis (≥ 2), e-mail requis + format, message requis (≥ 10, ≤ 2000). Messages d'erreur inline, `aria-invalid`, `aria-describedby`, validation au `blur` puis en direct une fois le champ touché ;
   - **honeypot** + délai minimal de remplissage (anti-spam) ;
-  - **soumission** : passage par une **route Nitro `POST /api/contact`** plutôt que par EmailJS côté client (la clé publique EmailJS est aujourd'hui dans le bundle). Le serveur relaie vers EmailJS (ou SMTP), avec rate-limit par IP (5/heure). Si le choix « statique pur » est retenu (§13), on garde EmailJS côté client — la clé publique EmailJS étant conçue pour être publique, c'est acceptable, mais moins propre ;
+  - **soumission** : `POST /api/contact`, unique fonction serverless du projet (§2). Elle valide le corps (schéma strict, longueurs bornées), applique un rate-limit par IP (5 requêtes/heure, en mémoire — suffisant pour le trafic d'un portfolio ; passer à Vercel KV si besoin d'un compteur partagé entre instances), puis relaie vers EmailJS ou un SMTP. Les identifiants vivent dans les variables d'environnement Vercel (`NUXT_EMAILJS_*`), jamais dans le bundle ;
   - **états** : `idle → submitting → success | error`, bouton désactivé pendant l'envoi avec un indicateur de progression maison (remplace `BounceLoader`), succès = confettis de spores + message `contact.mail_response.ok`, échec = message `contact.mail_response.ko` qui rappelle l'adresse directe.
 - **Pied de scène** : mentions légales minimales, lien vers le dépôt, année, et un bouton « Retour au début » qui rembobine le rail en douceur (`goTo('home')`).
 
@@ -595,22 +616,32 @@ Nouvelles clés à ajouter : `projects.other_toggle`, `a11y.*` (labels de naviga
 - Le changement de langue met à jour l'URL sans recharger, conserve la position du rail, et déclenche la transition §5.4.
 - Le visuel `sit_fr.png` / `sit_en.png` suit la locale (comportement actuel).
 
-### 9.3 Routes Nitro
+### 9.3 Données runtime : aucune
+
+L'API Express maison (`api.nathancouton.fr`) est **abandonnée**. Les trois jeux de données qu'elle servait deviennent des constantes TypeScript :
+
+```ts
+// app/data/about.ts
+export const topArtists: SpotifyArtist[] = [/* 4 entrées, cf. annexe A.6 */]
+export const topTracks:  SpotifyTrack[]  = [/* 4 entrées, cf. annexe A.6 */]
+export const games:      MediaItem[]     = [/* Hollow Knight, Final Fantasy X */]
+export const hobbies:    MediaItem[]     = [/* Musique, Australie */]
+```
+
+Les backups JSON du dépôt source ne sont pas repris tels quels : le fichier Spotify fait 4 973 lignes pour 8 entrées utiles. On ne garde que les champs réellement affichés (`name`, `url`, `image`, et `artist` pour les titres — ce dernier n'était pas affiché avant mais mérite de l'être).
+
+### 9.4 Côté serveur
 
 ```
-server/api/spotify.get.ts    → proxy vers $API/spotify,  cache 6 h, fallback JSON local
-server/api/games.get.ts      → proxy vers $API/games,    cache 24 h, fallback JSON local
-server/api/hobbies.get.ts    → proxy vers $API/hobbies,  cache 24 h, fallback JSON local
-server/api/contact.post.ts   → validation + rate-limit + relais EmailJS/SMTP
-server/middleware/legacy.ts  → 301 /about → /#about, etc.
-server/routes/sitemap.xml.ts → sitemap régénéré (2 URLs : / et /en)
-server/routes/robots.txt.ts
+server/api/contact.post.ts       → validation + rate-limit + relais e-mail (seule fonction)
+public/robots.txt                → statique
+app/pages/sitemap.xml            → non : généré au build (module ou hook nitro:prerender)
+scripts/fetch-remote-assets.ts   → outil de build ponctuel (pochettes Spotify), lancé à la main
 ```
 
-- Cache via `defineCachedEventHandler` (Nitro storage), `swr: true`.
-- Les fallbacks (`spotify.backup.json`, `games.backup.json`, `hobbies.backup.json`) sont repris du dépôt actuel et **allégés** (le backup Spotify fait 4 973 lignes — ne garder que les champs utilisés : `name`, `uri`, `images[2].url` pour les artistes ; `name`, `uri`, `album.images[0].url` pour les titres).
-- Les images Spotify pointent vers `i.scdn.co` : les déclarer dans `image.domains` de `@nuxt/image` ou les proxifier.
-- Config : `runtimeConfig.apiBase` (`NUXT_API_BASE`), `runtimeConfig.emailjs.*` côté serveur uniquement.
+Le sitemap ne contient plus que 2 URLs (`/` et `/en`) : il est écrit une fois dans `public/`, ou généré par un hook de build. Pas besoin de `@nuxtjs/sitemap` pour deux lignes.
+
+Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.siteUrl`.
 
 ---
 
@@ -630,7 +661,7 @@ server/routes/robots.txt.ts
 | Frame time pendant le scroll (desktop mid-range) | ≤ 12 ms au 95e centile |
 | Lighthouse (Perf / A11y / Best / SEO) | ≥ 92 / 100 / 100 / 100 |
 
-**Moyens :** préchargement de la scène Home uniquement ; les scènes 2 à 7 en `defineAsyncComponent` avec hydratation retardée (`hydrate-on-visible` / `<NuxtLazyHydrate>`) ; images AVIF/WebP + `sizes` explicites ; MP3 en `preload="none"` et import dynamique ; sprite SVG unique ; polices self-hostées, 2 graisses, `size-adjust` pour éviter le shift ; pas de polyfill inutile (cible : navigateurs supportant `:has()`, soit ~2023+).
+**Moyens :** tout le HTML est prérendu et servi depuis le CDN Vercel ; préchargement de la scène Home uniquement ; les scènes 2 à 7 en `defineAsyncComponent` avec hydratation retardée (`hydrate-on-visible` / `<NuxtLazyHydrate>`) ; images AVIF/WebP + `sizes` explicites ; MP3 en `preload="none"` et import dynamique ; sprite SVG unique ; polices self-hostées, 2 graisses, `size-adjust` pour éviter le shift ; pas de polyfill inutile (cible : navigateurs supportant `:has()`, soit ~2023+).
 
 ### 10.2 Accessibilité (cible WCAG 2.2 AA)
 
@@ -668,6 +699,7 @@ server/routes/robots.txt.ts
 │   │   ├── css/{reset,tokens,typography,utilities}.css
 │   │   ├── icons/*.svg              # sprite source
 │   │   └── img/…                    # repris du dépôt source, retraités
+│   │       └── (public/img/spotify/ pour les pochettes rapatriées)
 │   ├── components/
 │   │   ├── primitives/Nc{Button,Icon,Heading,Tag,Field,Card,Modal,Toast,Skeleton,Spinner,ThemeToggle,LocaleSwitch}.vue
 │   │   ├── rail/Nc{Rail,Scene,RailNav}.vue
@@ -682,20 +714,16 @@ server/routes/robots.txt.ts
 │   │   ├── useInView.ts             # IntersectionObserver partagé
 │   │   ├── useToast.ts
 │   │   └── useContactForm.ts
-│   ├── data/{types,timeline,projects,skills,contact}.ts
+│   ├── data/{types,timeline,projects,skills,about,contact}.ts
 │   ├── pages/index.vue              # unique page : monte les 7 scènes dans NcRail
 │   └── utils/{lerp,clamp,mapRange,prng,shortestAngle}.ts
 ├── i18n/locales/{fr,en}.json
 ├── public/{favicon.ico,nc_logo_static.png,cv/CV_Nathan_Couton.pdf,…}
-├── server/
-│   ├── api/{spotify,games,hobbies}.get.ts
-│   ├── api/contact.post.ts
-│   ├── middleware/legacy.ts
-│   ├── routes/{sitemap.xml,robots.txt}.ts
-│   └── data/*.backup.json
+├── server/api/contact.post.ts       # unique fonction serverless
+├── scripts/fetch-remote-assets.ts   # rapatriement ponctuel des pochettes Spotify
 ├── tests/{unit,e2e}/
 ├── nuxt.config.ts
-├── Dockerfile
+├── vercel.json                      # si un réglage échappe aux routeRules
 └── docs/SPEC.md                     # ce document
 ```
 
@@ -721,13 +749,25 @@ server/routes/robots.txt.ts
 - Conventional commits + semantic-release (déjà en place côté GitLab — à porter tel quel).
 - Husky/lefthook : lint + typecheck + tests unitaires au pre-push.
 
-### 12.3 Déploiement
+### 12.3 Déploiement — Vercel
 
-On reprend le pipeline existant : Docker multi-stage → image finale. Deux variantes selon §13 :
-- **statique** : build `nuxt generate` → nginx alpine (comme aujourd'hui, config nginx corrigée : le `root: /urs/share/nginx/html` est une typo) ;
-- **Node** : build `nuxt build` → `node-slim` + `node .output/server/index.mjs`, port exposé, healthcheck `/api/healthz`.
+Plus de Docker, plus de nginx, plus de VPS : le projet est connecté à Vercel, qui build à chaque push.
 
-Dans les deux cas : en-têtes de cache longs sur `/_nuxt/*` (immutable), `no-cache` sur le HTML, CSP stricte (`script-src 'self'`, pas d'inline sauf le nonce du script de restauration de hash/thème), HSTS, `Permissions-Policy`.
+| Élément | Valeur |
+|---|---|
+| Preset Nitro | `vercel` (déduit automatiquement de `process.env.VERCEL`, mais on le fixe explicitement) |
+| Build | `nuxt build` (avec `nitro.prerender.routes: ['/', '/en']`) |
+| Sortie | HTML + assets statiques sur le CDN, une fonction pour `/api/contact` |
+| Branche de production | `master` (ou `main`) |
+| Preview | une URL par branche / MR, automatique |
+| Variables d'env | `NUXT_EMAILJS_SERVICE_ID`, `NUXT_EMAILJS_TEMPLATE_ID`, `NUXT_EMAILJS_PRIVATE_KEY`, `NUXT_PUBLIC_SITE_URL` |
+| Domaine | `nathancouton.fr` + `www` → apex, certificat automatique |
+
+**En-têtes** (via `routeRules` ou `vercel.json`) : cache immuable sur `/_nuxt/*` (`public, max-age=31536000, immutable`), `no-cache` sur le HTML, CSP stricte (`script-src 'self'` — l'unique script inline, celui qui restaure le thème et le hash avant la première peinture, passe par un hash CSP calculé au build), `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restrictive.
+
+**Migration du domaine** : le VPS actuel sert encore le site. Basculer les DNS seulement une fois la preview Vercel validée, et garder le VPS debout quelques jours en repli. Les redirections 301 des anciennes routes (§3.5) doivent être en place **avant** la bascule.
+
+Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conservé pour le versioning, Vercel ne s'occupant que du déploiement. Si le dépôt bascule sur GitHub, l'équivalent en GitHub Actions.
 
 ### 12.4 Lots de livraison
 
@@ -739,30 +779,36 @@ Dans les deux cas : en-têtes de cache longs sur `/_nuxt/*` (immutable), `no-cac
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | Tout le contenu du site actuel est présent et traduit, SSR complet, a11y OK |
 | **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | Budgets perf §10.1 tenus, reduced-motion complet |
 | **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | Envoi d'e-mail fonctionnel, rate-limit, musique à la demande |
-| **L6 — Finition** | Perf, SEO, JSON-LD, redirections, Docker, tests visuels | Lighthouse ≥ budgets, 0 violation axe, pipeline vert, prêt à déployer |
+| **L6 — Finition** | Perf, SEO, JSON-LD, redirections 301, config Vercel, en-têtes, tests visuels | Lighthouse ≥ budgets, 0 violation axe, preview Vercel validée, prêt pour la bascule DNS |
 
 Chaque lot = une MR séparée, revue, avec captures avant/après.
 
 ---
 
-## 13. Décisions à valider avant le lot L0
+## 13. Arbitrages — validés le 21/09/2026
 
-| # | Question | Recommandation |
+| # | Question | Décision |
 |---|---|---|
-| 1 | **Rendu** : statique pur (`nuxt generate` + nginx) ou Node + Nitro ? | **Node + Nitro** — permet de cacher l'API Spotify, d'éviter le CORS, de sécuriser l'envoi d'e-mail et de faire les 301. Coût : un conteneur Node au lieu d'un nginx. |
-| 2 | **CSS** : SCSS conservé ou CSS natif + PostCSS ? | **CSS natif** (nesting, `color-mix`, `@custom-media`). Le SCSS ne servait qu'à générer les custom properties. |
-| 3 | **Mobile** : rail horizontal aussi sur téléphone, ou bascule verticale ? | **Bascule verticale** sous 1024 px (§8). Un rail horizontal tactile est hostile. |
-| 4 | **Police** : rester sur Roboto Mono ou passer à JetBrains Mono ? | **JetBrains Mono**, self-hostée. Même esprit, meilleur dessin. |
-| 5 | **Icônes de marque** : sprite SVG monochrome maison (redessiné) ou logos officiels colorés ? | **Sprite monochrome** : cohérence visuelle + poids + pas de question de licence. |
-| 6 | **Filtres par techno** sur la scène Projects : on ajoute ? | Oui, c'est une vraie valeur ajoutée et ça reste dans l'esprit du site. |
-| 7 | **Musique** (MP3 Hollow Knight, 4,3 Mo) : on conserve l'easter egg tel quel ? | Oui, mais chargement à la demande + contrôles visibles + jamais d'autoplay. Réencoder en ~1,5 Mo. |
-| 8 | **Assets parallax Hollow Knight** : ce sont des sprites tirés du jeu. Usage personnel non commercial, mais à assumer sciemment. | Conserver (statu quo du site en production), avec un crédit discret en pied de scène Contact. |
-| 9 | **Blog** : le stub `BlogView` est mort. On le supprime ou on prévoit une 8e scène ? | **Supprimer**. Si un blog arrive un jour, ce sera un vrai sous-site avec `@nuxt/content`, pas une scène. |
-| 10 | **Section « Autres projets »** : volet qui étend le rail, ou modale plein écran ? | **Volet qui étend le rail** — plus dans l'esprit du défilement continu. |
-| 11 | **Curseur personnalisé** : oui/non ? (divise) | Oui, mais discret, désactivable, et jamais au prix du curseur natif sur les zones de saisie. |
-| 12 | **Analytics** : aucun aujourd'hui. On en ajoute ? | Optionnel — si oui, Plausible ou Umami self-hosté (sans cookie, pas de bandeau nécessaire). |
+| 1 | Rendu et hébergement | **Statique, déployé sur Vercel.** Prérendu intégral des deux locales, CDN, une unique fonction serverless pour `/api/contact`. Plus de Docker/nginx/VPS. |
+| 1bis | Données Spotify / jeux / hobbies | **Figées en dur.** Le compte Spotify n'existe plus, l'API Express maison est abandonnée. Données reprises du dernier backup (annexe A.6), pochettes rapatriées en local. |
+| 2 | SCSS ou CSS natif | **CSS natif** + PostCSS (`postcss-custom-media`). Nesting natif, `color-mix()`, custom properties. Pas de `sass` dans le projet. |
+| 3 | Mobile | **Bascule verticale** sous 1024 px. Rail horizontal réservé au desktop avec pointeur fin. |
+| 4 | Police | **JetBrains Mono**, self-hostée via `@nuxt/fonts`, graisses 400 et 700. |
+| 5 | Icônes | **Sprite SVG monochrome maison**, `currentColor`, ~30 glyphes, < 25 Ko. Ni FontAwesome ni devicon. |
+| 6 | Filtres par techno sur Projects | **Oui.** Rangée de `NcTag` cliquables, mise en retrait des cartes non concernées, sans reflow. |
+| 7 | Easter egg musical | **Conservé.** Chargement à la demande, jamais d'autoplay, contrôles visibles, MP3 réencodé (~1,5 Mo). |
+| 8 | Assets parallax Hollow Knight | **Conservés**, avec crédit discret en pied de scène Contact. |
+| 9 | Blog | **Supprimé.** Le stub disparaît, pas de 8e scène. |
+| 10 | « Autres projets » | **Volet qui étend le rail** (span 2.5 → 4), avec compensation de la position de scroll. |
+| 11 | Curseur personnalisé | **Oui**, discret, désactivé sur pointeur grossier et en reduced-motion, curseur natif préservé sur les zones de saisie. |
+| 12 | Analytics | **Non.** Aucun traceur, aucun bandeau de consentement. |
 
----
+### 13.1 Ce que le passage en statique change concrètement
+
+- **Supprimé** : les 3 routes de proxy (`/api/spotify`, `/api/games`, `/api/hobbies`), le cache Nitro, les fallbacks JSON, la gestion d'erreur réseau, les états de chargement de la scène About, la variable `NUXT_API_BASE`, et toute la logique de filtrage au runtime (les blacklists sont appliquées une fois, à la main, en figeant les données).
+- **Ajouté** : `scripts/fetch-remote-assets.ts` pour rapatrier les 8 images Spotify (à lancer en local — le domaine `i.scdn.co` est injoignable depuis l'environnement d'agent), et les `routeRules` de redirection 301 en remplacement du middleware Nitro.
+- **Inchangé** : tout le reste. Le contenu affiché est identique à celui du site actuel ; seule sa provenance change.
+- **Dette assumée** : le top Spotify ne bougera plus. C'est un instantané de 2024. Si le sujet revient, deux voies propres : un job de build qui rafraîchit les données via l'API Spotify (nécessite un compte et un refresh token), ou assumer une rubrique « ce que j'écoutais » datée.
 
 ## 14. Définition de « terminé »
 
@@ -827,7 +873,34 @@ Chaque techno porte un texte de détail (affiché en modale) — repris intégra
 
 ### A.6 About
 
-Photo de profil · Tours, département 37 · « Curieux - Esprit d'équipe » · « J'aime les challenges » · Top Spotify (4 artistes + 4 titres, via API) · Jeux (Hollow Knight, Final Fantasy X) · Hobbies (Musique, Australie) · Logo employeur.
+Photo de profil · Tours, département 37 · « Curieux - Esprit d'équipe » · « J'aime les challenges » · Logo employeur.
+
+**Top Spotify — figé** (extrait du backup après application des filtres historiques : artiste exclu « Lorenzo », titre exclu « Zorro est arrivé », album exclu « Aqua Regia », puis `slice(0, 4)`) :
+
+*Artistes*
+
+| Nom | Lien | Image d'origine (à rapatrier) |
+|---|---|---|
+| Sleep Token | `open.spotify.com/artist/2n2RSaZqBuUUukhbLlpnE6` | `i.scdn.co/image/ab6761610000e5ebdbc568c9d871256b9a3e34a1` |
+| Periphery | `open.spotify.com/artist/6d24kC5fxHFOSEAmjQPPhc` | `i.scdn.co/image/ab6761610000e5ebae2304891734b9d9fafe1c8d` |
+| Bad Omens | `open.spotify.com/artist/3Ri4H12KFyu98LMjSoij5V` | `i.scdn.co/image/ab6761610000e5eb1ffa2e19b87dceb11074b564` |
+| Tenacious D | `open.spotify.com/artist/1XpDYCrUJnvCo9Ez6yeMWh` | `i.scdn.co/image/ab6761610000e5eb7637f18f419921b8d24bd9e5` |
+
+*Titres*
+
+| Titre | Artiste | Album | Lien | Pochette d'origine (à rapatrier) |
+|---|---|---|---|---|
+| Take Me Back To Eden | Sleep Token | Take Me Back To Eden | `open.spotify.com/track/2Gt7fjNlx901pPRkvBiNBZ` | `i.scdn.co/image/ab67616d0000b273c3d08e1763e769586bab1c97` |
+| Dracul Gras | Periphery | Periphery V: Djent Is Not A Genre | `open.spotify.com/track/23DnPpIoSRcYN04PI4bKku` | `i.scdn.co/image/ab67616d0000b273fef6779b6098e01e5e4a68f7` |
+| Rain | Sleep Token | Take Me Back To Eden | `open.spotify.com/track/0GXwlEXCO8qeeeOIYpsR3m` | `i.scdn.co/image/ab67616d0000b273c3d08e1763e769586bab1c97` |
+| Like A Villain | Bad Omens | THE DEATH OF PEACE OF MIND | `open.spotify.com/track/0xoyUiHhxVH4gwb0CRgNmg` | `i.scdn.co/image/ab67616d0000b273e5f6f7ec99735d7b870f18ae` |
+
+> Les deux titres de Sleep Token partagent la même pochette : 7 fichiers distincts à rapatrier, pas 8.
+> Le nom de l'artiste n'était pas affiché sur le site actuel ; il l'est maintenant (sous le titre, en `--surface-dim`).
+
+**Jeux — figés** : Hollow Knight (`images.igdb.com/igdb/image/upload/t_cover_big/co4hc2.png`) · Final Fantasy X (`…/co1tr1.png`). Mêmes remarques : rapatrier les jaquettes.
+
+**Hobbies — figés** : Musique (`assets/img/musique.jpg`) · Australie (`assets/img/australie.jpg`) — déjà locaux dans le dépôt source.
 
 ### A.7 Contact
 
@@ -841,7 +914,7 @@ Photo de profil · Tours, département 37 · « Curieux - Esprit d'équipe » ·
 |---|---|---|
 | `AboutView.vue` | `opacity: 7` sur `.track__name:hover` | `opacity: .9` |
 | `NcThemeSwitch.vue` | `border-radius: 90px - 6` (SCSS invalide) | `border-radius: 84px` |
-| `nginx.conf` | `root /urs/share/nginx/html` | `/usr/share/nginx/html` |
+| `nginx.conf` | `root /urs/share/nginx/html` | sans objet — nginx disparaît avec le passage sur Vercel |
 | `ContactView.vue` | `.knight:hover + .bench::before { content: "TEST" }` | supprimé |
 | `ContactView.vue` | 15 écritures de `style.marginTop` par frame de scroll | custom properties + transform composité |
 | `ContactView.vue`, `NavBar.vue` | `addEventListener('scroll')` jamais retiré | `useEventListener` (auto-cleanup) |
