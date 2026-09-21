@@ -9,6 +9,10 @@ canvas et transitions CSS sur mesure — aucune librairie de composants UI.
 
 > **La spécification fait foi : [`docs/SPEC.md`](docs/SPEC.md).**
 > Elle décrit le rail, le design system, chaque scène, les budgets et le plan de lots.
+>
+> **Vous reprenez le projet ? Lisez [`docs/HANDOFF.md`](docs/HANDOFF.md)** —
+> état d'avancement, règle de vérification, et la liste des pièges de cette
+> stack qui font perdre du temps.
 
 ## Démarrer
 
