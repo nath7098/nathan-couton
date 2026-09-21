@@ -33,7 +33,8 @@
   position: relative;
 }
 
-.rail__track {
+.rail__track,
+.rail__lean {
   display: flex;
   flex-direction: column;
 }
@@ -100,6 +101,22 @@
       to {
         transform: translate3d(calc(-1 * var(--rail-travel)), 0, 0);
       }
+    }
+
+    /* The slide is the compositor's; the lean rides on the inner wrapper so the
+       two never fight over the same transform. */
+    /* No kinetic skew.
+       SPEC §5.4 asked for the track to lean into the scroll. Measured three
+       ways — on each scene, on a single wrapper, at reduced amplitude — it cost
+       half the frame budget every time, because the surface being skewed is
+       1150vw wide however it is sliced. A ±2.5° lean is not worth halving the
+       frame rate, so the effect is dropped. --rail-velocity is still published
+       for effects that act on small elements. */
+    .rail__lean {
+      display: flex;
+      flex-direction: row;
+      inline-size: 100%;
+      block-size: 100%;
     }
 
     /* Per-scene progress, ranged over the slice of the rail that scene occupies.

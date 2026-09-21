@@ -4,6 +4,7 @@ const head = useLocaleHead({ seo: true })
 const config = useRuntimeConfig()
 
 useMotionPreference()
+providePointer()
 
 useHead(() => ({
   htmlAttrs: head.value.htmlAttrs,
@@ -40,6 +41,9 @@ useSeoMeta({
     <NuxtPage />
 
     <NcToaster />
+    <NcNoise />
+    <NcCursor />
+    <NcIntro />
   </div>
 </template>
 

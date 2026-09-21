@@ -63,7 +63,11 @@ est retirée du build de production, elle ne coûte donc rien au bundle livré.
   custom properties. Un accent qui porte du texte utilise `--primary-text` /
   `--secondary-text`, contrastés pour le thème clair.
 - **Mouvement** : n'animer que `transform`, `opacity`, `filter` et des custom
-  properties. `prefers-reduced-motion` est respecté partout.
+  properties. `prefers-reduced-motion` est respecté partout — sauf les animations
+  pilotées par le scroll, qui sont le mécanisme du rail et non de la décoration.
+- **Effets plein écran** : les mesurer avant de les garder. `mix-blend-mode` et
+  `skewY` appliqués à la surface du rail coûtaient chacun la moitié du budget de
+  frame ; `npm run smoke` surveille désormais le temps de frame au défilement.
 - **Aucun texte en dur** dans un composant : tout passe par les fichiers de locale.
 - **Icônes** : uniquement via `<NcIcon name="…" />`, dont les noms sont générés
   par `npm run icons`. Ajouter une icône = éditer `scripts/build-sprite.mjs`
@@ -94,6 +98,6 @@ Variables d'environnement : voir `.env.example`.
 | L1 | Rail horizontal, navigation, mode vertical mobile | ✅ |
 | L2 | Bibliothèque de primitives, sprite SVG | ✅ |
 | L3 | Contenu des sept scènes | ✅ |
-| L4 | Parallax, particules, transitions | à faire |
+| L4 | Parallax, particules, transitions | ✅ |
 | L5 | Formulaire de contact, scène Hollow Knight | à faire |
 | L6 | Perf, SEO, finition, bascule DNS | à faire |

@@ -30,6 +30,10 @@ const titleId = computed(() => `${props.scene.id}-title`)
     }"
     :aria-labelledby="titleId"
   >
+    <NcParticleField
+      :preset="scene.particles"
+      :seed="index * 7919 + 13"
+    />
     <!-- The scene number and title are the landmark's label. The home scene
          carries the page's only h1, so its title is visually hidden here. -->
     <header class="scene__head">

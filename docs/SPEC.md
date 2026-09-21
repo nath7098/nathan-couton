@@ -311,7 +311,9 @@ Toutes les scènes partagent : un **numéro de scène** discret (`01` … `07`) 
 2. **Un seul `requestAnimationFrame` global.** Pas de rAF par composant. Un orchestrateur (`useFrameLoop`) distribue le tick ; il se met en pause quand l'onglet est caché (`document.visibilitychange`) et quand le rail est immobile depuis 400 ms.
 3. **`will-change` est ciblé et temporaire** : posé sur les calques parallax et le track, retiré quand l'élément est hors-champ (éviter l'explosion mémoire GPU).
 4. **Budget de composition** : maximum ~12 calques promus simultanément. Les scènes non visibles reçoivent `content-visibility: auto` + `contain: layout paint style`.
-5. **`prefers-reduced-motion: reduce`** : parallax figé à sa position médiane, particules désactivées (ou réduites à un fond statique), transitions ramenées à ≤ 80 ms en `opacity` seule, snap désactivé, musique jamais auto-jouée. **Un seul point de vérité** : le composable `useMotionPreference()`, et un attribut `[data-motion="reduced"]` sur `<html>` pour le CSS.
+5. **`prefers-reduced-motion: reduce`** : parallax figé à sa position médiane, particules réduites à un fond statique (une frame peinte, rien qui bouge), transitions ramenées à ≤ 80 ms en `opacity` seule, snap désactivé, musique jamais auto-jouée. **Un seul point de vérité** : le composable `useMotionPreference()`, et un attribut `[data-motion="reduced"]` sur `<html>` pour le CSS.
+
+   > **Exception impérative (L4) :** les animations **pilotées par le scroll** (`rail-slide`, `scene-sweep`) sont exclues de la règle globale qui écrase `animation-duration`. Ce ne sont pas des décorations : elles *sont* le rail, et leur progression est le défilement de l'utilisateur. Les ramener à `0.01ms` projetait le track à sa position finale et figeait chaque scène à `--scene-progress: 1` — le site cessait de fonctionner en reduced-motion. Réduire le mouvement veut dire supprimer ce que l'utilisateur n'a pas demandé, pas le défilement qu'il est en train de faire.
 6. **Toute animation d'entrée est idempotente et réversible** : on scrolle dans les deux sens ; rien ne doit « rester coincé » en état intermédiaire.
 
 ### 5.2 Parallax
@@ -375,7 +377,7 @@ Composant `NcParticleField` — **canvas 2D maison**, aucune dépendance.
 Catalogue à implémenter (tout en CSS, déclenché par `view-timeline` ou par une classe `.is-in-view` posée par `IntersectionObserver`) :
 
 - **Entrée de scène** : les blocs arrivent en `translate3d(0, 24px, 0) scale(.98)` + `opacity: 0` → état neutre, en cascade (`--stagger: calc(var(--i) * 60ms)`), courbe `--ease-out-expo`.
-- **Skew cinétique** : le track reçoit `transform: skewY(calc(var(--rail-velocity) * .0006deg))` plafonné à ±3° — la sensation de vitesse sans le mal de mer. Coupé en reduced-motion.
+- ~~**Skew cinétique**~~ — **retiré après mesure (L4).** Le principe : faire pencher le track dans le sens du scroll. Mesuré de trois façons (sur chaque scène, sur un wrapper unique, à amplitude réduite), il coûtait à chaque fois **la moitié du budget de frame** : médiane 33 ms → 67 ms. La surface à déformer fait 1150 vw quelle que soit la découpe, et regrouper les sept scènes sous un seul calque a empiré les choses plutôt que l'inverse. Un penchement de ±2,5° ne vaut pas de diviser la fluidité par deux. `--rail-velocity` reste publié pour des effets portant sur de petits éléments.
 - **Révélation par masque** : titres révélés par `clip-path: inset()` animée, pas par `opacity` seule.
 - **Texte « machine à écrire »** : conservé pour l'intro et le label de nav — `steps()` + curseur clignotant, comme aujourd'hui, mais avec `ch` et sans `width: 0` figé.
 - **Hover de carte** : élévation (`--shadow-1` → `--shadow-3`), `translateZ` simulé par `scale(1.015)`, lueur de bordure via `background: linear-gradient` sur un pseudo-élément masqué, et **spotlight suivant le curseur** (`--mx` / `--my` posés au `pointermove`, throttlés à la frame).
@@ -385,7 +387,9 @@ Catalogue à implémenter (tout en CSS, déclenché par `view-timeline` ou par u
 
 ### 5.5 Bruit & grain
 
-Un overlay `background-image` SVG `feTurbulence` (généré une fois, inliné en data-URI, ~1,2 Ko), `opacity: .035`, `mix-blend-mode: overlay`, `pointer-events: none`, animé par `steps()` sur 8 positions (pas de re-génération par frame). Il unifie toute la page et casse le banding des dégradés.
+Un overlay `background-image` SVG `feTurbulence` (généré une fois, inliné en data-URI, ~1,2 Ko), `pointer-events: none`, animé par `steps()` sur 8 positions (pas de re-génération par frame). Il unifie toute la page et casse le banding des dégradés.
+
+> **Deux corrections mesurées (L4) :** `mix-blend-mode: overlay` sur toute la surface **doublait le temps de frame** à lui seul (médiane 16,7 → 33,3 ms, p95 33 → 83 ms). Il est retiré ; le grain garde sa texture en alpha simple, à `opacity: .05` pour compenser. Par ailleurs l'`inset: -50%` initial quadruplait la surface composée alors que le grain ne se déplace que de ±2 % — ramené à `-4%`.
 
 ---
 
@@ -787,7 +791,7 @@ Le pipeline GitLab existant (semantic-release, changelog, tags) peut être conse
 | **L1 — Rail** | `NcRail`, `NcScene`, `NcRailNav`, chemins A/B, deep-link, clavier, mode vertical mobile | ✅ **livré** — rail horizontal sur les deux chemins (CSS scroll-driven vérifié, repli rAF vérifié), clavier ←/→/Home/End, `/#skills` atterrit juste, empilement vertical sous 1024 px sans débordement, 33 contrôles runtime verts. Snap doux reporté (cf. note) |
 | **L2 — Primitives** | Les 12 composants de `primitives/`, sprite SVG, modale, toasts | ✅ **livré** — 12 primitives, sprite de 56 icônes (16 Ko gzip), galerie `/_dev/kitchen-sink` retirée du build de production, 41 tests |
 | **L3 — Contenu** | Données TS + locales complètes, les 7 scènes en version « statique » (structure + contenu, sans effets) | ✅ **livré** — les 7 scènes portent le contenu de v1, en FR et EN, présent dans le HTML prérendu. 47 tests, aucune scène ne déborde de son viewport |
-| **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | Budgets perf §10.1 tenus, reduced-motion complet |
+| **L4 — Effets** | Parallax, particules, transitions, curseur, grain, intro | ✅ **livré** — particules sur les 7 scènes, parallax, grain, curseur, intro. Trois effets retirés ou corrigés après mesure (voir §5.4). reduced-motion vérifié, y compris le rail lui-même |
 | **L5 — Contact & API** | Routes Nitro, formulaire, easter egg, scène parallax HK | Envoi d'e-mail fonctionnel, rate-limit, musique à la demande |
 | **L6 — Finition** | Perf, SEO, JSON-LD, redirections 301, config Vercel, en-têtes, tests visuels | Lighthouse ≥ budgets, 0 violation axe, preview Vercel validée, prêt pour la bascule DNS |
 

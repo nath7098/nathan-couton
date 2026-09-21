@@ -123,3 +123,21 @@ ol[role='list'] {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* Scroll-driven animations are exempt.
+   `rail-slide` and `scene-sweep` are not decoration: they ARE the rail, and
+   their progress is the user's own scrolling. Collapsing their duration to
+   0.01ms snaps the track to its end position and pins every scene at
+   progress 1 — the site stops working. Reduced motion should remove motion the
+   user did not ask for, not the scrolling they are doing. */
+@media (prefers-reduced-motion: reduce) {
+  .rail__track,
+  .scene {
+    animation-duration: auto !important;
+  }
+}
+
+:root[data-motion='reduced'] .rail__track,
+:root[data-motion='reduced'] .scene {
+  animation-duration: auto !important;
+}

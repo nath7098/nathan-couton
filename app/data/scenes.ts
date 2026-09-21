@@ -23,16 +23,18 @@ export interface SceneMeta {
   span: number
   /** i18n key for the nav label, under `navigation.*`. */
   labelKey: string
+  /** Particle preset for this scene's backdrop. See SPEC §5.3. */
+  particles: 'code-rain' | 'dust' | 'constellation' | 'embers' | 'grid-pulse' | 'spores'
 }
 
 export const SCENES: readonly SceneMeta[] = [
-  { id: 'home', span: 1, labelKey: 'navigation.home' },
-  { id: 'about', span: 1.5, labelKey: 'navigation.about' },
-  { id: 'experience', span: 2, labelKey: 'navigation.experience' },
-  { id: 'skills', span: 1.5, labelKey: 'navigation.skills' },
-  { id: 'education', span: 1, labelKey: 'navigation.education' },
-  { id: 'projects', span: 2.5, labelKey: 'navigation.projects' },
-  { id: 'contact', span: 2, labelKey: 'navigation.contact' },
+  { id: 'home', span: 1, labelKey: 'navigation.home', particles: 'code-rain' },
+  { id: 'about', span: 1.5, labelKey: 'navigation.about', particles: 'dust' },
+  { id: 'experience', span: 2, labelKey: 'navigation.experience', particles: 'embers' },
+  { id: 'skills', span: 1.5, labelKey: 'navigation.skills', particles: 'constellation' },
+  { id: 'education', span: 1, labelKey: 'navigation.education', particles: 'dust' },
+  { id: 'projects', span: 2.5, labelKey: 'navigation.projects', particles: 'grid-pulse' },
+  { id: 'contact', span: 2, labelKey: 'navigation.contact', particles: 'spores' },
 ] as const
 
 export const TOTAL_SPAN = SCENES.reduce((sum, scene) => sum + scene.span, 0)

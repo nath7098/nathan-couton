@@ -38,13 +38,6 @@ const LOCAL_BRAND = {
   illustrator: 'adobeillustrator',
 }
 
-/**
- * Trims path coordinates to 2 decimals. On a 24×24 viewBox rendered at 16–64px
- * that is well below a pixel, and simple-icons ships up to 5 — worth ~30% of
- * the sprite.
- */
-const round = path => path.replace(/-?\d*\.\d{3,}/g, m => String(Math.round(Number(m) * 100) / 100))
-
 const symbols = []
 const seen = new Set()
 
@@ -74,7 +67,14 @@ for (const [id, slug] of Object.entries(TECH)) {
     missing.push(`${id} (${slug})`)
     continue
   }
-  add(id, '', `<path fill="currentColor" d="${round(icon.path)}"/>`)
+  // Paths are used verbatim.
+  //
+  // An earlier version rounded coordinates to two decimals to save ~4kB. It
+  // corrupted the marks: in SVG path data `.405.874` is TWO numbers, and
+  // rewriting the first as `0.40` yields `0.400.87`, which the parser splits
+  // differently. GitHub and GitLab rendered as unrecognisable shapes. Not worth
+  // 4kB.
+  add(id, '', `<path fill="currentColor" d="${icon.path}"/>`)
 }
 
 if (missing.length) {

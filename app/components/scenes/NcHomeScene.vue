@@ -44,7 +44,9 @@ const rail = useRail()
   display: grid;
   gap: var(--space-s);
   justify-items: start;
-  max-inline-size: 46rem;
+  /* Wide enough for "{{ Nathan Couton }}" on one line at the top of the type
+     scale — 46rem broke it in two and split the braces across lines. */
+  max-inline-size: 72rem;
 }
 
 .home__greeting {
@@ -54,6 +56,7 @@ const rail = useRail()
 
 .home__name {
   margin-block: 0;
+  text-wrap: nowrap;
 }
 
 .home__position {

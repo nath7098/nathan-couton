@@ -50,6 +50,18 @@ const check = (ok, label) => {
   if (!ok) failures.push(label)
 }
 
+/**
+ * The intro veil covers the page for up to 2.2s on a first visit and swallows
+ * the first click (that click is what skips it). Anything that interacts has to
+ * get past it first, exactly as a visitor would.
+ */
+async function skipIntro(page) {
+  const intro = page.locator('.intro')
+  if (await intro.count() === 0) return
+  await page.keyboard.press('Escape').catch(() => {})
+  await intro.waitFor({ state: 'detached', timeout: 4000 }).catch(() => {})
+}
+
 /** Loads a page and fails on any console error, page error or 4xx/5xx. */
 async function visit(path) {
   const page = await browser.newPage()
@@ -59,6 +71,7 @@ async function visit(path) {
   page.on('response', r => r.status() >= 400 && problems.push(`HTTP ${r.status()} ${r.url()}`))
   await page.goto(`http://localhost:${PORT}${path}`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(600)
+  await skipIntro(page)
   return { page, problems }
 }
 
@@ -105,6 +118,7 @@ async function visit(path) {
   page.on('pageerror', e => problems.push(`pageerror: ${e.message}`))
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(400)
+  await skipIntro(page)
 
   check(problems.length === 0, `rail loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
 
@@ -157,6 +171,7 @@ async function visit(path) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(500)
+  await skipIntro(page)
 
   // A scene is exactly one viewport tall and clips what does not fit, so
   // scrollHeight tells us nothing — measure the children's boxes instead.
@@ -200,6 +215,7 @@ async function visit(path) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
   await page.goto(`http://localhost:${PORT}/#skills`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(700)
+  await skipIntro(page)
   const active = await page.getAttribute('.rail-nav__dot.is-active', 'aria-label')
   check(/comp[ée]tences|skills/i.test(active ?? ''), `/#skills lands on the skills scene (${active})`)
 
@@ -215,6 +231,7 @@ async function visit(path) {
   page.on('pageerror', e => problems.push(e.message))
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(400)
+  await skipIntro(page)
   check(problems.length === 0, `phone layout loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
 
   const before = await page.evaluate(() => document.querySelector('.rail__track')?.getBoundingClientRect().left)
@@ -228,11 +245,54 @@ async function visit(path) {
   await page.close()
 }
 
+// ── Frame budget while scrolling the rail ──────────────────────────────────
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
+  await skipIntro(page)
+  await page.waitForTimeout(500)
+
+  const frames = await page.evaluate(async () => {
+    const times = []
+    let last = performance.now()
+    let raf = requestAnimationFrame(function tick(now) {
+      times.push(now - last)
+      last = now
+      raf = requestAnimationFrame(tick)
+    })
+    const max = document.documentElement.scrollHeight - window.innerHeight
+    for (let i = 0; i <= 40; i++) {
+      window.scrollTo(0, (max * i) / 40)
+      await new Promise(resolve => setTimeout(resolve, 32))
+    }
+    cancelAnimationFrame(raf)
+    return times.slice(3)
+  })
+
+  frames.sort((a, b) => a - b)
+  const p95 = frames[Math.floor(frames.length * 0.95)]
+  const median = frames[Math.floor(frames.length * 0.5)]
+
+  // Headless software rendering, so absolute numbers are pessimistic —
+  // SPEC §10.1's 12ms target needs a real machine with a GPU. These ceilings
+  // are regression guards, not the budget: three effects each cost half the
+  // frame budget when first written, and this is what caught them.
+  //
+  // The median is the assertion that matters: it sits at 16.7ms (one vsync
+  // interval) run after run, so a doubling is unmissable. p95 swings between
+  // 33 and 50ms on an idle-but-shared machine, so its ceiling is loose enough
+  // not to fail at random — a flaky check gets ignored, which is worse than none.
+  check(median <= 25, `scroll frame median ${median.toFixed(1)}ms (ceiling 25ms, software rendering)`)
+  check(p95 <= 70, `scroll frame p95 ${p95.toFixed(1)}ms (ceiling 70ms, software rendering)`)
+  await page.close()
+}
+
 // ── Text contrast, both themes (SPEC §10.2) ────────────────────────────────
 for (const scheme of ['light', 'dark']) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, colorScheme: scheme })
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(400)
+  await skipIntro(page)
 
   const results = await page.evaluate(() => {
     // Any CSS colour → sRGB triplet, resolved by the engine itself. color-mix()

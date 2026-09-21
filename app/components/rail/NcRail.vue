@@ -124,19 +124,21 @@ onMounted(() => {
     <div class="rail__proxy">
       <div class="rail__viewport">
         <div class="rail__track">
-          <NcScene
-            v-for="(scene, index) in SCENES"
-            :key="scene.id"
-            :scene="scene"
-            :index="index"
-            :range="sceneRanges[scene.id]!"
-          >
-            <slot
-              :name="scene.id"
+          <div class="rail__lean">
+            <NcScene
+              v-for="(scene, index) in SCENES"
+              :key="scene.id"
               :scene="scene"
               :index="index"
-            />
-          </NcScene>
+              :range="sceneRanges[scene.id]!"
+            >
+              <slot
+                :name="scene.id"
+                :scene="scene"
+                :index="index"
+              />
+            </NcScene>
+          </div>
         </div>
       </div>
     </div>
