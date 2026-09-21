@@ -25,8 +25,11 @@ describe('rail geometry', () => {
     // Targets align a scene's LEFT edge with the viewport. The last scene is two
     // viewports wide, so its target is short of 1 — the tail of the rail shows
     // its second half. Progress 1 must still land inside it.
+    // The last scene's target sits short of 1 by its own extra width: it is
+    // `(TOTAL_SPAN - span) / (TOTAL_SPAN - 1)`, not a fixed 0.9-something.
     const contact = progressForScene(bounds, 'contact', TOTAL_SPAN)
-    expect(contact).toBeGreaterThan(0.9)
+    const contactSpan = SCENES.at(-1)!.span
+    expect(contact).toBeCloseTo((TOTAL_SPAN - contactSpan) / (TOTAL_SPAN - 1))
     expect(contact).toBeLessThan(1)
     expect(activeSceneAt(bounds, contact, TOTAL_SPAN)).toBe('contact')
 

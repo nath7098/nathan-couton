@@ -70,6 +70,10 @@ const titleId = computed(() => `${props.scene.id}-title`)
 }
 
 .scene__head {
+  /* Above any backdrop the scene lays down. Contact's is full-bleed and
+     positioned, so without this it paints straight over the scene's title. */
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: var(--space-3xs);
   justify-items: start;

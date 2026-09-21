@@ -15,6 +15,16 @@
   initial-value: 0;
 }
 
+/* The contact scene's walk (SPEC §6.7). Registered for the same reason as the
+   two above, and it is not optional: an *unregistered* custom property animates
+   discretely, so a scroll-driven `--walk: 0 → 1` would flip at the halfway mark
+   instead of sweeping, and the Knight would teleport onto the bench. */
+@property --walk {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 .rail {
   --header-h: 4rem;
   --rail-nav-h: 5rem;

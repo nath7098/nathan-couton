@@ -13,8 +13,10 @@ describe('scene registry', () => {
   })
 
   it('sums the spans used to size the scroll proxy', () => {
-    expect(TOTAL_SPAN).toBeCloseTo(11.5)
+    // Asserted as a sum, not a fixed number: spans are a pacing decision and
+    // get re-tuned (contact went 2 → 3 to give the Knight room to walk).
     expect(TOTAL_SPAN).toBe(SCENES.reduce((sum, s) => sum + s.span, 0))
+    expect(TOTAL_SPAN).toBeGreaterThan(SCENES.length)
   })
 
   it('gives every scene a positive span', () => {

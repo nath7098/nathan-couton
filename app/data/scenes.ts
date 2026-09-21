@@ -34,7 +34,11 @@ export const SCENES: readonly SceneMeta[] = [
   { id: 'skills', span: 1.5, labelKey: 'navigation.skills', particles: 'constellation' },
   { id: 'education', span: 1, labelKey: 'navigation.education', particles: 'dust' },
   { id: 'projects', span: 2.5, labelKey: 'navigation.projects', particles: 'grid-pulse' },
-  { id: 'contact', span: 2, labelKey: 'navigation.contact', particles: 'spores' },
+  // Three viewports, so the walk gets two of travel. At span 2 the Knight
+  // crossed the bench in a single flick of the wheel and the parallax never had
+  // room to separate; this is the one scene whose span is a choreography
+  // decision rather than a content one.
+  { id: 'contact', span: 3, labelKey: 'navigation.contact', particles: 'spores' },
 ] as const
 
 export const TOTAL_SPAN = SCENES.reduce((sum, scene) => sum + scene.span, 0)
