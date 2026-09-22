@@ -23,6 +23,7 @@
     "verify": "npm run check && npm run build && npm run test:api && npm run smoke && npm run lighthouse && node scripts/check-budgets.mjs",
     "icons": "node scripts/build-sprite.mjs",
     "sprites": "node scripts/build-knight-sprites.mjs && node scripts/build-scene-props.mjs",
+    "cave": "node scripts/build-cave-layers.mjs && node scripts/check-plate-edges.mjs",
     "assets:fetch": "node --experimental-strip-types scripts/fetch-remote-assets.mjs",
     "test:api": "node scripts/test-api.mjs",
     "lighthouse": "node scripts/lighthouse.mjs"

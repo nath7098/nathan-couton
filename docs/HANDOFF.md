@@ -199,7 +199,7 @@ app/
 i18n/               i18n.config.ts + locales/{fr,en}.ts
 server/             api/contact.post.ts + utils (validation, rate-limit)
 scripts/            build-sprite, security-headers, smoke, test-api, lighthouse…
-                    build-ground-strip, check-plate-edges (décor Contact)
+                    build-cave-layers, check-plate-edges (décor Contact)
 ```
 
 **Principes à ne pas casser :**
@@ -245,14 +245,43 @@ Les invariants sur lesquels tout repose, tous vérifiés par `npm run smoke` :
 
 Deux scripts d'assets, hors build, résultats commités :
 
-- `build-ground-strip.mjs` découpe dans `platform-1` la portion de chemin qui se
-  répète. La planche entière ne le peut pas : elle n'est peinte que sur 21 %–86 %
-  de sa largeur, et deux copies bout à bout laissent 28 vw de vide sous les pieds
-  du Chevalier.
+- `build-cave-layers.mjs` (`npm run cave`) découpe les huit planches de la
+  grotte dans **une seule peinture**, `cave-source.webp`. Cette image est une
+  planche de cinq aperçus : quatre groupes d'éléments et le composite. Seul le
+  composite est une image complète — la corrélation croisée des quatre autres
+  contre lui trouve leurs meilleurs décalages horizontaux à −2, 15, 47 et 14 px,
+  autrement dit ils ont été rendus séparément et n'ont jamais été calés
+  ensemble. Les empiler comme des calques désaxerait chaque stalactite de son
+  ombre. Découper une seule image garantit l'alignement : ce sont les mêmes
+  pixels. Tous les seuils sont dans `CUTS`, chacun avec la mesure qui l'a
+  produit ; le script est idempotent.
 - `check-plate-edges.mjs` dit, planche par planche, si les copies doivent être
   simplement répétées ou alternativement retournées. C'est mesuré, pas jugé à
   l'œil : une couture d'un pixel est invisible sur une capture et évidente dès
   que le calque bouge.
+
+Trois pièges de ce découpage, chacun payé une fois :
+
+1. **Rien de net ne doit exister dans deux calques.** Une silhouette partagée
+   entre deux profondeurs se lit comme une image double dès que la caméra
+   bouge — les lampadaires marchaient à côté d'eux-mêmes sur le sol.
+   Corollaire : un luminaire va à la vitesse de ce qui le porte. Un poteau est
+   planté dans le sol, une lanterne pend du plafond ; ils partagent donc la
+   profondeur du sol et celle du plafond, et `smoke.mjs` le vérifie.
+2. **Le fond n'est pas la peinture floutée.** Cette version-là dessine deux fois
+   chaque source de lumière et la grotte devient laiteuse. La version suivante —
+   résoudre le fond par `(source − avant·α)/(1 − α)` — reproduit la peinture au
+   pixel près à l'arrêt, et seulement à l'arrêt : chaque objet clair laisse un
+   trou sombre derrière lui, les deux se séparent dès que la scène bouge, et là
+   où la soustraction écrête un canal le trou vire au bleu. Le fond est donc la
+   peinture **rebouchée** : plafond prolongé par l'air d'en dessous, sol par
+   l'air d'au-dessus, piliers refermés horizontalement. Rien n'est compté deux
+   fois, rien ne peut devenir négatif.
+3. **Une propagation 4-connexe est un losange.** Le corps d'un luminaire est
+   étendu depuis son cœur chaud ; à 60 pas sans coût directionnel, la grotte
+   s'est remplie de losanges pâles à arêtes parfaitement diagonales. Le coût est
+   maintenant de 20 latéralement pour 1 verticalement : le budget achète 60
+   lignes de hauteur ou 3 pixels de largeur.
 
 ---
 

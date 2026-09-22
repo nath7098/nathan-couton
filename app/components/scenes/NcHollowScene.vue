@@ -13,7 +13,7 @@ import {
 import { PARALLAX_SIZES } from '~/data/parallax-sizes'
 
 /**
- * The Greenpath scene — the contact section's choreography (SPEC §6.7).
+ * The cave scene — the contact section's choreography (SPEC §6.7).
  *
  * The contact scene is one viewport wide and fills it edge to edge. The rail
  * brings it in, parks, and hands the rest of the page's scroll to `--walk`,
@@ -21,6 +21,10 @@ import { PARALLAX_SIZES } from '~/data/parallax-sizes'
  * stretch the Knight walks from the left of the screen to its centre and sits
  * down on a bench, and the cavern separates into its layers behind and in
  * front of him.
+ *
+ * The scenery itself is cut out of one painting by
+ * `scripts/build-cave-layers.mjs`; `app/data/parallax.ts` is the table of what
+ * came out and how fast each piece travels.
  *
  * ── What changed, and why ────────────────────────────────────────────────────
  * The previous version kept the scene three viewports wide and cancelled the
@@ -330,8 +334,12 @@ onBeforeUnmount(() => {
    Because a plate is never narrower than the viewport, a layer that covers
    `1 + depth × pan` plate widths covers every frame of the walk. */
 .hk {
-  --art: max(0.0732vw, 0.13021svh);
-  --plate: calc(1366 * var(--art));
+  /* One source pixel in screen units: 100vw / 1672 against 100svh / 384. The
+     plate is about four and a third to one, so on anything narrower than that
+     — every real display — it is the height term that wins and the painting
+     lands two to three screens wide. */
+  --art: max(0.05981vw, 0.26042svh);
+  --plate: calc(1672 * var(--art));
   /* Outside the strict minimum coverage, so rounding never shows a sliver of
      page background down the edge of the screen. Mirrors BLEED in the data. */
   --bleed: 0.08;
@@ -359,14 +367,18 @@ onBeforeUnmount(() => {
 
 /* ── The layers ────────────────────────────────────────────────────────────
    Parked with their leading edge just off screen at `--walk: 0`, then slid
-   left by `depth × pan` plate widths. The spread between those distances is
-   the depth, and it is the only difference between any two of these. */
+   left by `depth × pan` viewport widths. The spread between those distances is
+   the depth, and it is the only difference between any two of these.
+
+   Viewport widths, not plate widths: this plate is pinned to the viewport's
+   height, so a plate width is two screens on a monitor and thirteen on a phone
+   held upright — see PAN in app/data/parallax.ts. */
 .hk__layer {
   position: absolute;
   inset-block-start: calc(50% + var(--tile-top) * var(--art));
-  inset-inline-start: calc(-1 * (var(--depth) * var(--pan) + var(--bleed)) * var(--plate));
+  inset-inline-start: calc(-100vw * (var(--depth) * var(--pan) + var(--bleed)));
   display: flex;
-  transform: translate3d(calc((1 - var(--walk)) * var(--depth) * var(--pan) * var(--plate)), 0, 0);
+  transform: translate3d(calc(100vw * (1 - var(--walk)) * var(--depth) * var(--pan)), 0, 0);
 }
 
 .hk__tile {
@@ -407,7 +419,7 @@ onBeforeUnmount(() => {
 .hk__sign {
   --depth: 1;
 
-  transform: translate3d(calc((1 - var(--walk)) * var(--pan) * var(--plate)), 0, 0);
+  transform: translate3d(calc(100vw * (1 - var(--walk)) * var(--pan)), 0, 0);
 }
 
 .hk__bench {
@@ -497,7 +509,7 @@ onBeforeUnmount(() => {
   }
 
   @keyframes hk-pan {
-    from { transform: translate3d(calc(var(--depth) * var(--pan) * var(--plate)), 0, 0); }
+    from { transform: translate3d(calc(100vw * var(--depth) * var(--pan)), 0, 0); }
     to { transform: translate3d(0, 0, 0); }
   }
 
@@ -676,16 +688,22 @@ onBeforeUnmount(() => {
    band of Greenpath at the foot of the section, with the Knight already on his
    bench and the form in the normal flow above it.
 
-   The band is the whole point. `--art` is normally `max(100vw / 1366,
-   100svh / 768)` so that a plate always covers the viewport — which on a phone
-   means covering a tall, narrow box with a wide, short painting, i.e. showing
-   about a third of its width blown up threefold. It read as a green blur.
-   Driving `--art` off the width alone instead shows the painting whole, at the
-   aspect it was drawn in, and every landmark inside it still lands where the
-   arithmetic says. */
+   The band is the whole point. `--art` is normally driven by whichever of the
+   viewport's two dimensions needs more of the plate to cover it, which on a
+   phone means covering a tall, narrow box with a painting four times wider than
+   it is tall — about a twentieth of its width, blown up. It read as an orange
+   blur.
+
+   Here it is driven off the width instead, to a band a little over half the
+   viewport wide. Fitting the whole painting across the screen is the obvious
+   alternative and it is worse: at 4.35∶1 that is a ninety-pixel sliver on a
+   phone, too shallow to read as anywhere, with the credit line lying across
+   it. Half a screen of height shows a good stretch of cavern at a size where
+   the lanterns and the floor are legible, and every landmark inside it still
+   lands where the arithmetic says. */
 @media not all and (--rail) {
   .hk {
-    --art: 0.0732vw;
+    --art: calc(52vw / 384);
     --walk: 1;
 
     inset-block-start: auto;
@@ -693,7 +711,7 @@ onBeforeUnmount(() => {
        it, or it stops short of the screen edge while `--art` — which assumes a
        full-width band — keeps measuring against 100vw. */
     inset-inline: calc(-1 * var(--gutter));
-    block-size: calc(768 * var(--art));
+    block-size: 52vw;
   }
 
   .hk__layer,

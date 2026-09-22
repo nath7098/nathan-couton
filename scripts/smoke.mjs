@@ -309,8 +309,8 @@ async function visit(path) {
     const knight = box('.hk__knight--walk')
     const seated = box('.hk__knight--sit')
     const bench = box('.hk__bench')
-    // Anchored on the whole file name: `background-far` also contains
-    // "ground", and matching it instead made the ground plane look as slow as
+    // Anchored on the whole file name: `cave-roof-far` also contains "roof",
+    // and matching on a fragment once made the ground plane look as slow as
     // the far wall — a green test over a scene that was plainly wrong.
     const layerX = (file) => {
       const img = document.querySelector(`.hk__layer img[src$="/${file}.webp"]`)
@@ -321,9 +321,12 @@ async function visit(path) {
       knight: knight && { left: knight.left, right: knight.right, bottom: knight.bottom },
       seated: seated && { left: seated.left, right: seated.right },
       bench: bench && { left: bench.left, right: bench.right },
-      far: layerX('background-far'),
-      ground: layerX('ground'),
-      front: layerX('front-shadows'),
+      far: layerX('cave-back'),
+      ground: layerX('cave-ground'),
+      front: layerX('cave-front'),
+      lamps: layerX('cave-lamps'),
+      roof: layerX('cave-roof'),
+      lanterns: layerX('cave-lanterns'),
     }
   }, { walk, lock })
 
@@ -349,9 +352,17 @@ async function visit(path) {
     `layers separate by depth (far ${Math.round(far)}px < ground ${Math.round(ground)}px < front ${Math.round(front)}px)`)
 
   // 3. Every layer moves the same way every step — no reversal, no stall.
-  const monotonic = ['far', 'ground', 'front'].every(key =>
+  const monotonic = ['far', 'ground', 'front', 'lamps', 'roof', 'lanterns'].every(key =>
     frames.every((f, i) => i === 0 || f[key] <= frames[i - 1][key] + 0.5))
   check(monotonic, 'every layer slides left, every step of the walk')
+
+  // 2b. A fixture travels at the speed of what holds it up. The posts stand on
+  //     the floor and the lanterns hang off the roof, so each pair has to stay
+  //     locked together for the whole walk — a pixel of drift per step and the
+  //     post walks along the ground it is planted in.
+  const locked = (a, b) => frames.every(f => Math.abs(f[a] - f[b]) < 1)
+  check(locked('ground', 'lamps'), 'the lamp posts stay planted in the floor')
+  check(locked('roof', 'lanterns'), 'the lanterns stay hung from the roof')
 
   // 4. The Knight advances rightwards across the screen.
   const advances = frames.every((f, i) => i === 0 || f.knight.left >= frames[i - 1].knight.left - 0.5)

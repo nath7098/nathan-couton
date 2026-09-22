@@ -49,7 +49,7 @@ On refait le portfolio de zéro en **Nuxt 4**, en gardant **exactement les même
 | 4 | `/skills` | `SkillsView` | 4 roues de compétences (Front / Back / Database / Tools), icônes disposées en cercle, rotation vers l'icône sélectionnée, panneau détail (ancienneté + barre de niveau /5) |
 | 5 | `/education` | `EducationView` | Même timeline, 3 formations, sans détails dépliables |
 | 6 | `/projects` | `ProjectsView` | Grille de 4 projets principaux + toggle « autres projets » révélant 4 projets secondaires |
-| 7 | `/contact` | `ContactView` | Scène parallax Hollow Knight (15 calques) + icônes de contact + formulaire e-mail |
+| 7 | `/contact` | `ContactView` | Scène parallax Hollow Knight (8 calques) + icônes de contact + formulaire e-mail |
 | — | `/blog` | `BlogView` | Stub non routé (`<div>Blog view</div>`) — **hors périmètre** |
 
 ### 1.3 Ce qu'on garde, ce qu'on jette
@@ -332,11 +332,15 @@ Le composable, le composant `NcParallaxLayer` qui le consommait et les tokens `-
 **(c) Parallax de scène Contact (le gros morceau).** Réécrite. Le modèle de calques ci-dessous (profondeurs `−0.05` → `0.55`, `scale()` par calque, caméra qui annule le déplacement du rail) a été remplacé — voir l'en-tête de `app/data/parallax.ts` pour le détail et `docs/PASSATION.md` §4 pour le pourquoi. En résumé :
 
 - La scène fait **une seule fenêtre de large** et se fige plein écran ; le budget de scroll de la marche (`WALK_SPAN`, `app/utils/rail-geometry.ts`) vient *après* la course du rail, au lieu d'être pris dessus. Plus rien n'annule rien.
-- Chaque calque porte une **profondeur** = vitesse apparente à l'écran, le sol valant 1 : `0.10` pour la paroi du fond, `1.75` pour les ombres de premier plan. C'est le modèle du jeu — des plans plats, déplacés d'une fraction du déplacement de la caméra.
-- Tout est mesuré en **largeurs de planche** (`--art`), pas en `vw`, pour que le Chevalier, le banc et le sol restent sur la même règle quel que soit le format d'écran.
+- Chaque calque porte une **profondeur** = vitesse apparente à l'écran, le sol valant 1 : `0.10` pour le fond, `1.90` pour la lèvre de roche de premier plan. C'est le modèle du jeu — des plans plats, déplacés d'une fraction du déplacement de la caméra.
 - Les distances sont des **keyframes de `transform`** rangées sur la timeline de scroll, une par élément. Aucune propriété personnalisée n'est animée : c'est ce qui faisait trembler la scène.
 
-  Les PNG (6,8 Mo au total, jusqu'à 1,4 Mo l'unité) sont **retraités** : conversion AVIF + WebP par `scripts/` au moment du portage (sharp, largeur plafonnée à 1920), `loading="lazy"`, `decoding="async"`. **Mesuré : 278 Ko en AVIF** pour les 13 calques, contre un budget de 900 Ko.
+**Décor : la grotte (remplace Greenpath).** Les treize planches Greenpath ont été remplacées par **huit calques découpés dans une seule peinture**, `public/img/parallax/cave-source.webp`, par `scripts/build-cave-layers.mjs` (`npm run cave`). Le raisonnement complet est dans l'en-tête du script ; les points qui engagent le reste du site :
+
+- La planche est un **panorama 1672 × 384** (4,35∶1) là où Greenpath était en 1366 × 768. `--art` reste `max(100vw / L, 100svh / H)`, mais sur tout écran plus étroit que 4,35∶1 — c'est-à-dire tous — c'est le terme de hauteur qui gagne, et la peinture fait deux à trois écrans de large. La plupart des calques n'ont donc pas besoin d'être répétés.
+- **Conséquence : la course se mesure en largeurs de fenêtre, plus en largeurs de planche.** Les planches Greenpath avaient la forme d'une fenêtre, donc une fraction de planche valait une fraction d'écran partout. Celle-ci est épinglée par sa hauteur : une largeur de planche vaut deux écrans sur un moniteur et treize sur un téléphone tenu debout. La course du Chevalier était déjà en `vw` ; le monde qu'il traverse l'est maintenant aussi.
+- Le nombre de copies d'un calque dépend donc de la **forme de l'écran** : `tileCount()` écrit la garantie contre le 32∶9, le panneau le plus large vendu, et tout ce qui est plus étroit gare simplement la copie en trop hors champ.
+- Les 284 lignes de la peinture sont **complétées à 384** par 50 lignes de son propre bord, fondues vers le noir, en haut et en bas. Sans elles la scène agrandit la peinture ×3,2 pour couvrir la hauteur de la fenêtre et n'en montre qu'un tiers ; avec, ×2,3 et la moitié d'une planche de plus en cadre. Le padding est symétrique, donc `GROUND_LINE` ne bouge pas. **Mesuré : 133 Ko en AVIF** pour les 8 calques, contre 278 Ko pour les 13 de Greenpath et un budget de 900 Ko.
 
 > **Écart (L5) :** les calques `Knight_sit` et `sit_fr/en` sont servis en WebP simple et non via `<picture>`, et le MP3 du thème est **repris tel quel (4,4 Mo)** — aucun outil audio n'était disponible dans l'environnement de portage. Il est chargé en `preload="none"`, donc il ne pèse sur aucun chargement de page, mais un réencodage autour de 1,5 Mo reste souhaitable avant la mise en production.
 
@@ -477,7 +481,7 @@ Conséquences : plus d'`onMounted` asynchrone, plus d'états de chargement, plus
 **Contenu (identique) :** `contact.title`, la scène parallax Hollow Knight, les 5 points de contact (LinkedIn, GitHub, GitLab, téléphone, e-mail), le formulaire (nom, e-mail, message, envoi), les toasts de succès/erreur, l'easter egg du Chevalier.
 
 **Traitement :**
-- La scène parallax devient le **climax** : elle occupe 2 viewports, les 15 calques glissent horizontalement à leurs profondeurs respectives (§5.2c), le ciel s'assombrit progressivement, les spores s'intensifient.
+- La scène parallax devient le **climax** : elle se fige plein écran, les 8 calques glissent horizontalement à leurs profondeurs respectives (§5.2c), les spores s'intensifient.
 - **Easter egg conservé et amélioré** : le sprite `sit_fr/sit_en` (le panneau « Assieds-toi ») rebondit ; au clic sur le banc/Chevalier, le Chevalier apparaît en fondu, le panneau disparaît, **et le thème musical démarre** — mais :
   - lecture **toujours à l'initiative de l'utilisateur** (jamais d'autoplay), volume initial à 0.35, fondu d'entrée de 1,2 s ;
   - un **contrôle visible** apparaît (bouton pause + jauge de volume, style maison), et l'état est annoncé (`aria-live="polite"`) ;
@@ -527,7 +531,7 @@ Conséquences : plus d'`onMounted` asynchrone, plus d'états de chargement, plus
 | `NcSkillWheel` | Roue de compétences (§6.4) |
 | `NcProjectCard` | Carte projet (§6.6) |
 | `NcBentoTile` | Tuile de la grille About, avec voile de révélation |
-| `NcContactScene` | Orchestration des 15 calques + easter egg |
+| `NcContactScene` | Orchestration des huit calques + easter egg |
 | `NcNoise` | Overlay de grain (§5.5) |
 | `NcCursor` | Curseur personnalisé (§5.4) |
 | `NcIntro` | Séquence d'intro machine à écrire (§6.1) |
@@ -677,7 +681,7 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 - **Focus et rail** : quand un élément prend le focus au clavier dans une scène hors champ, le rail s'y déplace (`scrollIntoView` sur le proxy, instantané si reduced-motion).
 - Lien d'évitement « Aller au contenu ».
 - Contrastes ≥ 4.5:1 pour le texte, ≥ 3:1 pour les éléments d'interface — **à vérifier en particulier** sur le thème clair (l'orange `#f05f40` sur blanc est à 3.1:1, insuffisant pour du texte : assombrir la variante texte via `color-mix`).
-- Toutes les images informatives ont un `alt` ; les 15 calques du parallax sont décoratifs → `alt=""` + `aria-hidden`.
+- Toutes les images informatives ont un `alt` ; les calques du parallax sont décoratifs → `alt=""` + `aria-hidden`.
 - Aucun contenu porté uniquement par la couleur (les niveaux de compétence affichent aussi une valeur textuelle).
 - `prefers-reduced-motion` respecté partout (§5.1.5) ; **pas de flash > 3 Hz** ; pas de mouvement en boucle infini de grande amplitude hors zone de contenu.
 - Tests : axe-core en CI (Playwright), navigation clavier complète scénarisée, passage lecteur d'écran (VoiceOver + NVDA) sur les 7 scènes.
