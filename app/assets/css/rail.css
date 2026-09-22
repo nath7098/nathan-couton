@@ -15,11 +15,33 @@
   initial-value: 0;
 }
 
+/* The contact scene's walk (SPEC §6.7): 0 → 1 over the scroll that is left
+   once the track has parked.
+
+   Only the fallback path reads it. On engines with scroll-driven animations
+   the scene keys every transform off the scroll timeline directly and never
+   touches this — animating one shared custom property and deriving a dozen
+   full-screen transforms from it puts a whole style recalculation in every
+   frame, which is what used to make that scene shimmer. Registering it still
+   matters: an *unregistered* custom property is not interpolable, so the
+   fallback would jump rather than sweep. */
+@property --walk {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 .rail {
   --header-h: 4rem;
   --rail-nav-h: 5rem;
-  /* Fallback, replaced per-scene: how many viewports the whole track spans. */
-  --rail-total-span: 11.5;
+  /* All three are replaced inline by NcRail; these are the shape, not the
+     numbers. `total-span` is the track's width in viewports, `scroll-span` the
+     page's whole scroll in viewport heights — they differ by the walk budget
+     the contact scene spends after the track has parked — and `lock` is the
+     fraction of the scrollbar at which that handover happens. */
+  --rail-total-span: 10.5;
+  --rail-scroll-span: 12;
+  --rail-lock: 0.79167;
   --rail-travel: calc((var(--rail-total-span) - 1) * 100vw);
 }
 
@@ -56,8 +78,10 @@
 /* ── Horizontal rail (desktop) ────────────────────────────────────────────
    The proxy provides real scroll height; the viewport sticks; the track slides. */
 @media (--rail) {
+  /* One viewport taller than the scroll it has to provide, because the sticky
+     viewport occupies the first one. */
   .rail__proxy {
-    block-size: calc(var(--rail-total-span) * 100svh);
+    block-size: calc((var(--rail-scroll-span) + 1) * 100svh);
   }
 
   .rail__viewport {
@@ -78,6 +102,26 @@
     transform: translate3d(calc(-1 * var(--rail-progress) * var(--rail-travel)), 0, 0);
   }
 
+  /* The inner wrapper that actually holds the scenes.
+     It exists because the slide belongs to the track and anything riding on
+     top of it needs its own transform; the row layout, though, is the rail
+     itself. It used to be declared inside the scroll-driven `@supports` block
+     below, which left every engine without scroll-driven animations — Firefox
+     before 144, Safari before 26 — stacking the seven scenes *vertically*
+     inside a one-viewport-tall sticky box and showing only the first.
+
+     (No kinetic skew: SPEC §5.4 asked for the track to lean into the scroll.
+     Measured three ways — on each scene, on a single wrapper, at reduced
+     amplitude — it cost half the frame budget every time, because the surface
+     being skewed is a thousand-odd vw wide however it is sliced.
+     --rail-velocity is still published for effects on small elements.) */
+  .rail__lean {
+    display: flex;
+    flex-direction: row;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
   .scene {
     flex: 0 0 auto;
     inline-size: calc(var(--scene-span) * 100vw);
@@ -95,28 +139,16 @@
       transform: translate3d(0, 0, 0);
       animation: rail-slide linear both;
       animation-timeline: scroll(root block);
+      /* Stops at the lock point. `both` holds the end frame for the rest of
+         the scrollbar, which is the walk: the track is parked, and the contact
+         scene fills the viewport without anything having to counteract it. */
+      animation-range: 0% calc(var(--rail-lock) * 100%);
     }
 
     @keyframes rail-slide {
       to {
         transform: translate3d(calc(-1 * var(--rail-travel)), 0, 0);
       }
-    }
-
-    /* The slide is the compositor's; the lean rides on the inner wrapper so the
-       two never fight over the same transform. */
-    /* No kinetic skew.
-       SPEC §5.4 asked for the track to lean into the scroll. Measured three
-       ways — on each scene, on a single wrapper, at reduced amplitude — it cost
-       half the frame budget every time, because the surface being skewed is
-       1150vw wide however it is sliced. A ±2.5° lean is not worth halving the
-       frame rate, so the effect is dropped. --rail-velocity is still published
-       for effects that act on small elements. */
-    .rail__lean {
-      display: flex;
-      flex-direction: row;
-      inline-size: 100%;
-      block-size: 100%;
     }
 
     /* Per-scene progress, ranged over the slice of the rail that scene occupies.
@@ -132,6 +164,20 @@
     @keyframes scene-sweep {
       from { --scene-progress: 0; }
       to { --scene-progress: 1; }
+    }
+  }
+
+  /* ── Path B: the rAF loop drives the track ──────────────────────────────
+     There is no timeline to range a per-scene sweep over, and driving seven
+     of them from JS would mean seven style writes a frame for an entrance
+     effect. So the sweep is simply off here, at its finished value —
+     `--scene-progress` is a registered property with an initial value of 0,
+     which beats any `var(--scene-progress, 1)` fallback a scene might
+     declare, so leaving it unset is what dims every heading to 30% and
+     nudges it sideways for good. */
+  @supports not (animation-timeline: scroll()) {
+    .scene {
+      --scene-progress: 1;
     }
   }
 }

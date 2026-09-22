@@ -3,7 +3,7 @@
 > Pour l'agent ou le développeur qui reprend ce projet.
 > La **spec fait foi** : [`SPEC.md`](SPEC.md). Ce document dit **où on en est**,
 > **comment vérifier son travail**, et **ce qui fait perdre du temps ici**.
-> Dernière mise à jour : fin du lot L6.
+> Dernière mise à jour : réécriture de la scène Contact (après L6).
 
 ---
 
@@ -100,6 +100,25 @@ l'endroit concerné ; cette liste sert d'index.
   à `0.01ms` projette le track à sa position finale et fige chaque scène — le
   site cesse de fonctionner. Réduire le mouvement veut dire supprimer ce que
   l'utilisateur n'a pas demandé, pas le défilement qu'il est en train de faire.
+- **Le scroll de la page n'est pas la course du rail.** Depuis la réécriture de
+  la scène Contact, la barre de défilement porte *deux* choses : la course du
+  track, puis le budget de marche (`WALK_SPAN`). `splitScroll()` est le seul
+  endroit qui fait la conversion, `--rail-lock` la publie au CSS, et
+  `progressForScene() * RAIL_LOCK` est ce qu'un `goTo()` doit viser. Oublier le
+  facteur envoie chaque cible de navigation trop loin.
+- **Ne jamais annuler la course du rail avec une contre-transformation.** La
+  première scène Contact faisait 3 viewports et déplaçait une « caméra » vers la
+  droite d'exactement ce que le track déplaçait vers la gauche. Les deux
+  transformations, l'une portée par le compositeur et l'autre recalculée sur le
+  thread principal, ne tombaient jamais d'accord d'une frame à l'autre : toute la
+  scène tremblait. Si une scène doit rester immobile, il faut arrêter le track,
+  pas le compenser.
+- **Ne pas animer une propriété personnalisée partagée pour piloter un décor.**
+  `--walk` était animée sur la timeline de scroll et une douzaine de calques
+  plein écran en dérivaient leur `transform`. Une propriété personnalisée
+  n'est pas composable : chaque frame coûtait un recalcul de style complet.
+  Chaque élément anime désormais son propre `transform` entre deux valeurs
+  concrètes. `--walk` ne sert plus qu'au chemin de repli.
 
 ### CSS et build
 
@@ -138,8 +157,16 @@ Règle : **mesurer tout effet appliqué à une grande surface avant de le garder
 - **`align-content: center` réduit la boîte à la hauteur du contenu.** Un décor
   en `inset: 0` ne couvrait alors que le paragraphe. `.scene__body` a désormais
   une rangée pleine hauteur et chaque scène centre son propre contenu.
-- **Les scènes larges ne centrent pas leur contenu.** Contact fait deux
-  viewports : centrer place le contenu hors écran à l'arrivée.
+- **Les scènes larges ne centrent pas leur contenu.** Une scène de plus d'un
+  viewport place son contenu centré hors écran à l'arrivée. Contact ne fait plus
+  qu'un viewport, justement pour ça.
+- **Une scène plein écran doit l'être vraiment.** `.scene` réserve une rangée
+  `auto` pour son titre numéroté et une gouttière de chaque côté ; un décor en
+  `inset: 0` à l'intérieur de `.scene__body` commence donc cent pixels plus bas
+  que le haut de l'écran, avec une bande blanche au-dessus. D'où le drapeau
+  `fullBleed` sur la scène (`app/data/scenes.ts`), qui supprime la rangée et les
+  marges — et uniquement au palier `--rail`, le mode empilé étant une section
+  ordinaire.
 
 ### Tests
 
@@ -172,6 +199,7 @@ app/
 i18n/               i18n.config.ts + locales/{fr,en}.ts
 server/             api/contact.post.ts + utils (validation, rate-limit)
 scripts/            build-sprite, security-headers, smoke, test-api, lighthouse…
+                    build-ground-strip, check-plate-edges (décor Contact)
 ```
 
 **Principes à ne pas casser :**
@@ -182,9 +210,49 @@ scripts/            build-sprite, security-headers, smoke, test-api, lighthouse�
   composant.
 - N'animer que `transform`, `opacity`, `filter` et des custom properties.
 - Les composants lisent les **custom properties CSS** du rail (`--rail-progress`,
-  `--scene-progress`), pas l'état JS, quand c'est possible.
+  `--scene-progress`), pas l'état JS, quand c'est possible — mais **on n'anime
+  pas** une custom property pour en dériver des transformations plein écran (voir
+  §3, « Rail et scroll »).
+- **Aucun effet de décor ne réagit au pointeur.** La parallaxe est un mouvement
+  de caméra : elle appartient au défilement. `providePointer()` et
+  `NcParallaxLayer` ont été supprimés, SPEC §5.2(b) explique pourquoi.
 - Les icônes passent uniquement par `<NcIcon name="…" />`, dont les noms sont
   **générés** par `npm run icons`.
+
+### La scène Contact, en détail
+
+C'est la partie la plus dense du site, et celle qui a déjà été refaite une fois.
+Quatre fichiers, quatre responsabilités :
+
+| Fichier | Ce qu'il décide |
+|---|---|
+| `app/utils/rail-geometry.ts` | `WALK_SPAN` : combien de viewports de scroll viennent **après** la course du track. `splitScroll()` partage la barre entre les deux. |
+| `app/data/parallax.ts` | La table des calques : profondeur, planche, mode de répétition. Et `PAN`, `KNIGHT_START`, `FIGURE_SCALE`. |
+| `app/components/scenes/NcHollowScene.vue` | La mise en scène : une keyframe de `transform` par élément, rangée sur la timeline de scroll. |
+| `app/components/scenes/NcContactScene.vue` | Le formulaire, garé à droite d'une scène qui ne bouge pas. |
+
+Les invariants sur lesquels tout repose, tous vérifiés par `npm run smoke` :
+
+1. Le track est **à l'arrêt** pendant toute la marche — la scène ne bouge pas
+   d'un pixel, donc il n'y a rien qui puisse trembler.
+2. Les calques se séparent **par profondeur** : paroi du fond 120 px, sol
+   1 200 px, ombres de premier plan 2 100 px sur la même marche.
+3. Le Chevalier finit **au milieu du banc, au milieu de l'écran**. Le banc et lui
+   sont épinglés aux mêmes nombres (`--pan`, `--ground`, `--seat` dérivé de la
+   géométrie du banc) : c'est de l'arithmétique, pas du réglage à l'œil. Un écart
+   ici veut dire qu'une modification a cassé la relation.
+4. Le formulaire est arrivé à la fin de la marche et **dégage le banc**.
+
+Deux scripts d'assets, hors build, résultats commités :
+
+- `build-ground-strip.mjs` découpe dans `platform-1` la portion de chemin qui se
+  répète. La planche entière ne le peut pas : elle n'est peinte que sur 21 %–86 %
+  de sa largeur, et deux copies bout à bout laissent 28 vw de vide sous les pieds
+  du Chevalier.
+- `check-plate-edges.mjs` dit, planche par planche, si les copies doivent être
+  simplement répétées ou alternativement retournées. C'est mesuré, pas jugé à
+  l'œil : une couture d'un pixel est invisible sur une capture et évidente dès
+  que le calque bouge.
 
 ---
 
@@ -196,9 +264,13 @@ Trois, tous documentés dans `SPEC.md` à leur section :
 2. **Les projets tiennent sur une rangée, pas deux** (§6.6) — deux rangées
    débordaient de 540 px en hauteur. Le décalage vertical alterné rend le même
    effet.
-3. **Pas de snap doux** (§3.4) — reporté puis jugé non nécessaire : le
-   défilement libre est confortable et un snap mal réglé se bat avec
-   l'utilisateur. À reprendre si l'usage le réclame.
+3. **Snap uniquement à l'entrée de Contact** (§3.4). Le snap général reste
+   écarté — le défilement libre est confortable et un snap mal réglé se bat avec
+   l'utilisateur. Mais la scène Contact doit démarrer sa marche sur une image
+   propre, plein écran : s'arrêter dans la dernière demi-fenêtre avant le point
+   de verrouillage déclenche un `scrollTo` doux qui termine l'approche. Il ne
+   tire **que vers l'avant** (une marche déjà entamée n'est jamais ramenée en
+   arrière) et `npm run smoke` vérifie les deux sens.
 
 ---
 

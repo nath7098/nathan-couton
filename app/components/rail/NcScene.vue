@@ -22,6 +22,7 @@ const titleId = computed(() => `${props.scene.id}-title`)
     :id="scene.id"
     :data-scene="scene.id"
     class="scene"
+    :class="{ 'is-full-bleed': scene.fullBleed }"
     :style="{
       '--scene-span': scene.span,
       '--scene-range-start': range.start,
@@ -69,7 +70,44 @@ const titleId = computed(() => `${props.scene.id}-title`)
   align-content: center;
 }
 
+/* ── Full-bleed scenes ─────────────────────────────────────────────────────
+   Contact paints a Hollow Knight vista from edge to edge, and every landmark
+   inside it — the ground line, the seat of the bench — is measured off that
+   artwork as a share of the viewport. So the scene's box has to *be* the
+   viewport: no gutter, no padding reserved for the header or the nav, and no
+   auto row for the numbered title.
+
+   The title survives as screen-reader text, so the landmark keeps its label;
+   the header row simply stops taking up space. Getting this wrong is what
+   pushed the old backdrop a hundred-odd pixels down the screen and left a
+   white band above it.
+
+   Scoped to the rail on purpose. The stacked layout has no full-bleed scene —
+   it is an ordinary section with a backdrop — and hiding the heading there
+   would leave the contact section wearing a number and no title. */
+@media (--rail) {
+  .scene.is-full-bleed {
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+  }
+
+  /* Out of flow rather than `display: none`: the <h2> still has to exist for
+     the section's `aria-labelledby` to resolve to something. */
+  .scene.is-full-bleed .scene__head {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
 .scene__head {
+  /* Above any backdrop the scene lays down. Contact's is full-bleed and
+     positioned, so without this it paints straight over the scene's title. */
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: var(--space-3xs);
   justify-items: start;

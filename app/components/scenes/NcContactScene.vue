@@ -2,11 +2,15 @@
 import { CONTACT } from '~/data/contact'
 
 /**
- * Scene 07 — contact.
+ * Scene 07 — contact (SPEC §6.7).
  *
- * The Hollow Knight backdrop sits behind, the contact points and the working
- * form in front. Submission goes through /api/contact, the site's only
- * serverless function.
+ * One viewport wide, edge to edge, and pinned: the rail parks the scene and
+ * hands the rest of the page's scroll to the Knight's walk across it. Nothing
+ * on this scene slides sideways with the track, so the panel has a fixed place
+ * on screen and simply arrives — it settles in over the last third of the walk,
+ * as the Knight reaches the bench.
+ *
+ * It is parked clear of the centre, because the centre is where he sits down.
  */
 const { t } = useI18n()
 const toast = useToast()
@@ -38,7 +42,7 @@ async function copyPhone() {
   <div class="contact">
     <NcHollowScene />
 
-    <div class="contact__inner">
+    <div class="contact__panel">
       <div class="contact__intro">
         <NcHeading :level="2">
           {{ t('contact.title') }}
@@ -58,7 +62,7 @@ async function copyPhone() {
             >
               <NcIcon
                 :name="socialIcon[item.id]"
-                size="1.8rem"
+                size="1.6rem"
               />
             </a>
           </li>
@@ -70,7 +74,7 @@ async function copyPhone() {
             >
               <NcIcon
                 name="mail"
-                size="1.8rem"
+                size="1.6rem"
               />
             </a>
           </li>
@@ -83,7 +87,7 @@ async function copyPhone() {
             >
               <NcIcon
                 name="phone"
-                size="1.8rem"
+                size="1.6rem"
               />
             </a>
             <button
@@ -95,7 +99,7 @@ async function copyPhone() {
             >
               <NcIcon
                 name="copy"
-                size="1.8rem"
+                size="1.6rem"
               />
             </button>
           </li>
@@ -174,43 +178,76 @@ async function copyPhone() {
 </template>
 
 <style scoped>
-/* Fills the scene so the backdrop can too. The content starts at the left
-   edge: this scene is two viewports wide, and centring would park it off
-   screen until you had scrolled halfway through. */
 .contact {
   position: relative;
   inline-size: 100%;
   block-size: 100%;
-  display: grid;
-  place-items: center start;
 }
 
-.contact__inner {
-  position: relative;
+/* ── The destination ───────────────────────────────────────────────────────
+   Parked in the right-hand band of a scene that no longer moves, so there is
+   nothing to keep it in sync with: it has one place on screen from the first
+   frame of the walk to the last, and only fades and settles on the way in.
+
+   The width is capped so its left edge always clears the bench at the centre
+   of the screen — the Knight has to be visible sitting on it while the form is
+   being filled in, or the whole scene is just wallpaper behind a card. */
+.contact__panel {
+  position: absolute;
+  z-index: 1;
+  inset-inline-end: var(--gutter);
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  inline-size: min(34rem, 34vw);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(2rem, 5vw, 5rem);
-  align-items: center;
-  /* Fits inside the first viewport, gutters included, so nothing is clipped on
-     arrival; the backdrop keeps travelling for the scene's second viewport. */
-  inline-size: min(78rem, calc(100vw - 2 * var(--gutter)));
+  gap: var(--space-m);
   padding: var(--space-l);
   /* The artwork is bright in places; this panel keeps the text readable over
      it without hiding the scene. */
-  background: color-mix(in oklab, var(--background) 72%, transparent);
-  backdrop-filter: blur(6px);
-  border: 1px solid color-mix(in oklab, var(--surface) 12%, transparent);
+  background: color-mix(in oklab, var(--background) 78%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in oklab, var(--surface) 14%, transparent);
   border-radius: var(--radius-l);
+  /* Settles over the last third of the walk, so it arrives rather than
+     appears. Composited: opacity and transform only. */
+  --settle: clamp(0, (var(--walk, 1) - 0.62) * 3.2, 1);
+
+  opacity: var(--settle);
+  transform: translate3d(calc((1 - var(--settle)) * 2.5rem), 0, 0);
+}
+
+/* Path A: keyed off the scroll timeline like everything else in the scene, so
+   the panel arrives on exactly the stride the Knight arrives on. */
+@supports (animation-timeline: scroll()) {
+  .contact__panel {
+    opacity: 1;
+    transform: none;
+    animation: contact-settle linear both;
+    animation-timeline: scroll(root block);
+    animation-range: calc(var(--rail-lock) * 100%) 100%;
+  }
+
+  @keyframes contact-settle {
+    0%, 62% {
+      opacity: 0;
+      transform: translate3d(2.5rem, 0, 0);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
 }
 
 .contact__intro {
   display: grid;
-  gap: var(--space-l);
+  gap: var(--space-s);
 }
 
 .contact__points {
   display: flex;
-  gap: var(--space-s);
+  gap: var(--space-2xs);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -219,8 +256,8 @@ async function copyPhone() {
 .contact__point {
   display: grid;
   place-items: center;
-  inline-size: 3rem;
-  block-size: 3rem;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
   color: var(--primary-text);
   border: 1px solid var(--surface-faint);
   border-radius: var(--radius-m);
@@ -250,12 +287,12 @@ async function copyPhone() {
 
 .contact__form {
   display: grid;
-  gap: var(--space-m);
+  gap: var(--space-s);
   justify-items: start;
 }
 
 .contact__form-title {
-  font-size: var(--step-1);
+  font-size: var(--step-0);
   color: var(--surface);
 }
 
@@ -270,10 +307,27 @@ async function copyPhone() {
   inline-size: 100%;
 }
 
-@media not all and (min-width: 1024px) {
-  .contact__inner {
-    grid-template-columns: 1fr;
-    gap: var(--space-l);
+/* ── Stacked layout ────────────────────────────────────────────────────────
+   No rail, so no walk: the panel returns to the normal flow over a still
+   backdrop, and the scene reads as it did in v1. */
+@media not all and (--rail) {
+  .contact {
+    display: grid;
+    place-items: center;
+    /* Clears the band of Greenpath the scene draws along the bottom — see the
+       stacked-layout note in NcHollowScene. Same expression, so the two cannot
+       drift. */
+    padding-block-end: calc(768 * 0.0732vw + var(--space-m));
+  }
+
+  .contact__panel {
+    position: relative;
+    inset: auto;
+    translate: none;
+    transform: none;
+    opacity: 1;
+    animation: none;
+    inline-size: min(48rem, 100%);
   }
 
   .contact__fields {

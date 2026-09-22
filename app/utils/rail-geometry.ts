@@ -78,3 +78,56 @@ export function sceneProgressAt(bounds: SceneBounds[], id: SceneId, progress: nu
   const translated = progress * travel(totalSpan)
   return normalize(translated, scene.start - 1, scene.end)
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   The walk budget
+   ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Viewports of scroll granted to the contact scene *after* the track parks.
+ *
+ * The contact scene used to be three viewports wide and cancel the rail's own
+ * travel with a counter-translating camera, so that the artwork held still
+ * while the track slid underneath it. Two transforms of equal size and
+ * opposite sign, one of them driven by the compositor and the other by a
+ * custom property on the main thread: they never agreed frame to frame, and
+ * the whole scene shimmered.
+ *
+ * So the contact scene is now one viewport wide like most of the others, and
+ * the extra scroll lives here instead. The track travels `TOTAL_SPAN - 1`
+ * viewports and then stops; the remaining `WALK_SPAN` viewports of scroll move
+ * nothing but the scene's own layers. Nothing is cancelled, so nothing can
+ * disagree — and the moment the track parks is a natural place to snap to.
+ */
+export const WALK_SPAN = 2.5
+
+/** Total scroll distance of the page, in viewport heights. */
+export function scrollSpan(totalSpan: number): number {
+  return travel(totalSpan) + WALK_SPAN
+}
+
+/**
+ * Where the track finishes, as a fraction of total page scroll.
+ *
+ * Everything the rail knows is expressed against *track* progress (0 → 1 over
+ * `travel()` viewports). This is the one conversion between that and the
+ * document's own scrollbar.
+ */
+export function lockFraction(totalSpan: number): number {
+  const span = scrollSpan(totalSpan)
+  return span === 0 ? 1 : travel(totalSpan) / span
+}
+
+/**
+ * Splits raw document scroll (0 → 1) into the two things it drives: the
+ * track's progress, and the contact walk that follows it.
+ */
+export function splitScroll(scroll: number, totalSpan: number): { progress: number, walk: number } {
+  const lock = lockFraction(totalSpan)
+  if (lock <= 0) return { progress: 1, walk: clamp(scroll) }
+  if (lock >= 1) return { progress: clamp(scroll), walk: 0 }
+  return {
+    progress: clamp(scroll / lock),
+    walk: clamp((scroll - lock) / (1 - lock)),
+  }
+}

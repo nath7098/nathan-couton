@@ -322,28 +322,19 @@ Trois familles :
 
 **(a) Parallax de rail (toutes les scènes).** Chaque scène déclare des calques avec une profondeur `--depth` ∈ [−1, 1]. Le calque est translaté horizontalement à `calc(var(--rail-progress-local) * var(--depth) * var(--parallax-amplitude))`. Profondeur négative = va à contre-sens (arrière-plan), positive = devance (premier plan). Amplitude par défaut `12vw`.
 
-**(b) Parallax de pointeur.** Sur desktop uniquement, un mouvement de souris lissé (lerp 0.08) décale les calques de ±1.5 % en X/Y selon leur profondeur. Exposé via `--pointer-x` / `--pointer-y` sur `<body>` (valeurs normalisées −1 → 1). Coupé sur touch et en reduced-motion.
+**(b) Parallax de pointeur — ~~prévu~~ retiré.** La spec demandait un décalage des calques de ±1.5 % suivant la souris. C'est **supprimé**, et ça ne reviendra pas :
 
-**(c) Parallax de scène Contact (le gros morceau).** La scène Hollow Knight est reconstruite avec ses **15 calques** existants. Le mapping actuel (facteurs `-0.9`, `0.5`, `-0.3`, `-0.15`, `0.7`, `0.8`, scale `+scrollY/500`, `/2500`, `/3000`, `/8000`) est **transposé en profondeurs horizontales** et normalisé :
+- **Ça casse l'illusion.** Une parallaxe est un mouvement de caméra, et un mouvement de caméra appartient au déplacement. Dès que le décor réagit à la souris, il réagit à quelque chose que le personnage ne fait pas, et le relief cesse de se lire comme de la profondeur.
+- **Ça coûtait cher.** `providePointer()` tournait en boucle `requestAnimationFrame` en permanence sur desktop — même souris immobile — et écrivait deux propriétés personnalisées sur `<html>` à chaque frame. Sur une page dont toute la mise en page est pilotée par des propriétés personnalisées héritées de `<html>`, c'est un recalcul de style de tout le document par frame, en concurrence directe avec les animations de scroll du compositeur.
 
-| Calque | Fichier | `--depth` | Effet additionnel |
-|---|---|---|---|
-| background far | `background far.png` | −0.05 | fond fixe, léger zoom `scale(1 + p*0.04)` |
-| vines far | `vines far.png` | −0.10 | `scale(1 - p*0.06)` |
-| background 2 | `background 2.png` | −0.15 | |
-| background 1 | `background 1.png` | −0.25 | |
-| sides front | `sides front.png` | −0.30 | `scale(1 + p*0.02)` |
-| vines mid | `vines mid.png` | −0.40 | `scale(1 + p*0.05)` |
-| vines front | `vines front.png` | −0.60 | `scale(1 + p*0.18)` |
-| light | `light_1.png` | 0.20 | pulsation `filter: brightness()` 4 s |
-| tall grass | `tall grass.png` | 0.35 | ondulation `skewX` ±0.6° 6 s |
-| platform | `platform_1.png` | 0.30 | |
-| bench | `Town_bench_1.png` | 0.30 | |
-| front shadows | `front_shadows.png` | 0.45 | |
-| sit (FR/EN) | `sit_fr.png` / `sit_en.png` | 0.30 | rebond 1 s infini (existant, conservé) |
-| knight | `Knight_sit.png` | 0.30 | easter egg (§6.7) |
-| lumafly | `lumafly_2.png` | 0.55 | flottement autonome + lueur |
-| mask | — | — | dégradé vers `--background` pour la couture avec le formulaire |
+Le composable, le composant `NcParallaxLayer` qui le consommait et les tokens `--pointer-x` / `--pointer-y` ont été supprimés.
+
+**(c) Parallax de scène Contact (le gros morceau).** Réécrite. Le modèle de calques ci-dessous (profondeurs `−0.05` → `0.55`, `scale()` par calque, caméra qui annule le déplacement du rail) a été remplacé — voir l'en-tête de `app/data/parallax.ts` pour le détail et `docs/PASSATION.md` §4 pour le pourquoi. En résumé :
+
+- La scène fait **une seule fenêtre de large** et se fige plein écran ; le budget de scroll de la marche (`WALK_SPAN`, `app/utils/rail-geometry.ts`) vient *après* la course du rail, au lieu d'être pris dessus. Plus rien n'annule rien.
+- Chaque calque porte une **profondeur** = vitesse apparente à l'écran, le sol valant 1 : `0.10` pour la paroi du fond, `1.75` pour les ombres de premier plan. C'est le modèle du jeu — des plans plats, déplacés d'une fraction du déplacement de la caméra.
+- Tout est mesuré en **largeurs de planche** (`--art`), pas en `vw`, pour que le Chevalier, le banc et le sol restent sur la même règle quel que soit le format d'écran.
+- Les distances sont des **keyframes de `transform`** rangées sur la timeline de scroll, une par élément. Aucune propriété personnalisée n'est animée : c'est ce qui faisait trembler la scène.
 
   Les PNG (6,8 Mo au total, jusqu'à 1,4 Mo l'unité) sont **retraités** : conversion AVIF + WebP par `scripts/` au moment du portage (sharp, largeur plafonnée à 1920), `loading="lazy"`, `decoding="async"`. **Mesuré : 278 Ko en AVIF** pour les 13 calques, contre un budget de 900 Ko.
 
@@ -531,7 +522,6 @@ Conséquences : plus d'`onMounted` asynchrone, plus d'états de chargement, plus
 | `NcRail` | Conteneur du rail, proxy de scroll, provide du contexte |
 | `NcScene` | Enveloppe d'une scène : `id`, `span`, `index`, gestion `content-visibility`, expose `--scene-progress` |
 | `NcRailNav` | Barre de progression + pastilles + label (§3.7) |
-| `NcParallaxLayer` | Calque parallaxé : `depth`, `amplitude`, `scaleWith`, `src` (via `NuxtImg`) |
 | `NcParticleField` | Champ de particules (§5.3) |
 | `NcTimeline` | Timeline horizontale, `variant: 'detailed' \| 'compact'` |
 | `NcSkillWheel` | Roue de compétences (§6.4) |
@@ -725,7 +715,6 @@ Config : `runtimeConfig.emailjs.*` (serveur uniquement), `runtimeConfig.public.s
 │   │   ├── useRailScroll.ts         # fallback rAF
 │   │   ├── useFrameLoop.ts          # orchestrateur rAF unique
 │   │   ├── useMotionPreference.ts
-│   │   ├── usePointer.ts            # --pointer-x/y lissés
 │   │   ├── useInView.ts             # IntersectionObserver partagé
 │   │   ├── useToast.ts
 │   │   └── useContactForm.ts
