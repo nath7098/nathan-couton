@@ -1,47 +1,62 @@
 <script setup lang="ts">
-import { BACKDROP_LAYERS, FOREGROUND_LAYERS, STAGE_SHIFT, type ParallaxLayer } from '~/data/parallax'
+import {
+  BACKDROP_LAYERS,
+  FIGURE_SCALE,
+  FOREGROUND_LAYERS,
+  GROUND_LINE,
+  KNIGHT_START,
+  PAN,
+  SEAT_RISE,
+  tileCount,
+  type ParallaxLayer,
+} from '~/data/parallax'
 import { PARALLAX_SIZES } from '~/data/parallax-sizes'
 
 /**
- * The Hollow Knight backdrop — the contact scene's choreography (SPEC §6.7).
+ * The Greenpath scene — the contact section's choreography (SPEC §6.7).
  *
- * The contact scene is three viewports wide. The first frames the Knight
- * standing in the world; scrolling walks him two viewports to the right, and
- * the contact form rides in from the scene's far edge behind him. Everything is
- * driven by one number, `--walk`, which runs 0 → 1 over exactly that stretch.
+ * The contact scene is one viewport wide and fills it edge to edge. The rail
+ * brings it in, parks, and hands the rest of the page's scroll to `--walk`,
+ * which runs 0 → 1 while nothing else on the page moves at all. Over that
+ * stretch the Knight walks from the left of the screen to its centre and sits
+ * down on a bench, and the cavern separates into its layers behind and in
+ * front of him.
  *
- * ── The camera ───────────────────────────────────────────────────────────────
- * The rail slides the whole track left. `.hollow__camera` translates right by
- * precisely the same distance, so it hangs still in the viewport while the
- * scene moves past it — a locked-off camera, as in the game. Every layer inside
- * then slides left by its own `shift`, and that difference is the parallax.
+ * ── What changed, and why ────────────────────────────────────────────────────
+ * The previous version kept the scene three viewports wide and cancelled the
+ * rail's own travel with a camera that translated right by exactly as much as
+ * the track translated left. Two full-screen transforms of equal size and
+ * opposite sign — one driven by the compositor off the scroll timeline, the
+ * other recomputed on the main thread from an animated custom property — never
+ * agreed frame to frame, and the whole scene shimmered as you scrolled.
  *
- * ── Why a bespoke unit ───────────────────────────────────────────────────────
- * The plates are 1366×768 paintings drawn as one composition and shown with
- * `object-fit: cover`, whose scale is `max(boxW / 1366, boxH / 768)`. That
- * expression is writable in CSS, so `--art` is one source pixel in screen
- * units. Sizing the bench and the Knight in `--art` keeps them locked to the
- * painting at any aspect ratio, instead of drifting apart on a wide monitor.
- * The ground line and the bench's seat are likewise source-pixel constants
- * measured off the artwork, not numbers found by eye.
+ * Nothing is cancelled here. Each layer owns one transform, keyed straight off
+ * the scroll timeline, and the only thing that varies between them is the
+ * distance in the keyframe. There is nothing left to disagree.
+ *
+ * ── Scroll, and only scroll ──────────────────────────────────────────────────
+ * No pointer input reaches this scene. In the game the parallax *is* the camera
+ * move; mixing in a little sway on mouse position is what breaks the illusion,
+ * because the world then reacts to something the character is not doing.
  *
  * ── Landing on the bench ─────────────────────────────────────────────────────
- * The bench and the Knight converge on the same base position and both reach
- * their untransformed state at `--walk: 1`. The Knight sits in the middle of
- * the bench because the arithmetic cannot put him anywhere else — no tuning.
+ * The bench rides the ground plane, the Knight advances across it, and both
+ * reach their untransformed state at `--walk: 1` — at the centre of the
+ * screen, on the ground line measured off the artwork. He sits in the middle
+ * of the bench because the arithmetic cannot put him anywhere else.
  */
 const { t, locale } = useI18n()
 const { reduced } = useMotionPreference()
 const rail = useRail()
 
-/** One shared source of truth; the scene root declares the CSS range. */
+/** One shared source of truth; the rail owns the range. */
 const { arrived: seated } = useContactWalk()
 
 /**
- * Path B has no scroll-driven animations, so the sprite cycle there runs on
- * time and has to be paused when the rail is still — a Knight marking time on
- * the spot reads as a bug. A watch on the rail's own smoothed velocity is
- * enough; this writes a class, never a per-frame style.
+ * The fallback path has no scroll-driven animations, so the sprite cycle there
+ * runs on time and has to be paused when the rail is still — a Knight marking
+ * time on the spot reads as a bug. A watch on the rail's own smoothed velocity
+ * is enough; this writes a class, never a per-frame style.
  */
 const striding = ref(false)
 let stillTimer = 0
@@ -57,12 +72,23 @@ watch(rail.velocity, (value) => {
 /** The sign is drawn in the visitor's language, as in v1. */
 const signFile = computed(() => (locale.value === 'fr' ? 'sit-fr' : 'sit-en'))
 
-const layerStyle = (layer: ParallaxLayer) => ({ '--shift': layer.shift })
+/**
+ * Per-layer custom properties. `--depth` is the only thing that differs between
+ * two layers' transforms, and it is static — which is what lets the browser
+ * interpolate each one between two concrete values and run it off the main
+ * thread.
+ */
+const layerStyle = (layer: ParallaxLayer) => ({
+  '--depth': layer.depth,
+  '--tile-w': layer.width,
+  '--tile-h': layer.height,
+  '--tile-top': layer.top,
+})
 
 // ── The easter egg ───────────────────────────────────────────────────────────
-// The Knight is on screen from the start now, so his arrival is no longer the
-// secret. Sitting down is: reach the bench and the theme is offered, and it
-// only ever plays by the visitor's own hand.
+// The Knight is on screen from the start, so his arrival is not the secret.
+// Sitting down is: reach the bench and the theme is offered, and it only ever
+// plays by the visitor's own hand.
 const audio = ref<HTMLAudioElement>()
 const playing = ref(false)
 const volume = ref(0.35)
@@ -132,25 +158,31 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="hollow"
+    class="hk"
     :class="{ 'is-seated': seated, 'is-striding': striding }"
-    :style="{ '--stage-shift': STAGE_SHIFT }"
+    :style="{
+      '--pan': PAN,
+      '--ground-line': GROUND_LINE,
+      '--seat-rise': SEAT_RISE,
+      '--figure': FIGURE_SCALE,
+      '--knight-start': `${KNIGHT_START}vw`,
+    }"
   >
     <div
-      class="hollow__camera"
+      class="hk__world"
       aria-hidden="true"
     >
       <div
         v-for="layer in BACKDROP_LAYERS"
         :key="layer.file"
-        class="hollow__layer"
-        :class="[`is-${layer.cover}`, layer.motion ? `is-${layer.motion}` : '']"
+        class="hk__layer"
+        :class="[`is-${layer.repeat}`, layer.motion ? `is-${layer.motion}` : '']"
         :style="layerStyle(layer)"
       >
         <picture
-          v-for="tile in (layer.cover === 'mirror' ? 2 : 1)"
+          v-for="tile in tileCount(layer)"
           :key="tile"
-          class="hollow__tile"
+          class="hk__tile"
         >
           <source
             :srcset="`/img/parallax/${layer.file}.avif`"
@@ -166,9 +198,10 @@ onBeforeUnmount(() => {
         </picture>
       </div>
 
-      <!-- The bench travels with the ground it stands on. -->
+      <!-- The bench travels with the ground it stands on: same depth, same
+           keyframes, so the two cannot drift apart. -->
       <img
-        class="hollow__bench"
+        class="hk__bench"
         src="/img/parallax/bench.webp"
         :width="PARALLAX_SIZES.bench?.width"
         :height="PARALLAX_SIZES.bench?.height"
@@ -176,9 +209,10 @@ onBeforeUnmount(() => {
         decoding="async"
       >
 
-      <!-- The sign invites you to sit, and steps aside once you have. -->
+      <!-- The sign invites you to sit, rides in with the bench, and steps
+           aside once the Knight has arrived. -->
       <img
-        class="hollow__sign"
+        class="hk__sign"
         :src="`/img/parallax/${signFile}.webp`"
         :width="PARALLAX_SIZES[signFile]?.width"
         :height="PARALLAX_SIZES[signFile]?.height"
@@ -187,9 +221,9 @@ onBeforeUnmount(() => {
       >
 
       <!-- Two sprites, one character: the strip walks, the sit pose lands. -->
-      <div class="hollow__knight hollow__knight--walk" />
+      <div class="hk__knight hk__knight--walk" />
       <img
-        class="hollow__knight hollow__knight--sit"
+        class="hk__knight hk__knight--sit"
         src="/img/parallax/knight-sit.webp"
         :width="PARALLAX_SIZES['knight-sit']?.width"
         :height="PARALLAX_SIZES['knight-sit']?.height"
@@ -200,14 +234,14 @@ onBeforeUnmount(() => {
       <div
         v-for="layer in FOREGROUND_LAYERS"
         :key="layer.file"
-        class="hollow__layer"
-        :class="[`is-${layer.cover}`, layer.motion ? `is-${layer.motion}` : '']"
+        class="hk__layer"
+        :class="[`is-${layer.repeat}`, layer.motion ? `is-${layer.motion}` : '']"
         :style="layerStyle(layer)"
       >
         <picture
-          v-for="tile in (layer.cover === 'mirror' ? 2 : 1)"
+          v-for="tile in tileCount(layer)"
           :key="tile"
-          class="hollow__tile"
+          class="hk__tile"
         >
           <source
             :srcset="`/img/parallax/${layer.file}.avif`"
@@ -228,7 +262,7 @@ onBeforeUnmount(() => {
          offered once the Knight is actually sitting on it. -->
     <button
       type="button"
-      class="hollow__seat"
+      class="hk__seat"
       :aria-pressed="playing"
       :aria-label="playing ? t('contact.music.pause') : t('contact.music.play')"
       :tabindex="seated ? 0 : -1"
@@ -238,18 +272,18 @@ onBeforeUnmount(() => {
     <Transition name="nc-fade">
       <div
         v-if="seated"
-        class="hollow__controls"
+        class="hk__controls"
       >
         <NcButton
           size="sm"
           variant="ghost"
           :icon="playing ? 'pause' : 'play'"
+          :title="playing ? t('contact.music.pause') : t('contact.music.play')"
+          :aria-label="playing ? t('contact.music.pause') : t('contact.music.play')"
           @click="summon"
-        >
-          {{ playing ? t('contact.music.pause') : t('contact.music.play') }}
-        </NcButton>
+        />
 
-        <label class="hollow__volume">
+        <label class="hk__volume">
           <span class="nc-sr-only">{{ t('contact.music.volume') }}</span>
           <NcIcon :name="volume === 0 ? 'volume-off' : 'volume'" />
           <input
@@ -271,7 +305,7 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <p class="hollow__credit">
+    <p class="hk__credit">
       {{ t('contact.credits') }}
     </p>
 
@@ -285,288 +319,346 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* ── The walk ──────────────────────────────────────────────────────────────
-   One number drives the whole scene. Path A lets the compositor produce it
-   from the scroll timeline; path B derives it from the --rail-progress that
-   useRail already writes each frame. Neither path costs a layout read. */
-.hollow {
-  /* One pixel of the 1366×768 artwork, in screen units. `object-fit: cover`
-     scales by max(box/source) on each axis, which is exactly this. */
+/* ── The ruler ─────────────────────────────────────────────────────────────
+   `--art` is one pixel of the 1366×768 artwork, in screen units, defined so a
+   plate always covers the viewport — the same scale `object-fit: cover` would
+   pick, but available to arithmetic. Everything in this scene is sized and
+   placed in it, which is what keeps the Knight, the bench and the ground on
+   one ruler at any aspect ratio.
+
+   `--plate` is one plate width on screen, and the unit the pan is measured in.
+   Because a plate is never narrower than the viewport, a layer that covers
+   `1 + depth × pan` plate widths covers every frame of the walk. */
+.hk {
   --art: max(0.0732vw, 0.13021svh);
+  --plate: calc(1366 * var(--art));
+  /* Outside the strict minimum coverage, so rounding never shows a sliver of
+     page background down the edge of the screen. Mirrors BLEED in the data. */
+  --bleed: 0.08;
 
-  /* Source-pixel landmarks, measured off the plates (see build-scene-props). */
-  --ground: calc(50% + 271 * var(--art));   /* where feet and bench legs land */
-  --seat: calc(50% + 245 * var(--art));     /* the top of the bench's seat    */
+  /* Where feet and bench legs land, measured off the plates. The seat follows
+     from the bench's own geometry, so scaling the bench moves the seat with
+     it and the Knight cannot end up sitting through it. */
+  --ground: calc(50% + var(--ground-line) * var(--art));
+  --seat: calc(var(--ground) - var(--seat-rise) * var(--figure) * var(--art));
 
-  /* Where the Knight and the bench meet, as a share of the viewport. Chosen so
-     that --meet minus --stride still lands on the painted ground: the platform
-     plate only carries ground between 21% and 86% of its width, and starting
-     the Knight left of that leaves him standing on the dark. */
-  --meet: 34vw;
-  /* How far the Knight advances across the screen under his own steam. The
-     world slides --stage-shift on top of this, so his feet cover both. */
-  --stride: 15;
+  /* How far the Knight advances under his own steam. He finishes dead centre;
+     the world slides `--pan` underneath him on top of this. */
+  --advance: calc(50vw - var(--knight-start));
 
   position: absolute;
-  /* Full-bleed: the scene reserves room for the header and the rail nav, the
-     backdrop should ignore both so the camera box is exactly 100vw × 100svh
-     and --art stays true. */
-  inset-block: calc(-1 * var(--header-h)) calc(-1 * var(--rail-nav-h));
-  /* `.scene` insets its content by a gutter; the backdrop must bleed back over
-     it, or the artwork stops short of the screen edge and --art — which assumes
-     a 100vw camera — measures against the wrong box. */
-  inset-inline: calc(-1 * var(--gutter));
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
-/* ── The camera ────────────────────────────────────────────────────────────
-   Cancels the rail's own travel so the viewport holds still on the action. */
-.hollow__camera {
+.hk__world {
   position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: 100vw;
-  will-change: transform;
-  transform: translate3d(calc(var(--walk) * (var(--scene-span) - 1) * 100vw), 0, 0);
+  inset: 0;
 }
 
 /* ── The layers ────────────────────────────────────────────────────────────
-   Each slides left by its own shift; the spread between them is the depth. */
-.hollow__layer {
+   Parked with their leading edge just off screen at `--walk: 0`, then slid
+   left by `depth × pan` plate widths. The spread between those distances is
+   the depth, and it is the only difference between any two of these. */
+.hk__layer {
   position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: 100vw;
+  inset-block-start: calc(50% + var(--tile-top) * var(--art));
+  inset-inline-start: calc(-1 * (var(--depth) * var(--pan) + var(--bleed)) * var(--plate));
   display: flex;
-  will-change: transform;
-  transform: translate3d(
-    calc(var(--walk) * var(--shift) * -1vw + var(--pointer-x, 0) * var(--shift) * 0.06vw),
-    calc(var(--pointer-y, 0) * var(--shift) * 0.04vh),
-    0
-  );
+  transform: translate3d(calc((1 - var(--walk)) * var(--depth) * var(--pan) * var(--plate)), 0, 0);
 }
 
-/* Travel exposes the layer's trailing edge, so the box grows by the distance
-   it will move and `cover` re-crops it. Cheapest option, one quad. */
-.hollow__layer.is-widen {
-  inline-size: calc(100vw + var(--shift) * 1vw);
+.hk__tile {
+  flex: 0 0 auto;
+  inline-size: calc(var(--tile-w) * var(--art));
+  block-size: calc(var(--tile-h) * var(--art));
 }
 
-/* Two plates, the second flipped: a mirrored join repeats the edge column, so
-   there is no seam to hide, and the art keeps its native scale. */
-.hollow__layer.is-mirror {
-  inline-size: 200vw;
-}
-
-.hollow__layer.is-mirror .hollow__tile:last-child {
+/* A plate painted out to its own edges only joins cleanly to a flipped copy of
+   itself: the mirrored join repeats the edge column rather than cutting across
+   the art. Plates with transparent margins just repeat — see `repeat` in
+   app/data/parallax.ts, and `scripts/check-plate-edges.mjs` for which is
+   which. */
+.hk__layer.is-mirror .hk__tile:nth-child(even) {
   scale: -1 1;
 }
 
-.hollow__tile {
-  flex: 1 1 0;
-  min-inline-size: 0;
-}
-
-.hollow__tile img {
+.hk__tile img {
   display: block;
   inline-size: 100%;
   block-size: 100%;
-  object-fit: cover;
 }
 
-/* ── The bench and the Knight ──────────────────────────────────────────────
-   Both are pinned to `--meet` and reach their untransformed position at
-   --walk: 1. The bench arrives from the right with the ground it stands on;
-   the Knight comes up from the left under his own steam. Because both
-   transforms vanish together, he lands on its middle by construction. */
-.hollow__bench,
-.hollow__knight,
-.hollow__sign {
+/* ── The bench, the sign and the Knight ────────────────────────────────────
+   The bench and the sign stand on the ground plane, so they carry `--depth: 1`
+   and run the layers' own keyframes. The Knight crosses that ground, so his
+   distance is `--advance` instead. All three reach their untransformed state
+   at `--walk: 1`: the bench at the centre of the screen, the Knight in the
+   middle of the bench. */
+.hk__bench,
+.hk__sign,
+.hk__knight {
   position: absolute;
-  inset-inline-start: var(--meet);
-  will-change: transform;
+  inset-inline-start: 50%;
 }
 
-.hollow__bench {
+.hk__bench,
+.hk__sign {
+  --depth: 1;
+
+  transform: translate3d(calc((1 - var(--walk)) * var(--pan) * var(--plate)), 0, 0);
+}
+
+.hk__bench {
   inset-block-start: var(--ground);
-  inline-size: calc(159 * var(--art));
-  block-size: calc(89 * var(--art));
+  inline-size: calc(159 * var(--figure) * var(--art));
+  block-size: calc(89 * var(--figure) * var(--art));
   /* The crop carries 12 source pixels of padding below the legs, so the feet
      are 86.5% of the way down it. Offset by that, not by the box, or the bench
      floats a dozen pixels above the ground the Knight walks on. */
   translate: -50% -86.52%;
-  transform: translate3d(calc((1 - var(--walk)) * var(--stage-shift) * 1vw), 0, 0);
 }
 
-.hollow__sign {
+.hk__sign {
   inset-block-start: var(--seat);
-  inline-size: calc(170 * var(--art));
+  inline-size: calc(150 * var(--figure) * var(--art));
   block-size: auto;
-  translate: -50% -135%;
-  transform: translate3d(calc((1 - var(--walk)) * var(--stage-shift) * 1vw), 0, 0);
-  opacity: calc(1 - var(--walk));
+  translate: -50% -175%;
+  /* Gone before the form settles in, not just before he sits: the two would
+     otherwise share the same corner of the screen for a third of the walk. */
+  opacity: clamp(0, (0.82 - var(--walk)) * 7, 1);
 }
 
-.hollow__knight {
+.hk__knight {
   /* 62 source pixels tall — about the height of the bench's back, which is how
      the Knight scales against this scenery in the game. */
-  block-size: calc(62 * var(--art));
-  inline-size: calc(32.7 * var(--art));
+  inline-size: calc(32.7 * var(--figure) * var(--art));
+  block-size: calc(62 * var(--figure) * var(--art));
   translate: -50% -100%;
-  transform: translate3d(calc((1 - var(--walk)) * var(--stride) * -1vw), 0, 0);
+  transform: translate3d(calc((var(--walk) - 1) * var(--advance)), 0, 0);
 }
 
-.hollow__knight--walk {
+.hk__knight--walk {
   inset-block-start: var(--ground);
   background-image: image-set(
     url('/img/parallax/knight-walk.avif') type('image/avif'),
     url('/img/parallax/knight-walk.webp') type('image/webp')
   );
   background-repeat: no-repeat;
-  background-size: calc(8 * 32.7 * var(--art)) calc(62 * var(--art));
+  background-size: calc(8 * 32.7 * var(--figure) * var(--art)) calc(62 * var(--figure) * var(--art));
 }
 
 /* The sit pose is drawn ~1.4× larger than the walk frames, so it is rendered
    proportionally smaller to keep one character the same size throughout. */
-.hollow__knight--sit {
+.hk__knight--sit {
   inset-block-start: var(--seat);
-  block-size: calc(50 * var(--art));
-  inline-size: calc(30 * var(--art));
+  inline-size: calc(30 * var(--figure) * var(--art));
+  block-size: calc(50 * var(--figure) * var(--art));
   /* A hair past the seat line, so he reads as sitting in the bench rather than
      balanced on its edge. */
   translate: -50% -94%;
   opacity: 0;
 }
 
-.hollow.is-seated .hollow__knight--walk { opacity: 0; }
-.hollow.is-seated .hollow__knight--sit { opacity: 1; }
+.hk.is-seated .hk__knight--walk { opacity: 0; }
+.hk.is-seated .hk__knight--sit { opacity: 1; }
+
+/* ── Path A: the compositor drives every transform ─────────────────────────
+   One animation per element, each interpolating between two concrete
+   transforms — `--depth`, `--pan` and `--advance` are static, so the browser
+   resolves them once and runs the result off the main thread.
+
+   This is the whole point of the rewrite. Animating a shared `--walk` and
+   deriving the transforms from it, as the old scene did, puts a full style
+   recalculation of a full-screen layer stack in every single frame. */
+@supports (animation-timeline: scroll()) {
+  .hk__layer,
+  .hk__bench,
+  .hk__sign,
+  .hk__knight {
+    transform: none;
+    animation-name: hk-pan;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    /* The walk owns the scroll left over once the track has parked. */
+    animation-range: calc(var(--rail-lock) * 100%) 100%;
+  }
+
+  .hk__knight {
+    animation-name: hk-advance;
+  }
+
+  .hk__sign {
+    animation-name: hk-pan, hk-sign-fade;
+    animation-range: calc(var(--rail-lock) * 100%) 100%, calc(var(--rail-lock) * 100%) 100%;
+  }
+
+  @keyframes hk-pan {
+    from { transform: translate3d(calc(var(--depth) * var(--pan) * var(--plate)), 0, 0); }
+    to { transform: translate3d(0, 0, 0); }
+  }
+
+  @keyframes hk-advance {
+    from { transform: translate3d(calc(-1 * var(--advance)), 0, 0); }
+    to { transform: translate3d(0, 0, 0); }
+  }
+
+  @keyframes hk-sign-fade {
+    0%, 68% { opacity: 1; }
+    82%, 100% { opacity: 0; }
+  }
+}
 
 /* ── The stride ────────────────────────────────────────────────────────────
    Path A steps the strip along the scroll itself, so the legs advance with the
    distance walked and stop dead when the scroll does. `steps()` on a scroll
    timeline quantises background-position exactly onto frame boundaries. */
 @supports (animation-timeline: scroll()) {
-  .hollow__knight--walk {
-    animation-name: knight-step;
-    animation-timing-function: steps(8);
-    animation-iteration-count: 18;
-    animation-fill-mode: both;
-    animation-timeline: scroll(root block);
-    animation-range: calc(var(--walk-start) * 100%) calc(var(--walk-end) * 100%);
+  .hk__knight--walk {
+    animation-name: hk-advance, hk-step;
+    animation-duration: auto, auto;
+    animation-timing-function: linear, steps(8);
+    animation-iteration-count: 1, 20;
+    animation-fill-mode: both, both;
+    animation-timeline: scroll(root block), scroll(root block);
+    animation-range:
+      calc(var(--rail-lock) * 100%) 100%,
+      calc(var(--rail-lock) * 100%) 100%;
   }
 }
 
 /* Path B cannot bind frames to distance, so the cycle runs on time and is
    paused whenever the rail is still. */
 @supports not (animation-timeline: scroll()) {
-  .hollow__knight--walk {
-    animation: knight-step 0.75s steps(8) infinite;
+  .hk__knight--walk {
+    animation: hk-step 0.75s steps(8) infinite;
     animation-play-state: paused;
   }
 
-  .hollow.is-striding .hollow__knight--walk {
+  .hk.is-striding .hk__knight--walk {
     animation-play-state: running;
   }
 }
 
-@keyframes knight-step {
+@keyframes hk-step {
   from { background-position-x: 0; }
-  to { background-position-x: calc(-8 * 32.7 * var(--art)); }
+  to { background-position-x: calc(-8 * 32.7 * var(--figure) * var(--art)); }
 }
 
-/* ── Idle life ─────────────────────────────────────────────────────────────*/
-.hollow .is-glow { animation: nc-glow 5s var(--ease-in-out-quint) infinite alternate; }
-.hollow .is-sway { animation: nc-sway 7s var(--ease-in-out-quint) infinite alternate; }
-.hollow .is-float { animation: nc-float 9s var(--ease-in-out-quint) infinite alternate; }
+/* ── Idle life ─────────────────────────────────────────────────────────────
+   On the tiles rather than the layer, so it never has to share the layer's own
+   `animation` shorthand with the pan. Every tile of a layer gets the identical
+   animation, which is what keeps a mirrored join closed while it plays. */
+.hk__layer.is-glow .hk__tile { animation: nc-glow 5s var(--ease-in-out-quint) infinite alternate; }
+.hk__layer.is-sway .hk__tile { animation: nc-sway 7s var(--ease-in-out-quint) infinite alternate; }
+.hk__layer.is-float .hk__tile { animation: nc-float 9s var(--ease-in-out-quint) infinite alternate; }
 
-@keyframes nc-glow { to { filter: brightness(1.25); } }
-@keyframes nc-sway { to { rotate: 0.35deg; } }
-@keyframes nc-float { to { translate: 1.5% -2%; } }
+@keyframes nc-glow { to { filter: brightness(1.3); } }
+@keyframes nc-sway { to { translate: 0.4% 0; } }
+@keyframes nc-float { to { translate: 0 -1.4%; } }
+
+/* A flipped tile carries `scale: -1 1`; `translate` is a separate property, so
+   the two compose instead of one overwriting the other. */
 
 /* Decorative motion goes when motion is reduced. The walk itself does not: it
    is the navigation, and freezing it would strand the form off screen. */
-:root[data-motion='reduced'] .hollow .is-glow,
-:root[data-motion='reduced'] .hollow .is-sway,
-:root[data-motion='reduced'] .hollow .is-float,
-:root[data-motion='reduced'] .hollow__knight--walk {
+:root[data-motion='reduced'] .hk__layer .hk__tile,
+:root[data-motion='reduced'] .hk__knight--walk {
   animation: none;
 }
 
-/* A gradient at the foot of the scene hands over to the page background. */
-.hollow::after {
+/* A gradient at the head and foot of the scene hands over to the page
+   background, so the header and the rail nav have something to sit on. */
+.hk::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--background) 45%, transparent) 0%,
-    transparent 18%,
-    transparent 72%,
-    var(--background) 100%
+    color-mix(in oklab, var(--background) 55%, transparent) 0%,
+    transparent 8%,
+    transparent 88%,
+    color-mix(in oklab, var(--background) 62%, transparent) 100%
   );
 }
 
 /* ── The easter egg ────────────────────────────────────────────────────────*/
-.hollow__seat {
+.hk__seat {
   position: absolute;
   z-index: 2;
-  inset-block-start: calc(50% + 271 * var(--art));
-  inset-inline-start: var(--meet);
-  inline-size: calc(159 * var(--art));
-  block-size: calc(110 * var(--art));
+  inset-block-start: var(--ground);
+  inset-inline-start: 50%;
+  inline-size: calc(159 * var(--figure) * var(--art));
+  block-size: calc(110 * var(--figure) * var(--art));
   translate: -50% -100%;
   border-radius: var(--radius-m);
   opacity: 0;
   pointer-events: none;
 }
 
-.hollow.is-seated .hollow__seat {
+.hk.is-seated .hk__seat {
   pointer-events: auto;
 }
 
-.hollow__seat:focus-visible {
+.hk__seat:focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: 3px;
   opacity: 1;
 }
 
-.hollow__controls {
+/* Just above the Knight's head rather than at the foot of the screen, where
+   the rail nav lives, and icon-only: this is a control for an easter egg, not
+   a media player, and a pill carrying a full sentence sat in the middle of the
+   artwork like a dialog box. */
+.hk__controls {
   position: absolute;
   z-index: 3;
-  inset-block-end: var(--space-l);
-  inset-inline-start: var(--meet);
-  translate: -50% 0;
+  inset-block-start: var(--seat);
+  inset-inline-start: 50%;
+  translate: -50% calc(-100% - 72 * var(--figure) * var(--art));
   display: flex;
-  gap: var(--space-s);
+  gap: var(--space-2xs);
   align-items: center;
-  padding: var(--space-2xs) var(--space-s);
+  padding: var(--space-3xs) var(--space-2xs);
   background: var(--glass);
   backdrop-filter: blur(10px);
   border: 1px solid var(--surface-faint);
   border-radius: var(--radius-pill);
   pointer-events: auto;
+  white-space: nowrap;
 }
 
-.hollow__volume {
+/* Icon-only: the button's empty label span would otherwise hold it open. */
+.hk__controls :deep(.nc-button__label:empty) {
+  display: none;
+}
+
+.hk__volume {
   display: flex;
   gap: var(--space-2xs);
   align-items: center;
   color: var(--surface-dim);
 }
 
-.hollow__volume input {
-  inline-size: 6rem;
+.hk__volume input {
+  inline-size: 4.5rem;
   accent-color: var(--primary);
 }
 
-.hollow__credit {
+.hk__credit {
   position: absolute;
   inset-block-end: var(--space-2xs);
-  inset-inline-end: var(--space-s);
+  inset-inline-start: var(--space-s);
   font-size: 0.62rem;
   color: var(--surface-faint);
+  /* It sits directly on the artwork, which is bright in places and dark in
+     others; a scrim rather than a colour keeps it readable over both without
+     putting a box on the scene. */
+  text-shadow: 0 1px 3px rgb(0 0 0 / 65%);
 }
 
 .nc-fade-enter-active,
@@ -580,42 +672,64 @@ onBeforeUnmount(() => {
 }
 
 /* ── Stacked layout ────────────────────────────────────────────────────────
-   No horizontal rail, so there is no walk to drive. The scene becomes what it
-   always was below the breakpoint: a still backdrop with the Knight already on
-   his bench, and the form in the normal flow above it. */
+   No horizontal rail, so there is no walk to drive: the scene becomes a still
+   band of Greenpath at the foot of the section, with the Knight already on his
+   bench and the form in the normal flow above it.
+
+   The band is the whole point. `--art` is normally `max(100vw / 1366,
+   100svh / 768)` so that a plate always covers the viewport — which on a phone
+   means covering a tall, narrow box with a wide, short painting, i.e. showing
+   about a third of its width blown up threefold. It read as a green blur.
+   Driving `--art` off the width alone instead shows the painting whole, at the
+   aspect it was drawn in, and every landmark inside it still lands where the
+   arithmetic says. */
 @media not all and (--rail) {
-  .hollow {
-    inset-block: 0;
+  .hk {
+    --art: 0.0732vw;
+    --walk: 1;
+
+    inset-block-start: auto;
+    /* `.scene` insets its content by a gutter; the band has to bleed back over
+       it, or it stops short of the screen edge while `--art` — which assumes a
+       full-width band — keeps measuring against 100vw. */
+    inset-inline: calc(-1 * var(--gutter));
+    block-size: calc(768 * var(--art));
   }
 
-  .hollow,
-  .hollow__camera,
-  .hollow__layer {
+  .hk__layer,
+  .hk__bench,
+  .hk__sign,
+  .hk__knight,
+  .hk__knight--walk {
     animation: none;
-  }
-
-  .hollow__camera,
-  .hollow__layer,
-  .hollow__bench,
-  .hollow__knight,
-  .hollow__sign {
     transform: none;
   }
 
-  .hollow__layer {
-    inline-size: 100%;
+  .hk__layer {
+    inset-inline-start: 0;
   }
 
-  .hollow__layer.is-mirror .hollow__tile:last-child {
+  .hk__tile:nth-child(n + 2) {
     display: none;
   }
 
-  .hollow__bench,
-  .hollow__knight,
-  .hollow__sign,
-  .hollow__seat,
-  .hollow__controls {
-    inset-inline-start: 50%;
+  /* The invitation belongs to the walk; here he is already sitting. */
+  .hk__sign,
+  .hk__knight--walk {
+    opacity: 0;
+  }
+
+  .hk__knight--sit {
+    opacity: 1;
+  }
+
+  /* The bench easter egg belongs to the desktop scene: stacked, the form fills
+     the section and both the seat and its controls can only land on top of it.
+     The backdrop stays, the Knight stays sitting on his bench, the audio
+     element stays — there is just nothing here that can be clicked. */
+  .hk__controls,
+  .hk__seat {
+    display: none;
   }
 }
 </style>

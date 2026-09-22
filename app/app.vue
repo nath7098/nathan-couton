@@ -3,7 +3,6 @@ const { t } = useI18n()
 const head = useLocaleHead({ seo: true })
 
 useMotionPreference()
-providePointer()
 
 useHead(() => ({
   htmlAttrs: head.value.htmlAttrs,

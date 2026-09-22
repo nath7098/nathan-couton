@@ -25,6 +25,12 @@ export interface SceneMeta {
   labelKey: string
   /** Particle preset for this scene's backdrop. See SPEC §5.3. */
   particles: 'code-rain' | 'dust' | 'constellation' | 'embers' | 'grid-pulse' | 'spores'
+  /**
+   * The scene paints its own edge-to-edge artwork and wants the whole
+   * viewport: no gutter, no padding for the header or the nav, and the numbered
+   * title becomes screen-reader-only rather than a row of the layout.
+   */
+  fullBleed?: boolean
 }
 
 export const SCENES: readonly SceneMeta[] = [
@@ -34,11 +40,11 @@ export const SCENES: readonly SceneMeta[] = [
   { id: 'skills', span: 1.5, labelKey: 'navigation.skills', particles: 'constellation' },
   { id: 'education', span: 1, labelKey: 'navigation.education', particles: 'dust' },
   { id: 'projects', span: 2.5, labelKey: 'navigation.projects', particles: 'grid-pulse' },
-  // Three viewports, so the walk gets two of travel. At span 2 the Knight
-  // crossed the bench in a single flick of the wheel and the parallax never had
-  // room to separate; this is the one scene whose span is a choreography
-  // decision rather than a content one.
-  { id: 'contact', span: 3, labelKey: 'navigation.contact', particles: 'spores' },
+  // One viewport, like most of the rail. The Knight's walk is *not* paid for
+  // out of the track's travel any more — it runs on the extra scroll that
+  // `WALK_SPAN` adds after the track parks, which is what lets the scene hold
+  // perfectly still while he crosses it. See `app/utils/rail-geometry.ts`.
+  { id: 'contact', span: 1, labelKey: 'navigation.contact', particles: 'spores', fullBleed: true },
 ] as const
 
 export const TOTAL_SPAN = SCENES.reduce((sum, scene) => sum + scene.span, 0)

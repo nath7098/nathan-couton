@@ -60,8 +60,13 @@
   /* ── Rail signals (written by useRail, read by every scene) ───────────── */
   --rail-progress: 0;
   --rail-velocity: 0;
-  --pointer-x: 0;
-  --pointer-y: 0;
+
+  /* There is deliberately no pointer signal here. The parallax in this site is
+     a camera move, and a camera move belongs to the travel: mixing in a little
+     sway on mouse position makes the world react to something the visitor is
+     not doing, and the illusion stops reading. A `--pointer-x` / `--pointer-y`
+     pair used to live here, along with the composable that wrote them and a
+     layer component that consumed them; all three are gone. */
 }
 
 /* ── Semantic tokens ──────────────────────────────────────────────────────

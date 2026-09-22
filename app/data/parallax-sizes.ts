@@ -6,6 +6,7 @@ export const PARALLAX_SIZES: Record<string, { width: number, height: number }> =
   'background-far': { width: 1366, height: 768 },
   'bench': { width: 159, height: 89 },
   'front-shadows': { width: 1366, height: 768 },
+  'ground': { width: 720, height: 157 },
   'knight-idle': { width: 340, height: 129 },
   'knight-sit': { width: 87, height: 146 },
   'knight-walk': { width: 544, height: 129 },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SCENES, TOTAL_SPAN, isSceneId, type SceneId } from '~/data/scenes'
-import { RAIL_BOUNDS, RAIL_TRAVEL } from '~/composables/useRail'
+import { RAIL_BOUNDS, RAIL_LOCK, RAIL_SCROLL_SPAN, RAIL_TRAVEL } from '~/composables/useRail'
 
 /**
  * The rail: a tall scroll proxy, a sticky viewport and a track that slides
@@ -11,15 +11,19 @@ const rail = provideRail()
 const { reduced } = useMotionPreference()
 
 /**
- * Each scene's slice of the rail, as fractions of total scroll. Feeds
- * `animation-range` so scroll-driven CSS can give every scene its own progress.
+ * Each scene's slice of the rail, as fractions of total *document* scroll.
+ *
+ * Scene bounds are measured against the track, which only occupies the first
+ * `RAIL_LOCK` of the scrollbar — the rest belongs to the contact walk. Scaling
+ * here rather than in the stylesheet keeps `animation-range` a plain
+ * multiplication and leaves one place to look when the pacing changes.
  */
 const sceneRanges = computed(() =>
   Object.fromEntries(RAIL_BOUNDS.map(bounds => [
     bounds.id,
     {
-      start: RAIL_TRAVEL === 0 ? 0 : Math.max(bounds.start - 1, 0) / RAIL_TRAVEL,
-      end: RAIL_TRAVEL === 0 ? 1 : Math.min(bounds.end, RAIL_TRAVEL) / RAIL_TRAVEL,
+      start: RAIL_TRAVEL === 0 ? 0 : (Math.max(bounds.start - 1, 0) / RAIL_TRAVEL) * RAIL_LOCK,
+      end: RAIL_TRAVEL === 0 ? RAIL_LOCK : (Math.min(bounds.end, RAIL_TRAVEL) / RAIL_TRAVEL) * RAIL_LOCK,
     },
   ])),
 )
@@ -119,7 +123,11 @@ onMounted(() => {
 <template>
   <div
     class="rail"
-    :style="{ '--rail-total-span': TOTAL_SPAN }"
+    :style="{
+      '--rail-total-span': TOTAL_SPAN,
+      '--rail-scroll-span': RAIL_SCROLL_SPAN,
+      '--rail-lock': RAIL_LOCK,
+    }"
   >
     <div class="rail__proxy">
       <div class="rail__viewport">

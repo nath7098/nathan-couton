@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { SCENES, TOTAL_SPAN } from '~/data/scenes'
-import { activeSceneAt, progressForScene, sceneBounds, sceneProgressAt, travel } from '~/utils/rail-geometry'
+import {
+  WALK_SPAN,
+  activeSceneAt,
+  lockFraction,
+  progressForScene,
+  sceneBounds,
+  sceneProgressAt,
+  scrollSpan,
+  splitScroll,
+  travel,
+} from '~/utils/rail-geometry'
 
 const bounds = sceneBounds(SCENES)
 
@@ -22,15 +32,14 @@ describe('rail geometry', () => {
   it('starts at 0 and orders scene targets along the rail', () => {
     expect(progressForScene(bounds, 'home', TOTAL_SPAN)).toBe(0)
 
-    // Targets align a scene's LEFT edge with the viewport. The last scene is two
-    // viewports wide, so its target is short of 1 — the tail of the rail shows
-    // its second half. Progress 1 must still land inside it.
-    // The last scene's target sits short of 1 by its own extra width: it is
-    // `(TOTAL_SPAN - span) / (TOTAL_SPAN - 1)`, not a fixed 0.9-something.
+    // Targets align a scene's LEFT edge with the viewport, so the last scene's
+    // target is `(TOTAL_SPAN - span) / (TOTAL_SPAN - 1)` — which is exactly 1
+    // while that scene is one viewport wide, and short of 1 if it is ever
+    // widened again. Either way it must land inside it.
     const contact = progressForScene(bounds, 'contact', TOTAL_SPAN)
     const contactSpan = SCENES.at(-1)!.span
     expect(contact).toBeCloseTo((TOTAL_SPAN - contactSpan) / (TOTAL_SPAN - 1))
-    expect(contact).toBeLessThan(1)
+    expect(contact).toBeLessThanOrEqual(1)
     expect(activeSceneAt(bounds, contact, TOTAL_SPAN)).toBe('contact')
 
     const targets = SCENES.map(s => progressForScene(bounds, s.id, TOTAL_SPAN))
@@ -86,5 +95,66 @@ describe('rail geometry', () => {
   it('returns neutral values for an unknown scene', () => {
     expect(progressForScene(bounds, 'blog' as never, TOTAL_SPAN)).toBe(0)
     expect(sceneProgressAt(bounds, 'blog' as never, 0.5, TOTAL_SPAN)).toBe(0)
+  })
+})
+
+/**
+ * The walk budget is scroll the track does not consume. These are the
+ * guarantees the contact scene is built on: the track is parked for every
+ * frame of the walk, and the walk starts at exactly 0 the instant it parks.
+ */
+describe('the contact walk budget', () => {
+  it('adds the walk to the track travel, and nothing else', () => {
+    expect(scrollSpan(TOTAL_SPAN)).toBe(travel(TOTAL_SPAN) + WALK_SPAN)
+    expect(WALK_SPAN).toBeGreaterThan(0)
+  })
+
+  it('locks part-way through the scrollbar, leaving room for the walk', () => {
+    const lock = lockFraction(TOTAL_SPAN)
+    expect(lock).toBeGreaterThan(0)
+    expect(lock).toBeLessThan(1)
+    expect(lock).toBeCloseTo(travel(TOTAL_SPAN) / scrollSpan(TOTAL_SPAN))
+  })
+
+  it('hands the whole scrollbar to the track when there is no walk', () => {
+    // travel(1) is 0: a single-viewport rail is all walk and no track.
+    expect(lockFraction(1)).toBe(0)
+    expect(splitScroll(0.4, 1)).toEqual({ progress: 1, walk: 0.4 })
+  })
+
+  it('runs the track first and the walk second, never both at once', () => {
+    const lock = lockFraction(TOTAL_SPAN)
+
+    expect(splitScroll(0, TOTAL_SPAN)).toEqual({ progress: 0, walk: 0 })
+    expect(splitScroll(lock, TOTAL_SPAN).progress).toBeCloseTo(1)
+    expect(splitScroll(lock, TOTAL_SPAN).walk).toBeCloseTo(0)
+    expect(splitScroll(1, TOTAL_SPAN)).toEqual({ progress: 1, walk: 1 })
+
+    // Mid-track the walk has not begun; mid-walk the track is fully parked.
+    expect(splitScroll(lock / 2, TOTAL_SPAN).walk).toBe(0)
+    expect(splitScroll((lock + 1) / 2, TOTAL_SPAN).progress).toBe(1)
+  })
+
+  it('keeps both halves monotonic and inside [0, 1]', () => {
+    let lastProgress = -1
+    let lastWalk = -1
+    for (let i = 0; i <= 400; i++) {
+      const { progress, walk } = splitScroll(i / 400, TOTAL_SPAN)
+      expect(progress).toBeGreaterThanOrEqual(lastProgress)
+      expect(walk).toBeGreaterThanOrEqual(lastWalk)
+      expect(progress).toBeLessThanOrEqual(1)
+      expect(walk).toBeLessThanOrEqual(1)
+      lastProgress = progress
+      lastWalk = walk
+    }
+  })
+
+  it('parks the last scene full screen at the lock point', () => {
+    // The scene the walk belongs to has to be the one on screen when the track
+    // stops, or the walk animates something nobody is looking at.
+    const lock = lockFraction(TOTAL_SPAN)
+    const { progress } = splitScroll(lock, TOTAL_SPAN)
+    expect(activeSceneAt(bounds, progress, TOTAL_SPAN)).toBe('contact')
+    expect(SCENES.at(-1)!.span).toBe(1)
   })
 })
