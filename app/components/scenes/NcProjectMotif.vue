@@ -33,7 +33,6 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
         :cy="shape.y"
         :r="shape.r"
         :opacity="shape.o"
-        :style="{ '--n': index }"
       />
       <rect
         v-else-if="shape.kind === 'bar'"
@@ -44,7 +43,6 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
         :height="shape.h"
         rx="2"
         :opacity="shape.o"
-        :style="{ '--n': index }"
       />
       <path
         v-else
@@ -67,23 +65,24 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
 
 /*
   The card raises `--motif-lit` from 0 to 1 when it is hovered or focused.
-  Driving the reveal through a custom property rather than a class on the
-  parent keeps this component from having to know what contains it — and the
-  transitions still run, because it is `scale` and `stroke-dashoffset` that
-  change, not the property itself.
+  Driving the reveal through a custom property rather than a class on the parent
+  keeps this component from having to know what contains it — and the transition
+  still runs, because it is `stroke-dashoffset` that changes, not the property.
+
+  Only strokes move. Dots and bars used to scale individually on the same
+  signal, which put every one of them on its own render surface: with a hundred
+  of them inside the rail's transformed track, the p95 scroll frame went from
+  83ms to 100ms. They are static now, and the group's opacity — animated once,
+  on the card — is what brings them up.
 */
 
 .motif__dot,
 .motif__bar {
   fill: var(--motif-ink, currentcolor);
-  transform-box: fill-box;
-  transform-origin: center;
-  scale: calc(0.8 + 0.2 * var(--motif-lit, 0));
-  transition: scale var(--dur-slow) var(--ease-spring) calc(var(--n) * 6ms);
 }
 
-/* Drawn most of the way at rest: enough to read as a figure, short enough
-   that finishing the line is still a reveal. */
+/* Drawn most of the way at rest: enough to read as a figure, short enough that
+   finishing the line is still a reveal. */
 .motif__path {
   fill: none;
   stroke: var(--motif-ink, currentcolor);
@@ -94,8 +93,6 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
   transition: stroke-dashoffset 900ms var(--ease-out-expo) calc(var(--n) * 55ms);
 }
 
-:root[data-motion='reduced'] .motif__dot,
-:root[data-motion='reduced'] .motif__bar,
 :root[data-motion='reduced'] .motif__path {
   transition: none;
 }

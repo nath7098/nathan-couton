@@ -188,6 +188,16 @@ function toggleFilter(tech: TechKey) {
   grid-template-columns: 0fr;
   overflow: hidden;
   transition: grid-template-columns var(--dur-slow) var(--ease-out-expo);
+
+  /* Four more cards sit in here, clipped to nothing. They stay in the DOM —
+     the page is prerendered and their text is what a crawler reads — but a
+     closed panel has no business being laid out or painted on every frame of
+     the rail. */
+  content-visibility: hidden;
+}
+
+.projects__panel.is-open {
+  content-visibility: visible;
 }
 
 .projects__panel-inner {

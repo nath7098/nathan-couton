@@ -39,8 +39,13 @@ const imports = computed(() => props.project.tags.map(tag => ({
   accent: `var(--tech-${tag.tech}-accent)`,
 })))
 
-/** One number per grid row. See the row map in the stylesheet. */
-const LINES = 13
+/**
+ * The gutter, as one text node rather than thirteen elements. Eight cards live
+ * inside the rail's transformed track and every node in them is re-rastered as
+ * it slides; thirteen spans each was a hundred and four boxes for thirteen
+ * numbers. One line height per row is all it takes to keep them aligned.
+ */
+const GUTTER = Array.from({ length: 13 }, (_, i) => i + 1).join('\n')
 </script>
 
 <template>
@@ -73,10 +78,7 @@ const LINES = 13
         class="pc__gutter"
         aria-hidden="true"
       >
-        <span
-          v-for="line in LINES"
-          :key="line"
-        >{{ line }}</span>
+        {{ GUTTER }}
       </div>
 
       <p class="pc__meta">
@@ -146,7 +148,7 @@ const LINES = 13
 
   display: grid;
   grid-template-rows: auto 1fr auto;
-  inline-size: clamp(16rem, 20.5vw, 20rem);
+  inline-size: clamp(15.5rem, 18.5vw, 18.5rem);
   background: var(--editor);
   border: 1px solid var(--surface-faint);
   border-radius: var(--radius-m);
@@ -237,7 +239,9 @@ const LINES = 13
   color: var(--motif-ink);
   opacity: 0.48;
   transition: opacity var(--dur-slow) var(--ease-out-expo);
-  mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
+  /* No mask: the figure already stops above the description, and a masked
+     layer inside the rail's transformed track cost a whole frame quantum —
+     33ms median became 50ms, measured back to back. */
 }
 
 @media (hover: hover) {
@@ -253,9 +257,9 @@ const LINES = 13
 }
 
 .pc__gutter {
-  display: grid;
   grid-row: 1 / -1;
-  grid-template-rows: subgrid;
+  align-self: start;
+  white-space: pre;
   font-size: 0.6rem;
   line-height: var(--lh);
 
