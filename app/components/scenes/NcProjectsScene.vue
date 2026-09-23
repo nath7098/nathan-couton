@@ -152,10 +152,30 @@ function toggleFilter(tech: TechKey) {
   filter: saturate(0.35);
 }
 
+/* A tab on the side of the row, cut from the same chrome as the cards: opening
+   it slides four more files into the editor. A plain ghost button beside eight
+   editor windows read as a stray slab. */
 .projects__toggle {
   flex: 0 0 auto;
   writing-mode: vertical-rl;
-  padding-block: var(--space-s);
+  padding-block: var(--space-m);
+  padding-inline: var(--space-3xs);
+  font-size: var(--step--1);
+  color: var(--surface-dim);
+  background: color-mix(in oklab, var(--surface) 6%, var(--editor));
+  border: 1px solid var(--surface-faint);
+  border-inline-start-style: dashed;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--radius-m);
+  border-end-end-radius: var(--radius-m);
+}
+
+@media (hover: hover) {
+  .projects__toggle:hover {
+    color: var(--primary-text);
+    border-color: color-mix(in oklab, var(--primary) 50%, var(--surface-faint));
+  }
 }
 
 .projects__toggle.is-open :deep(.nc-button__icon-end) {

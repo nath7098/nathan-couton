@@ -182,44 +182,44 @@ export default {
   ],
   projects: [
     {
-      alt: 'Mutuelle de Poitiers Assurances',
+      meta: 'Mutuelle de Poitiers · fullstack dev on assignment',
       title: 'Prevoyance',
       description: 'My mission at Mutuelle de Poitiers Assurance. We developed an app for their new Prevoyance insurance.',
     },
     {
-      alt: 'Portfolio',
+      meta: 'Personal · design and development',
       title: 'Portfolio',
       description: 'My personal developer portfolio migration from html/css to Vue/ExpressJs',
     },
     {
-      alt: 'TSP Solver',
+      meta: 'Polytech Tours · free project, final year',
       title: 'TSP Web Solver',
       description: 'A TSP solver website created during my last year at Polytech Tours. It\'s purpose was to share an interactive way of discovering and learning the way the TSP can be solved.',
     },
     {
-      alt: 'Hololens RGBD Stream to point cloud',
+      meta: 'Polytech Tours · final-year R&D project',
       title: 'Hololens RGBD Stream to point cloud',
       description: 'Student project during 5th year at Polytech. Research & development of an app for the Hololens to acquire and recreate in 3D a points cloud using the depth sensor.',
     },
   ],
   other: [
     {
-      alt: 'Virtual moneybox',
+      meta: 'Polytech Tours × Sopra Banking · team of 6',
       title: 'Virtual Moneybox',
       description: 'A web app created during my 4th year at Polytech in a group of 6 students. This app was ordered by a team at Sopra Banking Software.',
     },
     {
-      alt: 'SwalloWin Sound',
+      meta: 'Polytech Tours · team of 5, app rework',
       title: 'SwalloWin Sound',
       description: 'A students project in group. Reworking of an android app helping doctors to detect deceases using swallowing sounds.',
     },
     {
-      alt: 'Website first version',
+      meta: 'Personal · learning the web',
       title: 'Website first version',
       description: 'My personal developer portfolio created while I was in Polytech Tours to experience and learn about web development basics.',
     },
     {
-      alt: 'AJL Peinture',
+      meta: 'Craftsman client · showcase site, solo',
       title: 'AJL Peinture',
       description: 'A website I created for an artisan in 2020. I used React to build more knowledge about this framework.',
     },
@@ -227,6 +227,9 @@ export default {
   projectsSection: {
     otherToggle: 'Other projects',
     otherToggleClose: 'Hide other projects',
+    statusLive: 'live',
+    statusSource: 'source open',
+    statusClosed: 'private',
     filterAll: 'All',
     filterLabel: 'Filter by technology',
     viewRepo: 'View the {name} repository',

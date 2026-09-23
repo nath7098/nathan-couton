@@ -1,4 +1,5 @@
 import type { Tag } from './types'
+import type { MotifKey } from '~/utils/project-motifs'
 
 export interface ProjectLink {
   href: string
@@ -7,23 +8,40 @@ export interface ProjectLink {
 
 export interface Project {
   id: string
-  image: string
+  /**
+   * The name the card shows in its title bar. Not a real path — it is the file
+   * this project would open on, and it carries the stack at a glance.
+   */
+  file: string
+  /** Shown in the title bar. A span for the long missions, a year otherwise. */
+  year: string
+  /** Which figure the card draws behind its text. See `project-motifs.ts`. */
+  motif: MotifKey
   titleKey: string
   descriptionKey: string
-  altKey: string
+  /** i18n key for the `// context · role` line above the title. */
+  metaKey: string
   tags: Tag[]
   links: ProjectLink[]
   group: 'main' | 'other'
 }
 
-/** The eight projects of v1, same order, same links. */
+/**
+ * The eight projects of v1, same order, same links.
+ *
+ * `image` and `altKey` are gone. Every project used to ship a 1355×678 PNG of
+ * two colour blocks and a ringed circle repeating the title; the cards now draw
+ * a figure from `motif` instead, and the seven files left the repository.
+ */
 export const PROJECTS: readonly Project[] = [
   {
     id: 'prevoyance',
-    image: '/img/projects/mdpa_logo.png',
+    file: 'prevoyance.vue',
+    year: '2021 – 2025',
+    motif: 'layers',
     titleKey: 'projects[0].title',
     descriptionKey: 'projects[0].description',
-    altKey: 'projects[0].alt',
+    metaKey: 'projects[0].meta',
     tags: [
       { label: 'Vue 2', tech: 'vue' },
       { label: 'Ts', tech: 'ts' },
@@ -35,10 +53,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'portfolio',
-    image: '/img/projects/portfolio_logo.png',
+    file: 'portfolio.vue',
+    year: '2023',
+    motif: 'stream',
     titleKey: 'projects[1].title',
     descriptionKey: 'projects[1].description',
-    altKey: 'projects[1].alt',
+    metaKey: 'projects[1].meta',
     tags: [
       { label: 'Vue 3', tech: 'vue' },
       { label: 'Vite', tech: 'vite' },
@@ -50,10 +70,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'tsp',
-    image: '/img/projects/tsp_logo.png',
+    file: 'tsp-solver.js',
+    year: '2020',
+    motif: 'tour',
     titleKey: 'projects[2].title',
     descriptionKey: 'projects[2].description',
-    altKey: 'projects[2].alt',
+    metaKey: 'projects[2].meta',
     tags: [
       { label: 'JQuery', tech: 'jquery' },
       { label: 'p5', tech: 'p5' },
@@ -67,10 +89,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'hololens',
-    image: '/img/projects/hololens_logo.png',
+    file: 'PointCloud.cs',
+    year: '2020',
+    motif: 'cloud',
     titleKey: 'projects[3].title',
     descriptionKey: 'projects[3].description',
-    altKey: 'projects[3].alt',
+    metaKey: 'projects[3].meta',
     tags: [
       { label: 'Unity', tech: 'unity' },
       { label: 'C#', tech: 'csharp' },
@@ -84,10 +108,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'moneybox',
-    image: '/img/projects/moneybox_logo.png',
+    file: 'moneybox.component.ts',
+    year: '2019',
+    motif: 'coins',
     titleKey: 'other[0].title',
     descriptionKey: 'other[0].description',
-    altKey: 'other[0].alt',
+    metaKey: 'other[0].meta',
     tags: [
       { label: 'Angular', tech: 'angular' },
       { label: 'Java', tech: 'java' },
@@ -99,10 +125,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'swallowin',
-    image: '/img/projects/swallow_logo.png',
+    file: 'SwalloWin.java',
+    year: '2019',
+    motif: 'wave',
     titleKey: 'other[1].title',
     descriptionKey: 'other[1].description',
-    altKey: 'other[1].alt',
+    metaKey: 'other[1].meta',
     // v1 tagged Android with the Vue colour, which was a copy-paste slip.
     tags: [
       { label: 'Android', tech: 'android' },
@@ -113,10 +141,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'first-website',
-    image: '/img/projects/portfolio_logo.png',
+    file: 'index.html',
+    year: '2018',
+    motif: 'wireframe',
     titleKey: 'other[2].title',
     descriptionKey: 'other[2].description',
-    altKey: 'other[2].alt',
+    metaKey: 'other[2].meta',
     tags: [
       { label: 'Html', tech: 'html' },
       { label: 'Css', tech: 'css' },
@@ -130,10 +160,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'ajl',
-    image: '/img/projects/ajl_logo.png',
+    file: 'ajl-peinture.jsx',
+    year: '2020',
+    motif: 'strokes',
     titleKey: 'other[3].title',
     descriptionKey: 'other[3].description',
-    altKey: 'other[3].alt',
+    metaKey: 'other[3].meta',
     tags: [
       { label: 'React', tech: 'react' },
       { label: 'Firebase', tech: 'firebase' },
@@ -143,3 +175,14 @@ export const PROJECTS: readonly Project[] = [
     group: 'other',
   },
 ]
+
+/**
+ * What the card's status pip says. Derived from the links rather than stored:
+ * a project with a demo is reachable, one with only a repository is readable,
+ * and one with neither was client work that never became public.
+ */
+export function projectStatus(project: Project): 'live' | 'source' | 'closed' {
+  if (project.links.some(link => link.kind === 'live')) return 'live'
+  if (project.links.length) return 'source'
+  return 'closed'
+}
