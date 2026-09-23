@@ -33,12 +33,47 @@ export default {
   },
   experience: [
     {
-      date: '2021 - Today',
+      date: 'July 2025 - Today',
+      title: 'Catamania',
+      content: 'Fullstack Java Developer',
+      details: [
+        {
+          date: 'July 2025 - Today',
+          title: 'Harmonie Mutuelle',
+          content: 'Performance Assurance et Solvabilité tribe — an Agile squad of 8: 3 developers including me, 1 tech lead, 3 business analysts and 1 product owner',
+          skills: [
+            {
+              details: 'Java 21 on the backend, for the APIs as well as the batch processing.',
+            },
+            {
+              details: 'Spring Boot 4 for the tribe\'s application services.',
+            },
+            {
+              details: 'Spring Batch for the solvency-related batch processing.',
+            },
+            {
+              details: 'Angular 19 on the frontend.',
+            },
+            {
+              details: 'Kafka for event exchange between services.',
+            },
+            {
+              details: 'Spark for distributed processing over large volumes of data.',
+            },
+            {
+              details: 'An Agile squad of 8: 3 developers including me, 1 tech lead, 3 business analysts and 1 product owner. Ceremonies, code reviews and merge requests.',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      date: '2021 - 2025',
       title: 'ACII by Audensiel',
       content: 'Fullstack Java Vuejs developer',
       details: [
         {
-          date: '2021 - Today',
+          date: '2021 - 2025',
           title: 'Mutuelle de Poitiers Assurances',
           content: 'Web app development',
           skills: [

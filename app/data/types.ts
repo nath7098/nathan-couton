@@ -7,7 +7,7 @@ export type TechKey
     | 'unity' | 'csharp' | 'cpp' | 'agile' | 'firebase' | 'express' | 'node'
     | 'android' | 'docker' | 'flex' | 'spring' | 'dotnet' | 'oracle' | 'postgres'
     | 'mysql' | 'mongo' | 'intellij' | 'vscode' | 'gitlab' | 'github'
-    | 'illustrator'
+    | 'illustrator' | 'kafka' | 'spark'
 
 export interface Tag {
   label: string
@@ -16,4 +16,4 @@ export interface Tag {
   detailsKey?: string
 }
 
-export type AccentKey = 'green' | 'polytech' | 'acii' | 'iut-red'
+export type AccentKey = 'green' | 'polytech' | 'acii' | 'iut-red' | 'catamania'

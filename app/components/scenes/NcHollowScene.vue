@@ -305,6 +305,14 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
+    <!-- The join with the scene before this one. Contact is the only scene
+         that paints edge to edge, so its leading edge is the one place on the
+         rail where the page background meets artwork at a hard vertical line. -->
+    <div
+      class="hk__seam"
+      aria-hidden="true"
+    />
+
     <p class="hk__credit">
       {{ t('contact.credits') }}
     </p>
@@ -496,6 +504,29 @@ onBeforeUnmount(() => {
     animation-range: calc(var(--rail-lock) * 100%) 100%, calc(var(--rail-lock) * 100%) 100%;
   }
 
+  .hk__seam {
+    animation-name: hk-seam;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    animation-range: calc(var(--rail-lock) * 100%) 100%;
+  }
+
+  /* `display` is discrete, so it flips on a frame rather than easing. It is
+     here rather than `opacity` alone because a layer at `opacity: 0` is still
+     composited over the moving track — measured, a strip that had faded to
+     nothing cost as much as one at full strength.
+
+     The strip cannot be kept out of the tree for the rail as well, which would
+     save a little more: an element that starts at `display: none` runs no
+     animation at all, so there would be nothing left to turn it back on. */
+  @keyframes hk-seam {
+    0% { display: block; opacity: 1; }
+    14% { display: block; opacity: 0; }
+    15%, 100% { display: none; opacity: 0; }
+  }
+
   @keyframes hk-pan {
     from { transform: translate3d(calc(var(--depth) * var(--pan) * var(--plate)), 0, 0); }
     to { transform: translate3d(0, 0, 0); }
@@ -584,6 +615,58 @@ onBeforeUnmount(() => {
     transparent 88%,
     color-mix(in oklab, var(--background) 62%, transparent) 100%
   );
+}
+
+/* ── The seam ──────────────────────────────────────────────────────────────
+   Contact is the only full-bleed scene, so where it meets Projects the page
+   background butts straight against the artwork: a hard vertical edge running
+   the full height of the screen, with a lit page on one side and a dark cavern
+   on the other.
+
+   A wash of the page background, fading out across the strip, carries the
+   colour over. It is deliberately wide — the join has to stop being an event
+   and become a gradient, and the cost of that is eating into the first fifth
+   of the cavern while the scene arrives, which is a good trade for an edge
+   nobody notices.
+
+   No `backdrop-filter` here, and that is the whole point of this version. A
+   blurred strip looks better in isolation and was what this started as, but the
+   filter puts the element on its own render surface, and that surface is
+   snapped to whole pixels while the scene's own edge sits on a fraction of one.
+   The two then disagree by exactly one column — measured, a single line of
+   untouched artwork at rgb(11,39,51) with the wash starting cleanly one pixel
+   later. A thin dark line down the full height of the screen, which is worse
+   than the edge it was there to hide. Without the filter the strip shares the
+   scene's box and covers it.
+
+   Gone once the scene has parked: past that its leading edge is off screen to
+   the left and the strip would be a sheet of page background lying over the
+   artwork for nothing. */
+.hk__seam {
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  /* A hair outside the box it is covering. The strip and the scene edge are
+     the same coordinate space, so this is belt and braces against a future
+     fractional layout reopening the gap the filter used to make. */
+  inset-inline-start: -2px;
+  inline-size: calc(22vw + 2px);
+  pointer-events: none;
+  /* Many stops rather than few: the eye finds the kink in a two-stop ramp
+     across a span this wide, and a kink reads as a band. */
+  background: linear-gradient(
+    to right,
+    var(--background) 0%,
+    var(--background) 6%,
+    color-mix(in oklab, var(--background) 88%, transparent) 20%,
+    color-mix(in oklab, var(--background) 62%, transparent) 38%,
+    color-mix(in oklab, var(--background) 34%, transparent) 58%,
+    color-mix(in oklab, var(--background) 14%, transparent) 78%,
+    transparent 100%
+  );
+  /* Path B has no timeline to range this over, so the strip lives for the
+     whole rail and fades as the walk starts. Path A below does better. */
+  opacity: clamp(0, 1 - var(--walk) * 8, 1);
 }
 
 /* ── The easter egg ────────────────────────────────────────────────────────*/
@@ -721,6 +804,12 @@ onBeforeUnmount(() => {
 
   .hk__knight--sit {
     opacity: 1;
+  }
+
+  /* No rail, so no vertical join to soften: the band sits under the form in
+     normal flow and its edges are the section's own. */
+  .hk__seam {
+    display: none;
   }
 
   /* The bench easter egg belongs to the desktop scene: stacked, the form fills
