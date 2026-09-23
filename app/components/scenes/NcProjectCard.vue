@@ -339,9 +339,19 @@ const pad = (n: number) => String(n).padStart(2, '0')
   min-block-size: calc(2 * 1.5em);
 }
 
-/* A fixed two rows of pills, not a minimum: a card whose stack fits on one line
-   would otherwise pull its LIENS row up and break the alignment across the row.
-   A small pill is 1.38rem tall and the gap is 0.25rem. */
+/* The one field whose value is a list, and the only one that needs the whole
+   card: squeezed into the value column of a narrow card, a four-technology
+   stack ran to three rows and lost two of them behind the clip. The label sits
+   above instead, and two rows then hold the longest stack at every width.
+
+   A fixed two rows, not a minimum: a card whose stack fits on one line would
+   otherwise pull its LIENS row up and break the alignment across the row. A
+   small pill is 1.38rem tall and the gap is 0.25rem. */
+.pc__row--stack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.2rem;
+}
+
 .pc__row--stack .pc__val {
   display: flex;
   flex-wrap: wrap;
@@ -391,6 +401,43 @@ const pad = (n: number) => String(n).padStart(2, '0')
 
 :root[data-motion='reduced'] .pc {
   transition: none;
+}
+
+/* A short viewport has to fit the same nine fields. The scene centres itself in
+   its row, so content taller than the row spills out of *both* ends — and the
+   top end is where the scene's title sits. Rather than let the card overflow,
+   it gives up what it can spare: first a line of prose, then the prose
+   altogether, then the height of the figure. Measured against the rail's own
+   floor of 600px. */
+@media (height < 840px) {
+  .pc__desc {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    min-block-size: calc(2 * 1.6em);
+  }
+}
+
+@media (height < 760px) {
+  .pc__desc {
+    display: none;
+  }
+
+  .pc__art {
+    max-block-size: 5.5rem;
+  }
+}
+
+@media (height < 680px) {
+  .pc__art {
+    max-block-size: 4rem;
+  }
+}
+
+/* At the rail's own floor the figure is the last thing to go, and it goes. */
+@media (height < 620px) {
+  .pc__art {
+    display: none;
+  }
 }
 
 /* Without hover there is no reveal to wait for: the figure is simply drawn. */

@@ -108,12 +108,25 @@ const titleId = computed(() => `${props.scene.id}-title`)
      positioned, so without this it paints straight over the scene's title. */
   position: relative;
   z-index: 1;
+
+  /* Being on top is for painting, not for catching clicks. This box runs the
+     full width of the scene while the number and the title only take their own
+     text, so the empty rest of it was sitting over whatever the scene put near
+     its top edge — and on a short viewport, where a dense scene spills up past
+     its row, that was the projects filter row: its pills looked normal and
+     ignored every click on their upper half. The children take their events
+     back so the title can still be selected. */
+  pointer-events: none;
   display: grid;
   gap: var(--space-3xs);
   justify-items: start;
   /* Follows this scene's own sweep across the viewport. */
   opacity: calc(0.3 + 0.7 * var(--scene-progress, 1));
   transform: translate3d(calc((1 - var(--scene-progress, 1)) * 1.5rem), 0, 0);
+}
+
+.scene__head > * {
+  pointer-events: auto;
 }
 
 /* A single full-height row, so a scene can lay a full-bleed backdrop behind its
