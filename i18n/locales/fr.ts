@@ -33,12 +33,47 @@ export default {
   },
   experience: [
     {
-      date: '2021 - Aujourd\'hui',
+      date: 'Juillet 2025 - Aujourd\'hui',
+      title: 'Catamania',
+      content: 'Développeur Fullstack Java',
+      details: [
+        {
+          date: 'Juillet 2025 - Aujourd\'hui',
+          title: 'Harmonie Mutuelle',
+          content: 'Tribu Performance Assurance et Solvabilité — squad Agile de 8 personnes : 3 développeurs dont moi, 1 tech lead, 3 business analysts et 1 product owner',
+          skills: [
+            {
+              details: 'Java 21 en backend, sur les APIs comme sur les traitements de masse.',
+            },
+            {
+              details: 'Spring Boot 4 pour les services applicatifs de la tribu.',
+            },
+            {
+              details: 'Spring Batch pour les traitements de masse liés à la solvabilité.',
+            },
+            {
+              details: 'Angular 19 en frontend.',
+            },
+            {
+              details: 'Kafka pour les échanges d\'événements entre les services.',
+            },
+            {
+              details: 'Spark pour les traitements distribués sur les gros volumes de données.',
+            },
+            {
+              details: 'Squad Agile de 8 personnes : 3 développeurs dont moi, 1 tech lead, 3 business analysts et 1 product owner. Rituels, revues de code et merge requests.',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      date: '2021 - 2025',
       title: 'ACII by Audensiel',
       content: 'Développeur Fullstack Java Vuejs',
       details: [
         {
-          date: '2021 - Aujourd\'hui',
+          date: '2021 - 2025',
           title: 'Mutuelle de Poitiers Assurances',
           content: 'Développement d\'application web',
           skills: [

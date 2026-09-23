@@ -17,6 +17,10 @@
   --c-polytech: #009fe3;
   --c-acii: #2d9ad5;
   --c-iut-red: #bf1e2e;
+  /* Placeholder for the current employer's dot: a colour already in this
+     palette, not a brand value read off their site. Swap it when the real one
+     lands with the logo. */
+  --c-catamania: var(--c-purple);
 
   /* ── Spacing ──────────────────────────────────────────────────────────── */
   --space-3xs: 0.25rem;
@@ -186,6 +190,10 @@
   --tech-flex-bg: rgb(131 138 155 / 40%);
   --tech-spring-accent: #6db33f;
   --tech-spring-bg: rgb(109 179 63 / 40%);
+  --tech-kafka-accent: #d4d4d4;
+  --tech-kafka-bg: rgb(120 120 120 / 40%);
+  --tech-spark-accent: #e25a1c;
+  --tech-spark-bg: rgb(226 90 28 / 40%);
   --tech-express-accent: #68a063;
   --tech-express-bg: rgb(60 135 58 / 40%);
   --tech-node-accent: #8cc84b;
@@ -221,6 +229,7 @@
   --accent-polytech: var(--c-polytech);
   --accent-acii: var(--c-acii);
   --accent-iut-red: var(--c-iut-red);
+  --accent-catamania: var(--c-catamania);
 }
 
 /* Text variants of the same accents.
@@ -233,6 +242,7 @@
   --accent-polytech-text: color-mix(in oklab, var(--c-polytech) 60%, #f5f5f5);
   --accent-acii-text: color-mix(in oklab, var(--c-acii) 60%, #f5f5f5);
   --accent-iut-red-text: color-mix(in oklab, var(--c-iut-red) 60%, #f5f5f5);
+  --accent-catamania-text: color-mix(in oklab, var(--c-catamania) 60%, #f5f5f5);
   /* Text laid over a filled accent. Dark reads on both hues (4.7:1 on the
      orange, 6.2:1 on the green) where --background did not. */
   --on-accent: var(--c-black);
@@ -243,5 +253,6 @@
   --accent-polytech-text: color-mix(in oklab, var(--c-polytech) 60%, #101314);
   --accent-acii-text: color-mix(in oklab, var(--c-acii) 60%, #101314);
   --accent-iut-red-text: color-mix(in oklab, var(--c-iut-red) 60%, #101314);
+  --accent-catamania-text: color-mix(in oklab, var(--c-catamania) 60%, #101314);
   --on-accent: var(--c-black);
 }

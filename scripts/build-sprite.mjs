@@ -30,6 +30,7 @@ const TECH = {
   android: 'android', docker: 'docker', postgres: 'postgresql', mysql: 'mysql',
   mongo: 'mongodb', dotnet: 'dotnet', intellij: 'intellijidea', spring: 'spring',
   gitlab: 'gitlab', github: 'github', spotify: 'spotify',
+  kafka: 'apachekafka', spark: 'apachespark',
 }
 
 /** Marks drawn by hand because simple-icons dropped them. */

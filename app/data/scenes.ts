@@ -35,11 +35,26 @@ export interface SceneMeta {
 
 export const SCENES: readonly SceneMeta[] = [
   { id: 'home', span: 1, labelKey: 'navigation.home', particles: 'code-rain' },
-  { id: 'about', span: 1.5, labelKey: 'navigation.about', particles: 'dust' },
+  // Its content ends 0.70 viewports in and nothing here expands, so the 1.5 it
+  // used to carry left two thirds of a screen of nothing before Experience.
+  { id: 'about', span: 1, labelKey: 'navigation.about', particles: 'dust' },
   { id: 'experience', span: 2, labelKey: 'navigation.experience', particles: 'embers' },
   { id: 'skills', span: 1.5, labelKey: 'navigation.skills', particles: 'constellation' },
   { id: 'education', span: 1, labelKey: 'navigation.education', particles: 'dust' },
-  { id: 'projects', span: 2.5, labelKey: 'navigation.projects', particles: 'grid-pulse' },
+  // Sized for the *open* drawer, not the closed one. "Autres projets" widens
+  // the row in place (`grid-template-columns: 0fr → 1fr`), so the scene has to
+  // be able to hold it or the extra cards run into Contact.
+  //
+  // What sets this number is the narrowest viewport the rail engages on at all
+  // — 1024px, per `--rail` in media.css — because that is where the cards take
+  // the largest share of the screen. Measured there, the content ends 1.22
+  // viewports in closed and 1.81 open; at 1440 it is 0.99 and 1.59. So 1.85,
+  // which clears the worst case with a little room and no more.
+  //
+  // The 2.5 this used to carry left a screen and a half of nothing after the
+  // cards. What is left now is the drawer's reserve, not waste — it is the
+  // room those extra cards open into.
+  { id: 'projects', span: 1.85, labelKey: 'navigation.projects', particles: 'grid-pulse' },
   // One viewport, like most of the rail. The Knight's walk is *not* paid for
   // out of the track's travel any more — it runs on the extra scroll that
   // `WALK_SPAN` adds after the track parks, which is what lets the scene hold

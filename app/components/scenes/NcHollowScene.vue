@@ -305,6 +305,14 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
+    <!-- The join with the scene before this one. Contact is the only scene
+         that paints edge to edge, so its leading edge is the one place on the
+         rail where the page background meets artwork at a hard vertical line. -->
+    <div
+      class="hk__seam"
+      aria-hidden="true"
+    />
+
     <p class="hk__credit">
       {{ t('contact.credits') }}
     </p>
@@ -496,6 +504,32 @@ onBeforeUnmount(() => {
     animation-range: calc(var(--rail-lock) * 100%) 100%, calc(var(--rail-lock) * 100%) 100%;
   }
 
+  .hk__seam {
+    animation-name: hk-seam;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+    animation-range: calc(var(--rail-lock) * 100%) 100%;
+  }
+
+  /* `display` is discrete, so it flips on a frame rather than easing — and it
+     has to be here rather than `opacity` alone, because a layer at `opacity: 0`
+     with a backdrop-filter on it is still composited: measured, a strip that
+     had faded to nothing cost exactly as much as one at full strength. Taking
+     it out of the render tree is what gives the frames back, and it takes the
+     walk — the heaviest stretch of the page — from 133ms a frame to the 117ms
+     it costs with no strip at all.
+
+     The strip cannot be kept out of the tree for the rail as well, which would
+     save a little more: an element that starts at `display: none` runs no
+     animation at all, so there would be nothing left to turn it back on. */
+  @keyframes hk-seam {
+    0% { display: block; opacity: 1; }
+    14% { display: block; opacity: 0; }
+    15%, 100% { display: none; opacity: 0; }
+  }
+
   @keyframes hk-pan {
     from { transform: translate3d(calc(var(--depth) * var(--pan) * var(--plate)), 0, 0); }
     to { transform: translate3d(0, 0, 0); }
@@ -584,6 +618,51 @@ onBeforeUnmount(() => {
     transparent 88%,
     color-mix(in oklab, var(--background) 62%, transparent) 100%
   );
+}
+
+/* ── The seam ──────────────────────────────────────────────────────────────
+   Contact is the only full-bleed scene, so where it meets Projects the page
+   background butts straight against the artwork: a hard vertical edge running
+   the full height of the screen, with a lit page on one side and a dark cavern
+   on the other.
+
+   Two things soften it, in one strip. A wash of the page background, fading out
+   across the strip, carries the colour over; and a blur of what is behind the
+   strip carries the focus over, so the first thing the artwork does is resolve
+   rather than arrive. The blur is masked by the same ramp that fades the wash —
+   without it the blur's own right edge is a new hard line one strip further in,
+   which is the whole problem moved rather than fixed.
+
+   Kept to a strip. A full-screen `backdrop-filter` costs about half the frame
+   budget on this page (SPEC §5.4); at 14vw it is a tenth of the pixels, and the
+   scroll-frame check in smoke.mjs is what says whether that still holds. */
+.hk__seam {
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 14vw;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    var(--background) 0%,
+    color-mix(in oklab, var(--background) 62%, transparent) 26%,
+    color-mix(in oklab, var(--background) 24%, transparent) 58%,
+    transparent 100%
+  );
+  /* Gone once the scene has parked. There is a join to soften only while
+     Contact is sliding in; for the whole of the walk its leading edge is off
+     screen to the left and the strip would be a translucent sheet lying over
+     the artwork for nothing. */
+  opacity: clamp(0, 1 - var(--walk) * 8, 1);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .hk__seam {
+    backdrop-filter: blur(14px);
+    /* The blur rides the same ramp as the wash, so both reach nothing together. */
+    mask-image: linear-gradient(to right, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
+  }
 }
 
 /* ── The easter egg ────────────────────────────────────────────────────────*/
@@ -721,6 +800,12 @@ onBeforeUnmount(() => {
 
   .hk__knight--sit {
     opacity: 1;
+  }
+
+  /* No rail, so no vertical join to soften: the band sits under the form in
+     normal flow and its edges are the section's own. */
+  .hk__seam {
+    display: none;
   }
 
   /* The bench easter egg belongs to the desktop scene: stacked, the form fills
