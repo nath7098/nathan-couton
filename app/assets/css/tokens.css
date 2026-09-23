@@ -20,7 +20,7 @@
   /* Placeholder for the current employer's dot: a colour already in this
      palette, not a brand value read off their site. Swap it when the real one
      lands with the logo. */
-  --c-catamania: var(--c-purple);
+  --c-catamania: #405878;
 
   /* ── Spacing ──────────────────────────────────────────────────────────── */
   --space-3xs: 0.25rem;

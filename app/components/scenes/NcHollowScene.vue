@@ -513,13 +513,10 @@ onBeforeUnmount(() => {
     animation-range: calc(var(--rail-lock) * 100%) 100%;
   }
 
-  /* `display` is discrete, so it flips on a frame rather than easing — and it
-     has to be here rather than `opacity` alone, because a layer at `opacity: 0`
-     with a backdrop-filter on it is still composited: measured, a strip that
-     had faded to nothing cost exactly as much as one at full strength. Taking
-     it out of the render tree is what gives the frames back, and it takes the
-     walk — the heaviest stretch of the page — from 133ms a frame to the 117ms
-     it costs with no strip at all.
+  /* `display` is discrete, so it flips on a frame rather than easing. It is
+     here rather than `opacity` alone because a layer at `opacity: 0` is still
+     composited over the moving track — measured, a strip that had faded to
+     nothing cost as much as one at full strength.
 
      The strip cannot be kept out of the tree for the rail as well, which would
      save a little more: an element that starts at `display: none` runs no
@@ -626,43 +623,50 @@ onBeforeUnmount(() => {
    the full height of the screen, with a lit page on one side and a dark cavern
    on the other.
 
-   Two things soften it, in one strip. A wash of the page background, fading out
-   across the strip, carries the colour over; and a blur of what is behind the
-   strip carries the focus over, so the first thing the artwork does is resolve
-   rather than arrive. The blur is masked by the same ramp that fades the wash —
-   without it the blur's own right edge is a new hard line one strip further in,
-   which is the whole problem moved rather than fixed.
+   A wash of the page background, fading out across the strip, carries the
+   colour over. It is deliberately wide — the join has to stop being an event
+   and become a gradient, and the cost of that is eating into the first fifth
+   of the cavern while the scene arrives, which is a good trade for an edge
+   nobody notices.
 
-   Kept to a strip. A full-screen `backdrop-filter` costs about half the frame
-   budget on this page (SPEC §5.4); at 14vw it is a tenth of the pixels, and the
-   scroll-frame check in smoke.mjs is what says whether that still holds. */
+   No `backdrop-filter` here, and that is the whole point of this version. A
+   blurred strip looks better in isolation and was what this started as, but the
+   filter puts the element on its own render surface, and that surface is
+   snapped to whole pixels while the scene's own edge sits on a fraction of one.
+   The two then disagree by exactly one column — measured, a single line of
+   untouched artwork at rgb(11,39,51) with the wash starting cleanly one pixel
+   later. A thin dark line down the full height of the screen, which is worse
+   than the edge it was there to hide. Without the filter the strip shares the
+   scene's box and covers it.
+
+   Gone once the scene has parked: past that its leading edge is off screen to
+   the left and the strip would be a sheet of page background lying over the
+   artwork for nothing. */
 .hk__seam {
   position: absolute;
   z-index: 1;
   inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: 14vw;
+  /* A hair outside the box it is covering. The strip and the scene edge are
+     the same coordinate space, so this is belt and braces against a future
+     fractional layout reopening the gap the filter used to make. */
+  inset-inline-start: -2px;
+  inline-size: calc(22vw + 2px);
   pointer-events: none;
+  /* Many stops rather than few: the eye finds the kink in a two-stop ramp
+     across a span this wide, and a kink reads as a band. */
   background: linear-gradient(
     to right,
     var(--background) 0%,
-    color-mix(in oklab, var(--background) 62%, transparent) 26%,
-    color-mix(in oklab, var(--background) 24%, transparent) 58%,
+    var(--background) 6%,
+    color-mix(in oklab, var(--background) 88%, transparent) 20%,
+    color-mix(in oklab, var(--background) 62%, transparent) 38%,
+    color-mix(in oklab, var(--background) 34%, transparent) 58%,
+    color-mix(in oklab, var(--background) 14%, transparent) 78%,
     transparent 100%
   );
-  /* Gone once the scene has parked. There is a join to soften only while
-     Contact is sliding in; for the whole of the walk its leading edge is off
-     screen to the left and the strip would be a translucent sheet lying over
-     the artwork for nothing. */
+  /* Path B has no timeline to range this over, so the strip lives for the
+     whole rail and fades as the walk starts. Path A below does better. */
   opacity: clamp(0, 1 - var(--walk) * 8, 1);
-}
-
-@supports (backdrop-filter: blur(1px)) {
-  .hk__seam {
-    backdrop-filter: blur(14px);
-    /* The blur rides the same ramp as the wash, so both reach nothing together. */
-    mask-image: linear-gradient(to right, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
-  }
 }
 
 /* ── The easter egg ────────────────────────────────────────────────────────*/
