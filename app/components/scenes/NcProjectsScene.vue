@@ -54,9 +54,8 @@ function toggleFilter(tech: TechKey) {
         size="sm"
         :label="item.label"
         :tech="item.tech"
-        :details="' '"
-        :class="{ 'is-filter-active': filter === item.tech }"
-        @open="toggleFilter(item.tech)"
+        :pressed="filter === item.tech"
+        @toggle="toggleFilter(item.tech)"
       />
 
       <NcButton
@@ -120,17 +119,18 @@ function toggleFilter(tech: TechKey) {
   flex-wrap: wrap;
   gap: var(--space-2xs);
   align-items: center;
+
+  /* The scene is two and a half viewports wide, so a wrapping row would never
+     wrap — it would just run off the side of the screen, taking the toggle with
+     it. Opening the panel adds seven more technologies, which is exactly when
+     that happens. */
+  max-inline-size: calc(100vw - var(--gutter) * 2);
 }
 
 .projects__filters-label {
   font-size: var(--step--1);
   color: var(--surface-dim);
   margin-inline-end: var(--space-2xs);
-}
-
-.is-filter-active {
-  background: var(--tag-bg);
-  box-shadow: 0 0 0 2px var(--tag-accent);
 }
 
 /* One row, not two.
@@ -181,10 +181,17 @@ function toggleFilter(tech: TechKey) {
   }
 }
 
-/* grid-template-columns 0fr → 1fr: the panel widens the rail in place. */
+/* grid-template-columns 0fr → 1fr: the panel widens the rail in place.
+
+   The padding is what lets a hovered card inside the panel lift without having
+   its top four pixels shaved off by the clip; the matching negative margin
+   keeps the panel the same height as the cards beside it, so the row still
+   stretches to one common height. */
 .projects__panel {
   display: grid;
   grid-template-columns: 0fr;
+  padding-block: var(--space-2xs);
+  margin-block: calc(var(--space-2xs) * -1);
   overflow: hidden;
   transition: grid-template-columns var(--dur-slow) var(--ease-out-expo);
 }
@@ -193,16 +200,21 @@ function toggleFilter(tech: TechKey) {
   grid-template-columns: 1fr;
 }
 
-/* The panel's track is 0fr when closed, but the row inside keeps its natural
-   width and is simply clipped. Letting it collapse instead squeezed the four
-   cards to nothing, and a tag pill 2px wide wraps its own label one letter per
-   line: boxes 157px tall, hanging out of the bottom of the scene. */
+/* The row inside the panel collapses to nothing when the panel is closed — that
+   is what makes the 0fr track work — but the cards in it must not. Letting them
+   shrink squeezed each one to a sliver, where a tag pill 2px wide wraps its own
+   label one letter per line: boxes 157px tall, hanging out of the bottom of the
+   scene. They keep their width and the panel clips them. */
 .projects__panel-inner {
   display: flex;
-  inline-size: max-content;
   min-inline-size: 0;
   gap: var(--space-m);
   align-items: stretch;
+}
+
+.projects__rows > .projects__card,
+.projects__panel-inner > .projects__card {
+  flex: 0 0 auto;
 }
 
 @media not all and (min-width: 1024px) {

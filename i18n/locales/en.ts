@@ -220,7 +220,7 @@ export default {
   other: [
     {
       year: '2019',
-      context: 'Polytech Tours × Sopra Banking',
+      context: 'Polytech × Sopra Banking',
       role: 'Team project, 6 students',
       title: 'Virtual Moneybox',
       description: 'A web app created during my 4th year at Polytech in a group of 6 students. This app was ordered by a team at Sopra Banking Software.',

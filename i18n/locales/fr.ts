@@ -220,7 +220,7 @@ export default {
   other: [
     {
       year: '2019',
-      context: 'Polytech Tours × Sopra Banking',
+      context: 'Polytech × Sopra Banking',
       role: 'Projet de groupe, 6 élèves',
       title: 'Tirelire virtuelle',
       description: 'Application web crée lors d\'un projet de groupe de 4ème année à Polytech Tours avec 6 élèves. Le projet a été commandé par une équipe de Sopra Baking Software',
