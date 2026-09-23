@@ -8,26 +8,22 @@ export interface ProjectLink {
 
 export interface Project {
   id: string
-  /**
-   * The name the card shows in its title bar. Not a real path — it is the file
-   * this project would open on, and it carries the stack at a glance.
-   */
-  file: string
-  /** Shown in the title bar. A span for the long missions, a year otherwise. */
-  year: string
-  /** Which figure the card draws behind its text. See `project-motifs.ts`. */
+  /** Which figure the card draws above its title. See `project-motifs.ts`. */
   motif: MotifKey
   titleKey: string
   descriptionKey: string
-  /** i18n key for the `// context · role` line above the title. */
-  metaKey: string
+  /** i18n keys for the three labelled rows. The year is translated too: a
+      running mission reads "2025 - aujourd'hui", not a number. */
+  yearKey: string
+  contextKey: string
+  roleKey: string
   tags: Tag[]
   links: ProjectLink[]
   group: 'main' | 'other'
 }
 
 /**
- * The eight projects of v1, same order, same links.
+ * The eight projects of v1, same order, same links, plus the current mission.
  *
  * `image` and `altKey` are gone. Every project used to ship a 1355×678 PNG of
  * two colour blocks and a ringed circle repeating the title; the cards now draw
@@ -35,13 +31,30 @@ export interface Project {
  */
 export const PROJECTS: readonly Project[] = [
   {
-    id: 'prevoyance',
-    file: 'prevoyance.vue',
-    year: '2021 – 2025',
-    motif: 'layers',
+    id: 'integration',
+    motif: 'flow',
     titleKey: 'projects[0].title',
     descriptionKey: 'projects[0].description',
-    metaKey: 'projects[0].meta',
+    yearKey: 'projects[0].year',
+    contextKey: 'projects[0].context',
+    roleKey: 'projects[0].role',
+    tags: [
+      { label: 'Java 21', tech: 'java' },
+      { label: 'Spring Boot', tech: 'spring' },
+      { label: 'Spring Batch', tech: 'spring' },
+      { label: 'Angular', tech: 'angular' },
+    ],
+    links: [],
+    group: 'main',
+  },
+  {
+    id: 'prevoyance',
+    motif: 'layers',
+    titleKey: 'projects[1].title',
+    descriptionKey: 'projects[1].description',
+    yearKey: 'projects[1].year',
+    contextKey: 'projects[1].context',
+    roleKey: 'projects[1].role',
     tags: [
       { label: 'Vue 2', tech: 'vue' },
       { label: 'Ts', tech: 'ts' },
@@ -53,12 +66,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'portfolio',
-    file: 'portfolio.vue',
-    year: '2023',
     motif: 'stream',
-    titleKey: 'projects[1].title',
-    descriptionKey: 'projects[1].description',
-    metaKey: 'projects[1].meta',
+    titleKey: 'projects[2].title',
+    descriptionKey: 'projects[2].description',
+    yearKey: 'projects[2].year',
+    contextKey: 'projects[2].context',
+    roleKey: 'projects[2].role',
     tags: [
       { label: 'Vue 3', tech: 'vue' },
       { label: 'Vite', tech: 'vite' },
@@ -70,12 +83,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'tsp',
-    file: 'tsp-solver.js',
-    year: '2020',
     motif: 'tour',
-    titleKey: 'projects[2].title',
-    descriptionKey: 'projects[2].description',
-    metaKey: 'projects[2].meta',
+    titleKey: 'projects[3].title',
+    descriptionKey: 'projects[3].description',
+    yearKey: 'projects[3].year',
+    contextKey: 'projects[3].context',
+    roleKey: 'projects[3].role',
     tags: [
       { label: 'JQuery', tech: 'jquery' },
       { label: 'p5', tech: 'p5' },
@@ -89,12 +102,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'hololens',
-    file: 'PointCloud.cs',
-    year: '2020',
     motif: 'cloud',
-    titleKey: 'projects[3].title',
-    descriptionKey: 'projects[3].description',
-    metaKey: 'projects[3].meta',
+    titleKey: 'projects[4].title',
+    descriptionKey: 'projects[4].description',
+    yearKey: 'projects[4].year',
+    contextKey: 'projects[4].context',
+    roleKey: 'projects[4].role',
     tags: [
       { label: 'Unity', tech: 'unity' },
       { label: 'C#', tech: 'csharp' },
@@ -108,12 +121,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'moneybox',
-    file: 'moneybox.component.ts',
-    year: '2019',
     motif: 'coins',
     titleKey: 'other[0].title',
     descriptionKey: 'other[0].description',
-    metaKey: 'other[0].meta',
+    yearKey: 'other[0].year',
+    contextKey: 'other[0].context',
+    roleKey: 'other[0].role',
     tags: [
       { label: 'Angular', tech: 'angular' },
       { label: 'Java', tech: 'java' },
@@ -125,12 +138,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'swallowin',
-    file: 'SwalloWin.java',
-    year: '2019',
     motif: 'wave',
     titleKey: 'other[1].title',
     descriptionKey: 'other[1].description',
-    metaKey: 'other[1].meta',
+    yearKey: 'other[1].year',
+    contextKey: 'other[1].context',
+    roleKey: 'other[1].role',
     // v1 tagged Android with the Vue colour, which was a copy-paste slip.
     tags: [
       { label: 'Android', tech: 'android' },
@@ -141,12 +154,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'first-website',
-    file: 'index.html',
-    year: '2018',
     motif: 'wireframe',
     titleKey: 'other[2].title',
     descriptionKey: 'other[2].description',
-    metaKey: 'other[2].meta',
+    yearKey: 'other[2].year',
+    contextKey: 'other[2].context',
+    roleKey: 'other[2].role',
     tags: [
       { label: 'Html', tech: 'html' },
       { label: 'Css', tech: 'css' },
@@ -160,12 +173,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'ajl',
-    file: 'ajl-peinture.jsx',
-    year: '2020',
     motif: 'strokes',
     titleKey: 'other[3].title',
     descriptionKey: 'other[3].description',
-    metaKey: 'other[3].meta',
+    yearKey: 'other[3].year',
+    contextKey: 'other[3].context',
+    roleKey: 'other[3].role',
     tags: [
       { label: 'React', tech: 'react' },
       { label: 'Firebase', tech: 'firebase' },

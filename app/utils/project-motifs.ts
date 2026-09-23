@@ -20,7 +20,8 @@ export const MOTIF_WIDTH = 300
 export const MOTIF_HEIGHT = 132
 
 export type MotifKey
-  = | 'tour' | 'cloud' | 'stream' | 'layers' | 'coins' | 'wave' | 'wireframe' | 'strokes'
+  = | 'tour' | 'cloud' | 'stream' | 'layers' | 'coins' | 'wave' | 'wireframe'
+    | 'strokes' | 'flow'
 
 export interface MotifDot { kind: 'dot', x: number, y: number, r: number, o: number }
 export interface MotifBar { kind: 'bar', x: number, y: number, w: number, h: number, o: number }
@@ -230,8 +231,43 @@ function strokes(seed: string): MotifShape[] {
   return out
 }
 
+/** Feeds arriving, meeting at a hub, and leaving again as served data. */
+function flow(seed: string): MotifShape[] {
+  const next = rng(seed)
+  const hubX = MOTIF_WIDTH * 0.52
+  const hubY = MOTIF_HEIGHT / 2
+  const out: MotifShape[] = []
+
+  const feeds = 5
+  for (let i = 0; i < feeds; i++) {
+    const y = 18 + (i * (MOTIF_HEIGHT - 36)) / (feeds - 1)
+    const bend = 40 + next() * 40
+    out.push({
+      ...polyline([[10, y], [hubX - bend, y], [hubX - 14, hubY]], false),
+      o: r1(0.45 + next() * 0.4),
+    })
+    out.push({ kind: 'dot', x: 10, y: r1(y), r: 2.2, o: 0.7 })
+  }
+
+  const sinks = 3
+  for (let i = 0; i < sinks; i++) {
+    const y = 30 + (i * (MOTIF_HEIGHT - 60)) / (sinks - 1)
+    out.push({
+      ...polyline([[hubX + 14, hubY], [hubX + 52, y], [MOTIF_WIDTH - 12, y]], false),
+      o: r1(0.55 + next() * 0.35),
+    })
+    out.push({ kind: 'dot', x: r1(MOTIF_WIDTH - 12), y: r1(y), r: 2.8, o: 0.85 })
+  }
+
+  // The hub itself: a batch window, drawn as a stack of short runs.
+  for (let i = 0; i < 3; i++) {
+    out.push({ kind: 'bar', x: r1(hubX - 12), y: r1(hubY - 11 + i * 8), w: 24, h: 4, o: r1(0.9 - i * 0.2) })
+  }
+  return out
+}
+
 const BUILDERS: Record<MotifKey, (seed: string) => MotifShape[]> = {
-  tour, cloud, stream, layers, coins, wave, wireframe, strokes,
+  tour, cloud, stream, layers, coins, wave, wireframe, strokes, flow,
 }
 
 /**

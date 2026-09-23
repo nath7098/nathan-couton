@@ -3,7 +3,7 @@ import { PROJECTS, projectStatus } from '~/data/projects'
 import type { MotifKey } from '~/utils/project-motifs'
 import { MOTIF_HEIGHT, MOTIF_WIDTH, motifShapes } from '~/utils/project-motifs'
 
-const KEYS: MotifKey[] = ['tour', 'cloud', 'stream', 'layers', 'coins', 'wave', 'wireframe', 'strokes']
+const KEYS: MotifKey[] = ['tour', 'cloud', 'stream', 'layers', 'coins', 'wave', 'wireframe', 'strokes', 'flow']
 
 /** Every coordinate a shape puts on screen, so bounds can be checked at once. */
 function extent(key: MotifKey, seed: string) {
@@ -72,7 +72,13 @@ describe('projects', () => {
     for (const project of PROJECTS) expect(KEYS).toContain(project.motif)
   })
 
+  it('gives every project its own motif', () => {
+    const motifs = PROJECTS.map(p => p.motif)
+    expect(new Set(motifs).size, 'two projects share a figure').toBe(motifs.length)
+  })
+
   it('reads the status off the links rather than storing it twice', () => {
+    expect(projectStatus(PROJECTS.find(p => p.id === 'integration')!)).toBe('closed')
     expect(projectStatus(PROJECTS.find(p => p.id === 'prevoyance')!)).toBe('closed')
     expect(projectStatus(PROJECTS.find(p => p.id === 'portfolio')!)).toBe('source')
     expect(projectStatus(PROJECTS.find(p => p.id === 'tsp')!)).toBe('live')

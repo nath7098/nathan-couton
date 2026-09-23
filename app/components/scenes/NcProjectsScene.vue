@@ -58,23 +58,11 @@ function toggleFilter(tech: TechKey) {
         :class="{ 'is-filter-active': filter === item.tech }"
         @open="toggleFilter(item.tech)"
       />
-    </div>
-
-    <!-- Main projects, the toggle and the extra panel share one row: opening
-         the panel extends the rail sideways instead of stacking below. -->
-    <div class="projects__rows">
-      <NcProjectCard
-        v-for="(project, index) in main"
-        :key="project.id"
-        :project="project"
-        class="projects__card"
-        :class="{ 'is-dimmed': dimmed(project.tags) }"
-        :style="{ '--row': index % 2, '--i': index }"
-      />
 
       <NcButton
         variant="ghost"
-        :icon-end="showOther ? 'chevron-right' : 'chevron-right'"
+        size="sm"
+        icon-end="chevron-right"
         :aria-expanded="showOther"
         class="projects__toggle"
         :class="{ 'is-open': showOther }"
@@ -82,6 +70,23 @@ function toggleFilter(tech: TechKey) {
       >
         {{ showOther ? t('projectsSection.otherToggleClose') : t('projectsSection.otherToggle') }}
       </NcButton>
+    </div>
+
+    <!-- The main projects and the extra panel share one row: opening the panel
+         extends the rail sideways instead of stacking below. The control that
+         opens it sits in the filter row, not at the end of the cards — with
+         nine projects the end of the row falls outside the viewport, and a
+         button you can only reach by scrolling the rail is not a button. -->
+    <div class="projects__rows">
+      <NcProjectCard
+        v-for="project in main"
+        :key="project.id"
+        :project="project"
+        :index="PROJECTS.indexOf(project)"
+        :total="PROJECTS.length"
+        class="projects__card"
+        :class="{ 'is-dimmed': dimmed(project.tags) }"
+      />
 
       <div
         class="projects__panel"
@@ -89,12 +94,13 @@ function toggleFilter(tech: TechKey) {
       >
         <div class="projects__panel-inner">
           <NcProjectCard
-            v-for="(project, index) in other"
+            v-for="project in other"
             :key="project.id"
             :project="project"
+            :index="PROJECTS.indexOf(project)"
+            :total="PROJECTS.length"
             class="projects__card"
             :class="{ 'is-dimmed': dimmed(project.tags) }"
-            :style="{ '--row': index % 2 }"
           />
         </div>
       </div>
@@ -130,20 +136,20 @@ function toggleFilter(tech: TechKey) {
 /* One row, not two.
    SPEC §6.6 called for two stacked rows drifting at different speeds, but two
    rows of cards do not fit a viewport's height alongside the scene title,
-   filters and the panel toggle. A single row with alternating vertical offsets
-   gives the same moving-sheet feel and leaves the scene readable. */
+   filters and the panel toggle.
+
+   It also called for alternating vertical offsets on a single row, to keep some
+   of that moving-sheet feel. That is gone too: every card is now exactly the
+   same height, and against eight identical rectangles a staggered baseline
+   stopped reading as movement and started reading as a misalignment. The row is
+   flat and the gaps are even. */
 .projects__rows {
   display: flex;
   gap: var(--space-s);
-  align-items: center;
+  align-items: stretch;
 }
 
-/* Alternating cards sit a little lower and drift the other way, so the row
-   reads as a sheet in motion rather than a rigid strip. */
 .projects__card {
-  --drift: calc((var(--row, 0) - 0.5) * (var(--scene-progress, 0.5) - 0.5));
-
-  transform: translate3d(calc(var(--drift) * -5vw), calc(var(--row, 0) * 1.25rem), 0);
   transition: opacity var(--dur-base) var(--ease-out-expo), filter var(--dur-base) var(--ease-out-expo);
 }
 
@@ -152,23 +158,20 @@ function toggleFilter(tech: TechKey) {
   filter: saturate(0.35);
 }
 
-/* A tab on the side of the row, cut from the same chrome as the cards: opening
-   it slides four more files into the editor. A plain ghost button beside eight
-   editor windows read as a stray slab. */
+/* Sits at the end of the filter row, separated from the technology pills so it
+   does not read as one of them. Not at the end of the card row: with nine
+   projects that end falls a screen and a half to the right, so the control that
+   reveals four of them only appeared once you had scrolled past them. */
 .projects__toggle {
   flex: 0 0 auto;
-  writing-mode: vertical-rl;
-  padding-block: var(--space-m);
-  padding-inline: var(--space-3xs);
-  font-size: var(--step--1);
+  margin-inline-start: var(--space-s);
   color: var(--surface-dim);
-  background: color-mix(in oklab, var(--surface) 6%, var(--editor));
   border: 1px solid var(--surface-faint);
-  border-inline-start-style: dashed;
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-  border-start-end-radius: var(--radius-m);
-  border-end-end-radius: var(--radius-m);
+  border-radius: var(--radius-pill);
+}
+
+.projects__toggle.is-open :deep(.nc-button__icon-end) {
+  transform: rotate(180deg);
 }
 
 @media (hover: hover) {
@@ -178,61 +181,34 @@ function toggleFilter(tech: TechKey) {
   }
 }
 
-.projects__toggle.is-open :deep(.nc-button__icon-end) {
-  transform: rotate(180deg);
-}
-
 /* grid-template-columns 0fr → 1fr: the panel widens the rail in place. */
 .projects__panel {
   display: grid;
   grid-template-columns: 0fr;
   overflow: hidden;
   transition: grid-template-columns var(--dur-slow) var(--ease-out-expo);
-
-  /* Four more cards sit in here, clipped to nothing. They stay in the DOM —
-     the page is prerendered and their text is what a crawler reads — but a
-     closed panel has no business being laid out or painted on every frame of
-     the rail. */
-  content-visibility: hidden;
-}
-
-.projects__panel.is-open {
-  content-visibility: visible;
-}
-
-.projects__panel-inner {
-  min-inline-size: 0;
-  display: flex;
-  gap: var(--space-s);
-  align-items: center;
 }
 
 .projects__panel.is-open {
   grid-template-columns: 1fr;
 }
 
+/* The panel's track is 0fr when closed, but the row inside keeps its natural
+   width and is simply clipped. Letting it collapse instead squeezed the four
+   cards to nothing, and a tag pill 2px wide wraps its own label one letter per
+   line: boxes 157px tall, hanging out of the bottom of the scene. */
 .projects__panel-inner {
-  min-inline-size: 0;
   display: flex;
+  inline-size: max-content;
+  min-inline-size: 0;
   gap: var(--space-m);
+  align-items: stretch;
 }
 
 @media not all and (min-width: 1024px) {
   .projects__rows {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  }
-
-  .projects__card {
-    transform: none;
-  }
-
-  .projects__rows {
-    align-items: stretch;
-  }
-
-  .projects__toggle {
-    writing-mode: horizontal-tb;
   }
 
   .projects__panel {
@@ -246,6 +222,7 @@ function toggleFilter(tech: TechKey) {
   }
 
   .projects__panel-inner {
+    inline-size: auto;
     flex-direction: column;
   }
 }
