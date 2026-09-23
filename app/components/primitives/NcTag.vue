@@ -3,20 +3,36 @@ import type { TechKey } from '~/data/types'
 
 /**
  * Tech pill. Colour comes from the --tech-* token pair, so the palette stays in
- * one place. A tag with details is a button that opens the modal; one without is
- * plain text — never a button that does nothing.
+ * one place.
+ *
+ * Three shapes, and only three: a tag with `details` is a button that opens the
+ * modal, a tag with `pressed` is a toggle button that reports its own state,
+ * and a tag with neither is plain text — never a button that does nothing.
+ *
+ * The toggle exists because the projects filter used to fake one by passing a
+ * single space as `details`. A space trims to nothing, so the pills rendered as
+ * spans: not focusable, not clickable, and silently inert.
  */
 const props = withDefaults(defineProps<{
   label: string
   tech: TechKey
-  /** Explanatory text; makes the tag interactive when present. */
+  /** Explanatory text; makes the tag open a modal when present. */
   details?: string
+  /** Present makes the tag a toggle button, and carries its state. */
+  pressed?: boolean
   size?: 'sm' | 'md'
-}>(), { details: undefined, size: 'md' })
+}>(), { details: undefined, pressed: undefined, size: 'md' })
 
-const emit = defineEmits<{ open: [] }>()
+const emit = defineEmits<{ open: [], toggle: [] }>()
 
-const interactive = computed(() => Boolean(props.details?.trim()))
+const isToggle = computed(() => props.pressed !== undefined)
+const hasDetails = computed(() => Boolean(props.details?.trim()))
+const interactive = computed(() => isToggle.value || hasDetails.value)
+
+function onClick() {
+  if (isToggle.value) emit('toggle')
+  else if (hasDetails.value) emit('open')
+}
 </script>
 
 <template>
@@ -29,7 +45,8 @@ const interactive = computed(() => Boolean(props.details?.trim()))
       '--tag-bg': `var(--tech-${tech}-bg)`,
     }"
     :type="interactive ? 'button' : undefined"
-    @click="interactive && emit('open')"
+    :aria-pressed="isToggle ? String(pressed) : undefined"
+    @click="onClick"
   >
     {{ label }}
   </component>
@@ -70,5 +87,11 @@ const interactive = computed(() => Boolean(props.details?.trim()))
 
 .nc-tag.is-interactive:active {
   transform: translateY(0);
+}
+
+/* A pressed toggle keeps its fill so the state survives the pointer leaving. */
+.nc-tag[aria-pressed='true'] {
+  background: var(--tag-bg);
+  box-shadow: 0 0 0 2px var(--tag-accent);
 }
 </style>

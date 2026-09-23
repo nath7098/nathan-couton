@@ -1,4 +1,5 @@
 import type { Tag } from './types'
+import type { MotifKey } from '~/utils/project-motifs'
 
 export interface ProjectLink {
   href: string
@@ -7,23 +8,53 @@ export interface ProjectLink {
 
 export interface Project {
   id: string
-  image: string
+  /** Which figure the card draws above its title. See `project-motifs.ts`. */
+  motif: MotifKey
   titleKey: string
   descriptionKey: string
-  altKey: string
+  /** i18n keys for the three labelled rows. The year is translated too: a
+      running mission reads "2025 - aujourd'hui", not a number. */
+  yearKey: string
+  contextKey: string
+  roleKey: string
   tags: Tag[]
   links: ProjectLink[]
   group: 'main' | 'other'
 }
 
-/** The eight projects of v1, same order, same links. */
+/**
+ * The eight projects of v1, same order, same links, plus the current mission.
+ *
+ * `image` and `altKey` are gone. Every project used to ship a 1355×678 PNG of
+ * two colour blocks and a ringed circle repeating the title; the cards now draw
+ * a figure from `motif` instead, and the seven files left the repository.
+ */
 export const PROJECTS: readonly Project[] = [
   {
-    id: 'prevoyance',
-    image: '/img/projects/mdpa_logo.png',
+    id: 'integration',
+    motif: 'flow',
     titleKey: 'projects[0].title',
     descriptionKey: 'projects[0].description',
-    altKey: 'projects[0].alt',
+    yearKey: 'projects[0].year',
+    contextKey: 'projects[0].context',
+    roleKey: 'projects[0].role',
+    tags: [
+      { label: 'Java 21', tech: 'java' },
+      { label: 'Spring Boot', tech: 'spring' },
+      { label: 'Spring Batch', tech: 'spring' },
+      { label: 'Angular', tech: 'angular' },
+    ],
+    links: [],
+    group: 'main',
+  },
+  {
+    id: 'prevoyance',
+    motif: 'layers',
+    titleKey: 'projects[1].title',
+    descriptionKey: 'projects[1].description',
+    yearKey: 'projects[1].year',
+    contextKey: 'projects[1].context',
+    roleKey: 'projects[1].role',
     tags: [
       { label: 'Vue 2', tech: 'vue' },
       { label: 'Ts', tech: 'ts' },
@@ -35,10 +66,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'portfolio',
-    image: '/img/projects/portfolio_logo.png',
-    titleKey: 'projects[1].title',
-    descriptionKey: 'projects[1].description',
-    altKey: 'projects[1].alt',
+    motif: 'stream',
+    titleKey: 'projects[2].title',
+    descriptionKey: 'projects[2].description',
+    yearKey: 'projects[2].year',
+    contextKey: 'projects[2].context',
+    roleKey: 'projects[2].role',
     tags: [
       { label: 'Vue 3', tech: 'vue' },
       { label: 'Vite', tech: 'vite' },
@@ -50,10 +83,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'tsp',
-    image: '/img/projects/tsp_logo.png',
-    titleKey: 'projects[2].title',
-    descriptionKey: 'projects[2].description',
-    altKey: 'projects[2].alt',
+    motif: 'tour',
+    titleKey: 'projects[3].title',
+    descriptionKey: 'projects[3].description',
+    yearKey: 'projects[3].year',
+    contextKey: 'projects[3].context',
+    roleKey: 'projects[3].role',
     tags: [
       { label: 'JQuery', tech: 'jquery' },
       { label: 'p5', tech: 'p5' },
@@ -67,10 +102,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'hololens',
-    image: '/img/projects/hololens_logo.png',
-    titleKey: 'projects[3].title',
-    descriptionKey: 'projects[3].description',
-    altKey: 'projects[3].alt',
+    motif: 'cloud',
+    titleKey: 'projects[4].title',
+    descriptionKey: 'projects[4].description',
+    yearKey: 'projects[4].year',
+    contextKey: 'projects[4].context',
+    roleKey: 'projects[4].role',
     tags: [
       { label: 'Unity', tech: 'unity' },
       { label: 'C#', tech: 'csharp' },
@@ -84,10 +121,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'moneybox',
-    image: '/img/projects/moneybox_logo.png',
+    motif: 'coins',
     titleKey: 'other[0].title',
     descriptionKey: 'other[0].description',
-    altKey: 'other[0].alt',
+    yearKey: 'other[0].year',
+    contextKey: 'other[0].context',
+    roleKey: 'other[0].role',
     tags: [
       { label: 'Angular', tech: 'angular' },
       { label: 'Java', tech: 'java' },
@@ -99,10 +138,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'swallowin',
-    image: '/img/projects/swallow_logo.png',
+    motif: 'wave',
     titleKey: 'other[1].title',
     descriptionKey: 'other[1].description',
-    altKey: 'other[1].alt',
+    yearKey: 'other[1].year',
+    contextKey: 'other[1].context',
+    roleKey: 'other[1].role',
     // v1 tagged Android with the Vue colour, which was a copy-paste slip.
     tags: [
       { label: 'Android', tech: 'android' },
@@ -113,10 +154,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'first-website',
-    image: '/img/projects/portfolio_logo.png',
+    motif: 'wireframe',
     titleKey: 'other[2].title',
     descriptionKey: 'other[2].description',
-    altKey: 'other[2].alt',
+    yearKey: 'other[2].year',
+    contextKey: 'other[2].context',
+    roleKey: 'other[2].role',
     tags: [
       { label: 'Html', tech: 'html' },
       { label: 'Css', tech: 'css' },
@@ -130,10 +173,12 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     id: 'ajl',
-    image: '/img/projects/ajl_logo.png',
+    motif: 'strokes',
     titleKey: 'other[3].title',
     descriptionKey: 'other[3].description',
-    altKey: 'other[3].alt',
+    yearKey: 'other[3].year',
+    contextKey: 'other[3].context',
+    roleKey: 'other[3].role',
     tags: [
       { label: 'React', tech: 'react' },
       { label: 'Firebase', tech: 'firebase' },
@@ -143,3 +188,14 @@ export const PROJECTS: readonly Project[] = [
     group: 'other',
   },
 ]
+
+/**
+ * What the card's status pip says. Derived from the links rather than stored:
+ * a project with a demo is reachable, one with only a repository is readable,
+ * and one with neither was client work that never became public.
+ */
+export function projectStatus(project: Project): 'live' | 'source' | 'closed' {
+  if (project.links.some(link => link.kind === 'live')) return 'live'
+  if (project.links.length) return 'source'
+  return 'closed'
+}
