@@ -87,6 +87,25 @@ const rail = useRail()
   animation: nc-nudge 1.6s var(--ease-in-out-quint) infinite;
 }
 
+@media not all and (--rail) {
+  /* The name is held on one line so the braces never split across two. There is
+     no width for that on a phone: at the top of the type scale it wants 578px
+     inside a 343px column, and ran off the side of the screen. Wrapping puts
+     the opening brace with "Nathan" and the closing one with "Couton", which is
+     the split the nowrap was there to prevent — between the two, a hero that
+     fits wins. */
+  .home__name {
+    text-wrap: balance;
+  }
+
+  /* "défilez →" points sideways because the rail moves sideways. Stacked, the
+     page scrolls down like any other, and the hint is both wrong and
+     unnecessary. */
+  .home__hint {
+    display: none;
+  }
+}
+
 @keyframes nc-nudge {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(0.35em); }

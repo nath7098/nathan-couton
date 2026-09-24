@@ -193,12 +193,7 @@ async function copyPhone() {
    of the screen — the Knight has to be visible sitting on it while the form is
    being filled in, or the whole scene is just wallpaper behind a card. */
 .contact__panel {
-  position: absolute;
   z-index: 1;
-  inset-inline-end: var(--gutter);
-  inset-block-start: 50%;
-  translate: 0 -50%;
-  inline-size: min(34rem, 34vw);
   display: grid;
   gap: var(--space-m);
   padding: var(--space-l);
@@ -208,35 +203,55 @@ async function copyPhone() {
   backdrop-filter: blur(10px);
   border: 1px solid color-mix(in oklab, var(--surface) 14%, transparent);
   border-radius: var(--radius-l);
-  /* Settles over the last third of the walk, so it arrives rather than
-     appears. Composited: opacity and transform only. */
-  --settle: clamp(0, (var(--walk, 1) - 0.62) * 3.2, 1);
-
-  opacity: var(--settle);
-  transform: translate3d(calc((1 - var(--settle)) * 2.5rem), 0, 0);
 }
 
-/* Path A: keyed off the scroll timeline like everything else in the scene, so
-   the panel arrives on exactly the stride the Knight arrives on. */
-@supports (animation-timeline: scroll()) {
+/* Everything that parks the panel in the right-hand band belongs to the rail,
+   and is written here rather than reset in the stacked block below.
+
+   It used to be the other way round — absolute, centred with `translate`, then
+   `translate: none` further down — and the minifier dropped that reset: `none`
+   is the initial value of `translate`, so it read as redundant. It was not, and
+   the panel kept the half-its-height lift it was given for a centring that no
+   longer applied: 321px up, over the section above, with a hole where it had
+   been. A declaration that only exists to undo another one is a declaration a
+   build step is free to delete. */
+@media (--rail) {
   .contact__panel {
-    opacity: 1;
-    transform: none;
-    animation: contact-settle linear both;
-    animation-timeline: scroll(root block);
-    animation-range: calc(var(--rail-lock) * 100%) 100%;
+    position: absolute;
+    inset-inline-end: var(--gutter);
+    inset-block-start: 50%;
+    translate: 0 -50%;
+    inline-size: min(34rem, 34vw);
+    /* Settles over the last third of the walk, so it arrives rather than
+       appears. Composited: opacity and transform only. */
+    --settle: clamp(0, (var(--walk, 1) - 0.62) * 3.2, 1);
+
+    opacity: var(--settle);
+    transform: translate3d(calc((1 - var(--settle)) * 2.5rem), 0, 0);
   }
 
-  @keyframes contact-settle {
-    0%, 62% {
-      opacity: 0;
-      transform: translate3d(2.5rem, 0, 0);
-    }
-
-    100% {
+  /* Path A: keyed off the scroll timeline like everything else in the scene, so
+     the panel arrives on exactly the stride the Knight arrives on. */
+  @supports (animation-timeline: scroll()) {
+    .contact__panel {
       opacity: 1;
-      transform: translate3d(0, 0, 0);
+      transform: none;
+      animation: contact-settle linear both;
+      animation-timeline: scroll(root block);
+      animation-range: calc(var(--rail-lock) * 100%) 100%;
     }
+  }
+}
+
+@keyframes contact-settle {
+  0%, 62% {
+    opacity: 0;
+    transform: translate3d(2.5rem, 0, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -314,6 +329,11 @@ async function copyPhone() {
   .contact {
     display: grid;
     place-items: center;
+    /* Tall enough for the form and the band, not merely as tall as the screen.
+       Pinned to 100% it left the form overlapping the artwork by a hundred-odd
+       pixels on a phone, where the fields stack and the panel is at its
+       tallest. */
+    block-size: auto;
     /* Clears the band of Greenpath the scene draws along the bottom — see the
        stacked-layout note in NcHollowScene. Same expression, so the two cannot
        drift. */
@@ -321,12 +341,6 @@ async function copyPhone() {
   }
 
   .contact__panel {
-    position: relative;
-    inset: auto;
-    translate: none;
-    transform: none;
-    opacity: 1;
-    animation: none;
     inline-size: min(48rem, 100%);
   }
 

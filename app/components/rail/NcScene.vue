@@ -139,6 +139,37 @@ const titleId = computed(() => `${props.scene.id}-title`)
   block-size: 100%;
 }
 
+/* Stacked, a section is free to be taller than the screen — that is what a page
+   scrolls through. On the rail a scene is exactly one viewport and clips what
+   does not fit, deliberately; here the same pinned row simply cut the content
+   off at the screen's height, which is how the contact form came to sit on top
+   of the artwork below it on a phone. `min-block-size: 100svh` on the section
+   still guarantees a full screen when the content is shorter. */
+@media not all and (--rail) {
+  /* Both rows sized by their content rather than a pinned `1fr`, so a section
+     taller than the screen grows instead of spilling out of its row. Short
+     sections still centre, because the section keeps `min-block-size: 100svh`
+     and `align-content: center` above. */
+  .scene {
+    grid-template-rows: auto auto;
+    /* The bottom padding reserves room for the rail nav, which is `display:
+       none` below 1024px: stacked, it was eighty pixels of nothing under every
+       section. */
+    padding-block-end: var(--space-l);
+  }
+
+  /* The full-bleed scene ends the page; its band of artwork reaches the bottom
+     edge rather than floating above a strip of background. */
+  .scene.is-full-bleed {
+    padding-block-end: 0;
+  }
+
+  .scene__body {
+    grid-template-rows: auto;
+    block-size: auto;
+  }
+}
+
 .scene__number {
   color: var(--surface-dim);
   font-size: var(--step-1);

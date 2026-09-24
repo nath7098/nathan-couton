@@ -123,6 +123,12 @@ const failed = ref(false)
   gap: 0.1em;
   padding: var(--space-3xs);
   text-align: center;
+  /* The fallback puts this label back in flow, where an artist name longer than
+     its tile spilled over the neighbours — four tiles across a phone leave 86px
+     each. It stays inside its own tile and wraps instead. */
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
   opacity: 0;
   transform: translateY(0.4rem);
   transition: opacity var(--dur-base) var(--ease-out-expo), transform var(--dur-base) var(--ease-out-expo);
