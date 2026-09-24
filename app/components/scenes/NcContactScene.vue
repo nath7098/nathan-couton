@@ -7,14 +7,36 @@ import { CONTACT } from '~/data/contact'
  * One viewport wide, edge to edge, and pinned: the rail parks the scene and
  * hands the rest of the page's scroll to the Knight's walk across it. Nothing
  * on this scene slides sideways with the track, so the panel has a fixed place
- * on screen and simply arrives — it settles in over the last third of the walk,
- * as the Knight reaches the bench.
+ * on screen and simply arrives.
+ *
+ * It arrives on one cue and one only: the Knight sitting down. The walk is the
+ * invitation the sign spells out, and putting the form on screen while he is
+ * still crossing the scene answers it before it has been made — worse, it gives
+ * the visitor somewhere else to look for the two seconds the scene is about. So
+ * it is not there at all until he is on the bench, and then it settles in, a
+ * beat behind his flare.
  *
  * It is parked clear of the centre, because the centre is where he sits down.
  */
 const { t } = useI18n()
 const toast = useToast()
 const { values, company, errors, status, touch, submit } = useContactForm()
+
+const rail = useRail()
+
+/** The one cue the panel answers to. */
+const { arrived: seated } = useContactWalk()
+
+/**
+ * True while the panel is faded out and must not be reachable — a form nobody
+ * can see is not one a keyboard should land in, or a screen reader read out.
+ *
+ * Only ever in the rail layout: stacked, there is no walk, the Knight is drawn
+ * already sitting and the form is simply there. `isHorizontal` is false until
+ * the rail mounts, so the first render never makes it inert — which costs
+ * nothing, because the fade itself is pure CSS and keyed off the media query.
+ */
+const away = computed(() => rail.isHorizontal.value && !seated.value)
 
 const socialIcon = { linkedin: 'linkedin', github: 'github', gitlab: 'gitlab' } as const
 
@@ -39,10 +61,16 @@ async function copyPhone() {
 </script>
 
 <template>
-  <div class="contact">
+  <div
+    class="contact"
+    :class="{ 'is-seated': seated }"
+  >
     <NcHollowScene />
 
-    <div class="contact__panel">
+    <div
+      class="contact__panel"
+      :inert="away"
+    >
       <div class="contact__intro">
         <NcHeading :level="2">
           {{ t('contact.title') }}
@@ -186,8 +214,8 @@ async function copyPhone() {
 
 /* ── The destination ───────────────────────────────────────────────────────
    Parked in the right-hand band of a scene that no longer moves, so there is
-   nothing to keep it in sync with: it has one place on screen from the first
-   frame of the walk to the last, and only fades and settles on the way in.
+   nothing to keep it in sync with: it has one place on screen, and only fades
+   and settles on the way in.
 
    The width is capped so its left edge always clears the bench at the centre
    of the screen — the Knight has to be visible sitting on it while the form is
@@ -220,39 +248,46 @@ async function copyPhone() {
     position: absolute;
     inset-inline-end: var(--gutter);
     inset-block-start: 50%;
-    translate: 0 -50%;
     inline-size: min(34rem, 34vw);
-    /* Settles over the last third of the walk, so it arrives rather than
-       appears. Composited: opacity and transform only. */
-    --settle: clamp(0, (var(--walk, 1) - 0.62) * 3.2, 1);
+    /* Held back until he sits, and the centring and the slide are one
+       declaration rather than `translate` plus `transform`.
 
-    opacity: var(--settle);
-    transform: translate3d(calc((1 - var(--settle)) * 2.5rem), 0, 0);
+       That is the same hazard as the note above, measured again. Written as
+       two properties, the build drops the `translate` outright and the panel
+       loses the half-its-height lift that centres it — this time because the
+       `transform` beside it is a constant, so the minifier folds the pair into
+       one and keeps the wrong half. On main it survives only because that
+       `transform` carries a `var()` and cannot be folded. One property cannot
+       be folded into anything.
+
+       `inert` carries the other half of the job — see the template. Hiding
+       this with `visibility` would read well, but `visible` is the initial
+       value of `visibility`, which is exactly the shape of declaration this
+       file has already lost once. A form that is merely transparent still
+       takes tab stops, so the part that must not be dropped is a DOM
+       attribute, where no build step can decide it is redundant. */
+    translate: 2.5rem -50%;
+    opacity: 0;
+    transition:
+      opacity var(--dur-slow) var(--ease-out-expo),
+      translate var(--dur-slow) var(--ease-out-expo);
   }
 
-  /* Path A: keyed off the scroll timeline like everything else in the scene, so
-     the panel arrives on exactly the stride the Knight arrives on. */
-  @supports (animation-timeline: scroll()) {
-    .contact__panel {
-      opacity: 1;
-      transform: none;
-      animation: contact-settle linear both;
-      animation-timeline: scroll(root block);
-      animation-range: calc(var(--rail-lock) * 100%) 100%;
-    }
+  .contact.is-seated .contact__panel {
+    translate: 0 -50%;
+    opacity: 1;
+    /* A beat behind him: the flare gets its instant to itself, and the panel
+       reads as an answer to it rather than as part of it. Matches FLASH_MS in
+       NcHollowScene. */
+    transition-delay: 260ms;
   }
 }
 
-@keyframes contact-settle {
-  0%, 62% {
-    opacity: 0;
-    transform: translate3d(2.5rem, 0, 0);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+/* Reduced motion collapses every duration on the page already (see reset.css);
+   the delay is the one piece of choreography left, and waiting on a flare that
+   is not playing is just a form that arrives late for no reason. */
+:root[data-motion='reduced'] .contact__panel {
+  transition-delay: 0s;
 }
 
 .contact__intro {
