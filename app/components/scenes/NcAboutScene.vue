@@ -280,8 +280,16 @@ const { t } = useI18n()
 }
 
 @media not all and (min-width: 1024px) {
+  /* The scene flows in columns for the rail, which gives it width but no
+     height. Stacked it has the opposite, and `grid-template-columns: 1fr` alone
+     did not turn it round: with `grid-auto-flow: column` still set, the extra
+     items went on filling implicit columns at `max-content`, so the bento ran
+     687px past the right edge of a 390px screen. The flow has to turn with the
+     layout. */
   .about {
-    grid-template-columns: 1fr;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-l);
   }
 
