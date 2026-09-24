@@ -3,7 +3,8 @@
 > Pour l'agent ou le développeur qui reprend ce projet.
 > La **spec fait foi** : [`SPEC.md`](SPEC.md). Ce document dit **où on en est**,
 > **comment vérifier son travail**, et **ce qui fait perdre du temps ici**.
-> Dernière mise à jour : réécriture de la scène Contact (après L6).
+> Dernière mise à jour : le Chevalier s'assoit — taille de la pose assise,
+> lueur et particules, formulaire qui n'arrive qu'à ce moment (après L6).
 
 ---
 
@@ -241,7 +242,37 @@ Les invariants sur lesquels tout repose, tous vérifiés par `npm run smoke` :
    sont épinglés aux mêmes nombres (`--pan`, `--ground`, `--seat` dérivé de la
    géométrie du banc) : c'est de l'arithmétique, pas du réglage à l'œil. Un écart
    ici veut dire qu'une modification a cassé la relation.
-4. Le formulaire est arrivé à la fin de la marche et **dégage le banc**.
+4. Le formulaire **n'est pas là de toute la marche** et arrive quand il s'assoit,
+   en dégageant le banc. `inert` autant qu'`opacity` : un formulaire transparent
+   garde ses arrêts de tabulation.
+5. **S'asseoir se joue en deux temps** : il vire au blanc lumineux, puis, une
+   fois redevenu normal, des particules blanches s'échappent de lui. Le smoke les
+   cherche dans cet ordre — le second temps après le premier, jamais en même
+   temps.
+
+Trois pièges dans ces deux fichiers, tous les trois payés une fois :
+
+- **La pose assise n'est pas à l'échelle de la bande de marche.** Elle vit sur sa
+  propre planche de 87 × 146 et se cale sur le **masque** (la coque blanche, 41
+  lignes de profil contre 47 de face), pas sur la largeur — de face une tête est
+  plus large, et s'y fier rapetissait le Chevalier d'un tiers au moment où il
+  s'asseyait. Son ancrage vertical suit ses hanches (ligne 112 sur 146), pas le
+  bas de sa boîte, qui porte 18 lignes vides. `node .nc-mask.mjs` remesure les
+  deux planches si les sprites changent.
+- **Un raccourci `animation` sur un sprite du Chevalier le renvoie à gauche de
+  l'écran.** Sur le chemin A, ses sprites portent déjà `hk-advance` sur la
+  timeline de scroll, et le raccourci réinitialise `animation-timeline`. C'est
+  pour ça que la lueur et les particules sont portées par `.hk__rest`, un élément
+  à part qui reçoit la même course.
+- **`translate` et `transform` sur la même règle : le build en perd un.** Le
+  panneau de contact est centré par `translate: 0 -50%` ; lui adjoindre un
+  `transform` constant pour le glissement d'entrée, et le minifieur replie les
+  deux en un et garde le mauvais. Sur `main` ça passait seulement parce que ce
+  `transform` portait un `var()` et ne pouvait pas être replié. Le centrage et le
+  glissement sont donc **une seule déclaration** (`translate: 2.5rem -50%` →
+  `translate: 0 -50%`). C'est la troisième fois que ce fichier perd une
+  déclaration à ce jeu ; la règle est : ne jamais compter sur une déclaration que
+  le minifieur peut croire redondante.
 
 Deux scripts d'assets, hors build, résultats commités :
 
