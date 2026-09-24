@@ -309,6 +309,7 @@ async function visit(path) {
     const knight = box('.hk__knight--walk')
     const seated = box('.hk__knight--sit')
     const bench = box('.hk__bench')
+    const panel = document.querySelector('.contact__panel')
     // Anchored on the whole file name: `cave-roof-far` also contains "roof",
     // and matching on a fragment once made the ground plane look as slow as
     // the far wall — a green test over a scene that was plainly wrong.
@@ -318,6 +319,7 @@ async function visit(path) {
     }
     return {
       scene: scene && { left: scene.left, top: scene.top, width: scene.width, height: scene.height },
+      panelVisibility: panel && getComputedStyle(panel).visibility,
       knight: knight && { left: knight.left, right: knight.right, bottom: knight.bottom },
       seated: seated && { left: seated.left, right: seated.right },
       bench: bench && { left: bench.left, right: bench.right },
@@ -404,15 +406,45 @@ async function visit(path) {
   check(Math.abs(early.rest - (early.target - 2 * 900)) < 4,
     `scrolling stops elsewhere on the rail are left alone (${Math.round(early.rest)})`)
 
-  await sampleAt(1)
+  // 7. The form belongs to the bench: it is not on screen at all while he is
+  //    still walking, and `visibility` rather than opacity alone, so a form
+  //    nobody can see is not one a keyboard can reach either.
+  const hiddenDuringWalk = frames.slice(0, -1).every(f => f.panelVisibility === 'hidden')
+  check(hiddenDuringWalk, `the form stays away for the whole walk (${
+    frames.map(f => f.panelVisibility).join(', ')})`)
 
-  // 7. The form has arrived by then, and is clear of the bench.
+  // 8. Sitting down is played, in two beats: he flares white, then sheds motes
+  //    once he is back to normal. Sampled by polling rather than by sleeping a
+  //    fixed time — the point is that both beats happen and in that order, not
+  //    what millisecond they land on.
+  await sampleAt(0.5)
+  await page.waitForTimeout(600)
+  const rest = await page.evaluate(async () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight
+    window.scrollTo(0, max)
+    const seen = { flashAt: -1, motesAt: -1 }
+    for (let t = 0; t < 2000; t += 40) {
+      if (seen.flashAt < 0 && document.querySelector('.hk__flash')) seen.flashAt = t
+      if (seen.motesAt < 0 && document.querySelector('.hk__mote')) seen.motesAt = t
+      if (seen.flashAt >= 0 && seen.motesAt >= 0) break
+      await new Promise(r => setTimeout(r, 40))
+    }
+    return seen
+  })
+  check(rest.flashAt >= 0, `the Knight flares white as he sits (at ${rest.flashAt}ms)`)
+  check(rest.motesAt > rest.flashAt,
+    `and sheds motes once he is back to normal (flare ${rest.flashAt}ms → motes ${rest.motesAt}ms)`)
+
+  // 9. And the form arrives on that cue, clear of the bench.
+  await page.waitForTimeout(1200)
   const panel = await page.evaluate(() => {
     const el = document.querySelector('.contact__panel')
     const r = el.getBoundingClientRect()
-    return { left: r.left, opacity: parseFloat(getComputedStyle(el).opacity) }
+    const cs = getComputedStyle(el)
+    return { left: r.left, opacity: parseFloat(cs.opacity), visibility: cs.visibility }
   })
-  check(panel.opacity > 0.95, `the form has settled in by the end of the walk (opacity ${panel.opacity.toFixed(2)})`)
+  check(panel.opacity > 0.95 && panel.visibility === 'visible',
+    `the form arrives once he is on the bench (opacity ${panel.opacity.toFixed(2)}, ${panel.visibility})`)
   check(panel.left > last.bench.right, `the form clears the bench (${Math.round(panel.left)} > ${Math.round(last.bench.right)})`)
 
   await page.close()

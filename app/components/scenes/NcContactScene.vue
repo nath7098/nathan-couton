@@ -7,14 +7,23 @@ import { CONTACT } from '~/data/contact'
  * One viewport wide, edge to edge, and pinned: the rail parks the scene and
  * hands the rest of the page's scroll to the Knight's walk across it. Nothing
  * on this scene slides sideways with the track, so the panel has a fixed place
- * on screen and simply arrives — it settles in over the last third of the walk,
- * as the Knight reaches the bench.
+ * on screen and simply arrives.
+ *
+ * It arrives on one cue and one only: the Knight sitting down. The walk is the
+ * invitation the sign spells out, and putting the form on screen while he is
+ * still crossing the cavern answers it before it has been made — worse, it
+ * gives the visitor somewhere else to look for the two seconds the scene is
+ * about. So it is not there at all until he is on the bench, and then it
+ * settles in, a beat behind his flare.
  *
  * It is parked clear of the centre, because the centre is where he sits down.
  */
 const { t } = useI18n()
 const toast = useToast()
 const { values, company, errors, status, touch, submit } = useContactForm()
+
+/** The one cue the panel answers to. */
+const { arrived: seated } = useContactWalk()
 
 const socialIcon = { linkedin: 'linkedin', github: 'github', gitlab: 'gitlab' } as const
 
@@ -39,7 +48,10 @@ async function copyPhone() {
 </script>
 
 <template>
-  <div class="contact">
+  <div
+    class="contact"
+    :class="{ 'is-seated': seated }"
+  >
     <NcHollowScene />
 
     <div class="contact__panel">
@@ -186,8 +198,8 @@ async function copyPhone() {
 
 /* ── The destination ───────────────────────────────────────────────────────
    Parked in the right-hand band of a scene that no longer moves, so there is
-   nothing to keep it in sync with: it has one place on screen from the first
-   frame of the walk to the last, and only fades and settles on the way in.
+   nothing to keep it in sync with: it has one place on screen, and only fades
+   and settles on the way in.
 
    The width is capped so its left edge always clears the bench at the centre
    of the screen — the Knight has to be visible sitting on it while the form is
@@ -208,36 +220,45 @@ async function copyPhone() {
   backdrop-filter: blur(10px);
   border: 1px solid color-mix(in oklab, var(--surface) 14%, transparent);
   border-radius: var(--radius-l);
-  /* Settles over the last third of the walk, so it arrives rather than
-     appears. Composited: opacity and transform only. */
-  --settle: clamp(0, (var(--walk, 1) - 0.62) * 3.2, 1);
-
-  opacity: var(--settle);
-  transform: translate3d(calc((1 - var(--settle)) * 2.5rem), 0, 0);
 }
 
-/* Path A: keyed off the scroll timeline like everything else in the scene, so
-   the panel arrives on exactly the stride the Knight arrives on. */
-@supports (animation-timeline: scroll()) {
+/* ── Held back until he sits ───────────────────────────────────────────────
+   Inside the rail's own media query, so the stacked layout — which has no
+   walk and draws him already sitting — never sees any of it and the form is
+   simply there, as it was in v1.
+
+   `visibility`, not `opacity` alone: a form faded to nothing still takes tab
+   stops and still reads out, and a panel the visitor cannot see is not one
+   they should be able to type into. It is discrete rather than interpolated,
+   so it gets a line of the transition to itself: it lifts on the way in, with
+   the fade, and only comes back once the fade out has finished. */
+@media (--rail) {
   .contact__panel {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(2.5rem, 0, 0);
+    transition:
+      opacity var(--dur-slow) var(--ease-out-expo),
+      transform var(--dur-slow) var(--ease-out-expo),
+      visibility 0s linear var(--dur-slow);
+  }
+
+  .contact.is-seated .contact__panel {
     opacity: 1;
-    transform: none;
-    animation: contact-settle linear both;
-    animation-timeline: scroll(root block);
-    animation-range: calc(var(--rail-lock) * 100%) 100%;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+    /* A beat behind him: the flare gets its instant to itself, and the panel
+       reads as an answer to it rather than as part of it. Matches FLASH_MS in
+       NcHollowScene. */
+    transition-delay: 260ms;
   }
+}
 
-  @keyframes contact-settle {
-    0%, 62% {
-      opacity: 0;
-      transform: translate3d(2.5rem, 0, 0);
-    }
-
-    100% {
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
-    }
-  }
+/* Reduced motion collapses every duration on the page already (see reset.css);
+   the delay is the one piece of choreography left, and waiting on a flare that
+   is not playing is just a form that arrives late for no reason. */
+:root[data-motion='reduced'] .contact__panel {
+  transition-delay: 0s;
 }
 
 .contact__intro {
@@ -324,9 +345,6 @@ async function copyPhone() {
     position: relative;
     inset: auto;
     translate: none;
-    transform: none;
-    opacity: 1;
-    animation: none;
     inline-size: min(48rem, 100%);
   }
 

@@ -11,6 +11,7 @@ import {
   type ParallaxLayer,
 } from '~/data/parallax'
 import { PARALLAX_SIZES } from '~/data/parallax-sizes'
+import { createRandom } from '~/utils/particles'
 
 /**
  * The cave scene — the contact section's choreography (SPEC §6.7).
@@ -75,6 +76,84 @@ watch(rail.velocity, (value) => {
 
 /** The sign is drawn in the visitor's language, as in v1. */
 const signFile = computed(() => (locale.value === 'fr' ? 'sit-fr' : 'sit-en'))
+
+// ── Sitting down ─────────────────────────────────────────────────────────────
+// What the game plays when the Knight drops onto a bench, in the order it plays
+// it: he flares pure white for an instant, and only once he is back to normal
+// does the light he let go of drift off him.
+//
+// Both beats are CSS animations on elements of their own — the Knight's own
+// sprites already carry the walk's animation on path A, and an `animation`
+// shorthand on top of that would reset the timeline and drop him back at the
+// left of the screen.
+
+/** How long the flare lasts. Short: it is a blink, not a transformation. */
+const FLASH_MS = 260
+/** How long motes keep coming off him afterwards — the slowest of them is
+ * 190ms of delay plus 980ms of travel, so this outlasts the last one. */
+const MOTES_MS = 1200
+
+/**
+ * The motes, laid out once from a fixed seed so every visitor — and every
+ * screenshot — gets the same burst.
+ *
+ * Positions are percentages of the Knight's own box; distances and sizes are
+ * in the figures' source pixels, scaled in CSS by the same `--figure × --art`
+ * as the sprites, so the burst is the same size against him at any viewport.
+ */
+const MOTES = (() => {
+  const random = createRandom(0x51_77_1e)
+  return Array.from({ length: 20 }, (_, id) => {
+    const x = 26 + random() * 48
+    const y = 32 + random() * 34
+    // Away from his middle, so the burst opens outwards rather than rising in
+    // a column.
+    const spread = (x - 50) * 0.95 + (random() - 0.5) * 6
+    return {
+      id,
+      style: {
+        '--mote-x': `${x.toFixed(1)}%`,
+        '--mote-y': `${y.toFixed(1)}%`,
+        '--mote-dx': spread.toFixed(2),
+        '--mote-dy': (-14 - random() * 16).toFixed(2),
+        '--mote-size': (2.4 + random() * 2.6).toFixed(2),
+        '--mote-delay': `${Math.round(random() * 190)}ms`,
+        '--mote-dur': `${600 + Math.round(random() * 380)}ms`,
+      },
+    }
+  })
+})()
+
+/** True for the flare itself. */
+const flashing = ref(false)
+/** True while motes are still leaving him — starts as the flare ends. */
+const shedding = ref(false)
+let flashTimer = 0
+let motesTimer = 0
+
+function clearRest() {
+  window.clearTimeout(flashTimer)
+  window.clearTimeout(motesTimer)
+  flashing.value = false
+  shedding.value = false
+}
+
+watch(seated, (value) => {
+  clearRest()
+  // Only on the walk's own arrival: the stacked layout draws him already
+  // sitting, so there is no moment to punctuate, and reduced motion asked for
+  // none of this.
+  if (!value || reduced.value || !rail.isHorizontal.value) return
+
+  flashing.value = true
+  flashTimer = window.setTimeout(() => {
+    flashing.value = false
+    shedding.value = true
+    motesTimer = window.setTimeout(() => {
+      shedding.value = false
+    }, MOTES_MS)
+  }, FLASH_MS)
+})
 
 /**
  * Per-layer custom properties. `--depth` is the only thing that differs between
@@ -156,6 +235,7 @@ watch(rail.activeScene, (scene) => {
 onBeforeUnmount(() => {
   cancelAnimationFrame(fadeHandle)
   window.clearTimeout(stillTimer)
+  clearRest()
   pause()
 })
 </script>
@@ -170,6 +250,7 @@ onBeforeUnmount(() => {
       '--seat-rise': SEAT_RISE,
       '--figure': FIGURE_SCALE,
       '--knight-start': `${KNIGHT_START}vw`,
+      '--flash-dur': `${FLASH_MS}ms`,
     }"
   >
     <div
@@ -234,6 +315,33 @@ onBeforeUnmount(() => {
         alt=""
         decoding="async"
       >
+
+      <!-- Sitting down, in two beats. The box is the sit pose's own, so the
+           flare registers with him exactly and the motes leave from his body
+           rather than from somewhere near it. -->
+      <div
+        v-if="flashing || shedding"
+        class="hk__rest"
+      >
+        <img
+          v-if="flashing"
+          class="hk__flash"
+          src="/img/parallax/knight-sit.webp"
+          :width="PARALLAX_SIZES['knight-sit']?.width"
+          :height="PARALLAX_SIZES['knight-sit']?.height"
+          alt=""
+          decoding="async"
+        >
+
+        <template v-if="shedding">
+          <span
+            v-for="mote in MOTES"
+            :key="mote.id"
+            class="hk__mote"
+            :style="mote.style"
+          />
+        </template>
+      </div>
 
       <div
         v-for="layer in FOREGROUND_LAYERS"
@@ -410,7 +518,8 @@ onBeforeUnmount(() => {
    middle of the bench. */
 .hk__bench,
 .hk__sign,
-.hk__knight {
+.hk__knight,
+.hk__rest {
   position: absolute;
   inset-inline-start: 50%;
 }
@@ -448,6 +557,13 @@ onBeforeUnmount(() => {
   inline-size: calc(32.7 * var(--figure) * var(--art));
   block-size: calc(62 * var(--figure) * var(--art));
   translate: -50% -100%;
+}
+
+/* The burst rides with him: it only ever plays at the very end of the walk,
+   but `arrived` is a threshold rather than the last pixel, so there is a
+   sliver of pan left to keep in step with. */
+.hk__knight,
+.hk__rest {
   transform: translate3d(calc((var(--walk) - 1) * var(--advance)), 0, 0);
 }
 
@@ -461,20 +577,122 @@ onBeforeUnmount(() => {
   background-size: calc(8 * 32.7 * var(--figure) * var(--art)) calc(62 * var(--figure) * var(--art));
 }
 
-/* The sit pose is drawn ~1.4× larger than the walk frames, so it is rendered
-   proportionally smaller to keep one character the same size throughout. */
-.hk__knight--sit {
+/* ── The sit pose ─────────────────────────────────────────────────────────
+   Its own 87×146 canvas, and not the walk strip's scale, so it has to be
+   matched to it rather than dropped in.
+
+   Matched on the *mask* — the white shell, the one landmark that means the
+   same thing in a profile and a front view. It measures 41 source rows in a
+   walk frame and 47 in the sit pose, so the sit canvas renders at 41/47 of
+   the walk's own 0.481 art units per source pixel: 0.419, hence 87 × 0.419
+   and 146 × 0.419 below.
+
+   The 1.4 this replaces came from the *widths* (45 against 63) — but he is
+   walking in profile and sitting face on, and a head seen front on is simply
+   wider than the same head in profile. Sizing on that shrank him by a third
+   the moment he sat down. */
+.hk__knight--sit,
+.hk__rest {
   inset-block-start: var(--seat);
-  inline-size: calc(30 * var(--figure) * var(--art));
-  block-size: calc(50 * var(--figure) * var(--art));
-  /* A hair past the seat line, so he reads as sitting in the bench rather than
-     balanced on its edge. */
-  translate: -50% -94%;
+  inline-size: calc(36.5 * var(--figure) * var(--art));
+  block-size: calc(61.2 * var(--figure) * var(--art));
+  /* His hips are at row 112 of the canvas's 146 — 77% down — and the canvas
+     carries 18 blank rows below his feet. Anchored there rather than on the
+     box, so he sits *on* the plank with his legs over its front edge instead
+     of floating above the back rest. */
+  translate: -50% -84%;
+}
+
+.hk__knight--sit {
   opacity: 0;
 }
 
 .hk.is-seated .hk__knight--walk { opacity: 0; }
 .hk.is-seated .hk__knight--sit { opacity: 1; }
+
+/* ── Sitting down ─────────────────────────────────────────────────────────
+   The Knight flares pure white for an instant, and once he is back to normal
+   the light he let go of drifts off him. Two beats, two elements: the sprites
+   themselves already carry the walk on path A, and an `animation` shorthand
+   on top of one of them would reset its timeline and drop him back at the
+   left of the screen.
+
+   `brightness(0) invert(1)` is the flare: it flattens every pixel to black,
+   alpha untouched, then inverts it — the sprite's own silhouette in pure
+   white, which is what the game does. `drop-shadow` on an `<img>` is taken
+   from that silhouette rather than from the box, so the glow has his shape. */
+.hk__flash {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  animation: hk-flash var(--flash-dur, 260ms) var(--ease-out-expo) both;
+}
+
+@keyframes hk-flash {
+  0% {
+    opacity: 0;
+    scale: 1;
+    filter:
+      brightness(0) invert(1)
+      drop-shadow(0 0 0 rgb(255 255 255 / 0%));
+  }
+
+  22% {
+    opacity: 1;
+    scale: 1.03;
+    filter:
+      brightness(0) invert(1)
+      drop-shadow(0 0 calc(9 * var(--figure) * var(--art)) rgb(255 255 255 / 92%));
+  }
+
+  100% {
+    opacity: 0;
+    scale: 1.12;
+    filter:
+      brightness(0) invert(1)
+      drop-shadow(0 0 calc(24 * var(--figure) * var(--art)) rgb(255 255 255 / 0%));
+  }
+}
+
+/* Positions are a share of his own box; distances and sizes are in the
+   figures' source pixels, scaled here by the same `--figure × --art` as every
+   sprite in the scene — so the burst keeps its size against him on a laptop
+   and on a 4K panel alike. The numbers come from NcHollowScene's own seeded
+   table, so the same twenty motes leave him every time. */
+.hk__mote {
+  position: absolute;
+  inset-block-start: var(--mote-y);
+  inset-inline-start: var(--mote-x);
+  inline-size: calc(var(--mote-size) * var(--figure) * var(--art));
+  block-size: calc(var(--mote-size) * var(--figure) * var(--art));
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 calc(var(--mote-size) * 2 * var(--figure) * var(--art)) rgb(255 255 255 / 75%);
+  opacity: 0;
+  animation: hk-mote var(--mote-dur) var(--ease-out-expo) var(--mote-delay) both;
+}
+
+@keyframes hk-mote {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+    translate: 0 0;
+  }
+
+  18% {
+    opacity: 1;
+    scale: 1;
+  }
+
+  100% {
+    opacity: 0;
+    scale: 0.35;
+    translate:
+      calc(var(--mote-dx) * var(--figure) * var(--art))
+      calc(var(--mote-dy) * var(--figure) * var(--art));
+  }
+}
 
 /* ── Path A: the compositor drives every transform ─────────────────────────
    One animation per element, each interpolating between two concrete
@@ -488,7 +706,8 @@ onBeforeUnmount(() => {
   .hk__layer,
   .hk__bench,
   .hk__sign,
-  .hk__knight {
+  .hk__knight,
+  .hk__rest {
     transform: none;
     animation-name: hk-pan;
     animation-duration: auto;
@@ -499,7 +718,8 @@ onBeforeUnmount(() => {
     animation-range: calc(var(--rail-lock) * 100%) 100%;
   }
 
-  .hk__knight {
+  .hk__knight,
+  .hk__rest {
     animation-name: hk-advance;
   }
 
@@ -718,7 +938,8 @@ onBeforeUnmount(() => {
   .hk__bench,
   .hk__sign,
   .hk__knight,
-  .hk__knight--walk {
+  .hk__knight--walk,
+  .hk__rest {
     animation: none;
     transform: none;
   }
