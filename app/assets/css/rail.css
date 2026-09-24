@@ -62,6 +62,17 @@
 }
 
 .scene {
+  /* Finished, unless the rail says otherwise.
+
+     `--scene-progress` is a registered property with an initial value of 0, and
+     a registered initial beats any `var(--scene-progress, 1)` fallback a scene
+     declares. Both branches of the rail set it — path A animates it over the
+     scene's slice of the scroll, path B pins it at 1 — but both live inside the
+     rail's media query. Stacked, neither ran: every heading on the site sat at
+     30% opacity, nudged sideways, for good. The rail still overrides this, an
+     animation winning over a plain declaration. */
+  --scene-progress: 1;
+
   position: relative;
   display: grid;
   align-content: center;

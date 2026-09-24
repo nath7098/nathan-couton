@@ -223,6 +223,13 @@ function toggleFilter(tech: TechKey) {
     grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   }
 
+  /* The card carries a fixed width for the rail, where it is one of five in a
+     row. Stacked it is alone in its column and has to fill it, or it sits in a
+     343px column at 248px with the rest of the screen blank beside it. */
+  .projects__card {
+    inline-size: 100%;
+  }
+
   .projects__panel {
     grid-template-columns: 1fr;
     grid-template-rows: 0fr;

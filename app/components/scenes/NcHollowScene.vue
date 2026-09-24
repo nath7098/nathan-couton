@@ -737,11 +737,14 @@ onBeforeUnmount(() => {
   inset-block-end: var(--space-2xs);
   inset-inline-start: var(--space-s);
   font-size: 0.62rem;
-  color: var(--surface-faint);
+  /* Not a themed token: what is behind this line is the artwork, which is the
+     same dark green whichever theme is on. `--surface-faint` follows the theme
+     and turned mid-grey on light, which is unreadable over lit grass. */
+  color: rgb(255 255 255 / 72%);
   /* It sits directly on the artwork, which is bright in places and dark in
      others; a scrim rather than a colour keeps it readable over both without
      putting a box on the scene. */
-  text-shadow: 0 1px 3px rgb(0 0 0 / 65%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
 }
 
 .nc-fade-enter-active,
