@@ -1,13 +1,13 @@
-// Scene ids drive the rail, the nav and the legacy redirects. Single source of truth.
-const SCENES = ['home', 'about', 'experience', 'skills', 'education', 'projects', 'contact'] as const
+import { LEGACY_PATHS } from './app/data/sections'
 
 // The v1 site was a multi-page SPA. Those URLs are indexed, so they must survive
-// as 301s onto the matching scene. A fragment never reaches the server, so this
-// only imposes the hash — it cannot read one.
+// as 301s onto the matching section. A fragment never reaches the server, so this
+// only imposes the hash — it cannot read one. Experience and education both
+// lead to the Parcours now.
 const legacyRedirects = Object.fromEntries(
-  SCENES.filter(scene => scene !== 'home').flatMap(scene => [
-    [`/${scene}`, { redirect: { to: `/#${scene}`, statusCode: 301 as const } }],
-    [`/en/${scene}`, { redirect: { to: `/en#${scene}`, statusCode: 301 as const } }],
+  Object.entries(LEGACY_PATHS).flatMap(([path, section]) => [
+    [`/${path}`, { redirect: { to: `/#${section}`, statusCode: 301 as const } }],
+    [`/en/${path}`, { redirect: { to: `/en#${section}`, statusCode: 301 as const } }],
   ]),
 )
 
@@ -40,7 +40,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ['~/assets/css/fonts.css', '~/assets/css/reset.css', '~/assets/css/tokens.css', '~/assets/css/typography.css', '~/assets/css/rail.css'],
+  css: ['~/assets/css/fonts.css', '~/assets/css/reset.css', '~/assets/css/tokens.css', '~/assets/css/typography.css', '~/assets/css/sections.css'],
 
   colorMode: {
     classSuffix: '',

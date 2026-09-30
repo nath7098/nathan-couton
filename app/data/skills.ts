@@ -1,85 +1,68 @@
+import type { CommitId } from './parcours'
 import type { IconName } from '~/utils/icon-names'
+
+/**
+ * Skills, sorted by how they are actually used — not rated.
+ *
+ * v1 showed a self-assessed level per skill, to a tenth ("Niveau 4.2 sur 5"),
+ * inside wheels that showed four skills out of twenty-four at a time. A
+ * decimal self-rating cannot be checked and reads as a guess; a wheel cannot
+ * be searched. What a recruiter matches against is a list of words, and what
+ * makes a word credible is where it was used. So: three tiers, the years, and
+ * links to the missions in the Parcours.
+ *
+ * `years` are the owner's own figures, carried over from v1 and brought up to
+ * date in 2026; where v1 had none, they follow from the Parcours dates, or
+ * are left out.
+ */
+export type SkillTier = 'daily' | 'solid' | 'explored'
 
 export interface Skill {
   id: string
   name: string
-  icon: IconName
-  /** Years of practice. */
-  years: number
-  /** Self-assessed level out of 5. */
-  level: number
+  icon?: IconName
+  tier: SkillTier
+  years?: number
+  /** Where it was used, as anchors into the Parcours. */
+  usedIn?: readonly CommitId[]
 }
 
-export interface SkillFamily {
-  id: 'front' | 'back' | 'database' | 'tools'
-  titleKey: string
-  /** Which semantic accent colours the wheel. */
-  accent: 'secondary' | 'primary' | 'tertiary' | 'danger'
-  skills: readonly Skill[]
-}
+export const TIERS: readonly SkillTier[] = ['daily', 'solid', 'explored']
 
-/**
- * Years of practice and self-assessed level, per skill.
- *
- * The v1 numbers were taken around 2023; the ones still in daily use carry the
- * three years elapsed since. Levels only moved where the current mission is the
- * evidence — Java, Spring and Angular are the day job now, where Angular used
- * to be a one-project excursion. Anything dormant (React, C#, .NET) is left
- * exactly as it was: no time has been served on it.
- */
-export const SKILL_FAMILIES: readonly SkillFamily[] = [
-  {
-    id: 'front',
-    titleKey: 'skillFamilies.front',
-    accent: 'secondary',
-    skills: [
-      { id: 'vue', name: 'Vue', icon: 'vue', years: 5, level: 4.5 },
-      { id: 'js', name: 'Javascript', icon: 'js', years: 7, level: 4.5 },
-      { id: 'ts', name: 'Typescript', icon: 'ts', years: 6, level: 4.5 },
-      { id: 'sass', name: 'Sass', icon: 'sass', years: 5, level: 3.5 },
-      { id: 'angular', name: 'Angular', icon: 'angular', years: 5, level: 4.5 },
-      { id: 'bootstrap', name: 'Bootstrap', icon: 'bootstrap', years: 7, level: 4 },
-      { id: 'html', name: 'Html 5', icon: 'html', years: 8, level: 5 },
-      { id: 'react', name: 'React', icon: 'react', years: 1, level: 2 },
-    ],
-  },
-  {
-    id: 'back',
-    titleKey: 'skillFamilies.back',
-    accent: 'primary',
-    skills: [
-      { id: 'java', name: 'Java', icon: 'java', years: 6, level: 5 },
-      { id: 'spring', name: 'Spring', icon: 'spring', years: 6, level: 4.5 },
-      { id: 'kafka', name: 'Kafka', icon: 'kafka', years: 1, level: 3 },
-      { id: 'spark', name: 'Spark', icon: 'spark', years: 1, level: 2.5 },
-      { id: 'node', name: 'NodeJS', icon: 'node', years: 2, level: 3 },
-      { id: 'csharp', name: 'CSharp', icon: 'csharp', years: 1, level: 2 },
-      { id: 'dotnet', name: '.NET Core', icon: 'dotnet', years: 1, level: 1.5 },
-    ],
-  },
-  {
-    id: 'database',
-    titleKey: 'skillFamilies.database',
-    accent: 'danger',
-    skills: [
-      { id: 'oracle', name: 'Oracle', icon: 'oracle', years: 8, level: 4.2 },
-      { id: 'postgres', name: 'PostgreSQL', icon: 'postgres', years: 6, level: 4 },
-      { id: 'mysql', name: 'MySQL', icon: 'mysql', years: 8, level: 4 },
-      { id: 'firebase', name: 'Firebase', icon: 'firebase', years: 1, level: 2.1 },
-      { id: 'mongo', name: 'MongoDb', icon: 'mongo', years: 1, level: 2.2 },
-    ],
-  },
-  {
-    id: 'tools',
-    titleKey: 'skillFamilies.tools',
-    accent: 'tertiary',
-    skills: [
-      { id: 'intellij', name: 'IntelliJ', icon: 'intellij', years: 8, level: 5 },
-      { id: 'vscode', name: 'VsCode', icon: 'vscode', years: 6, level: 4 },
-      { id: 'gitlab', name: 'GitLab', icon: 'gitlab', years: 7, level: 4.5 },
-      { id: 'github', name: 'GitHub', icon: 'github', years: 7, level: 4 },
-      { id: 'docker', name: 'Docker', icon: 'docker', years: 4, level: 3.5 },
-      { id: 'illustrator', name: 'Illustrator', icon: 'illustrator', years: 2, level: 2.7 },
-    ],
-  },
+export const SKILLS: readonly Skill[] = [
+  // ── Every day, on the current mission ──────────────────────────────────
+  { id: 'java', name: 'Java', icon: 'java', tier: 'daily', years: 6, usedIn: ['harmonie', 'mpa', 'tempo', 'sopra-2020'] },
+  { id: 'spring', name: 'Spring Boot', icon: 'spring', tier: 'daily', years: 6, usedIn: ['harmonie', 'mpa', 'tempo'] },
+  { id: 'spring-batch', name: 'Spring Batch', icon: 'spring', tier: 'daily', years: 1, usedIn: ['harmonie'] },
+  { id: 'angular', name: 'Angular', icon: 'angular', tier: 'daily', years: 5, usedIn: ['harmonie', 'tempo', 'sopra-2020'] },
+  { id: 'ts', name: 'TypeScript', icon: 'ts', tier: 'daily', years: 6, usedIn: ['harmonie', 'mpa'] },
+  { id: 'kafka', name: 'Kafka', icon: 'kafka', tier: 'daily', years: 1, usedIn: ['harmonie'] },
+  { id: 'spark', name: 'Spark', icon: 'spark', tier: 'daily', years: 1, usedIn: ['harmonie'] },
+  { id: 'intellij', name: 'IntelliJ IDEA', icon: 'intellij', tier: 'daily', years: 8 },
+  { id: 'gitlab', name: 'Git · GitLab', icon: 'gitlab', tier: 'daily', years: 7 },
+
+  // ── Used in production, known well ─────────────────────────────────────
+  { id: 'vue', name: 'Vue.js', icon: 'vue', tier: 'solid', years: 5, usedIn: ['mpa'] },
+  { id: 'security', name: 'Spring Security', icon: 'spring', tier: 'solid', years: 5, usedIn: ['mpa', 'tempo'] },
+  { id: 'hibernate', name: 'Hibernate / JPA', tier: 'solid', years: 5, usedIn: ['mpa', 'tempo'] },
+  { id: 'oracle', name: 'Oracle', icon: 'oracle', tier: 'solid', years: 8 },
+  { id: 'postgres', name: 'PostgreSQL', icon: 'postgres', tier: 'solid', years: 6 },
+  { id: 'mysql', name: 'MySQL', icon: 'mysql', tier: 'solid', years: 8 },
+  { id: 'js', name: 'JavaScript', icon: 'js', tier: 'solid', years: 7 },
+  { id: 'html', name: 'HTML · CSS · Sass', icon: 'html', tier: 'solid', years: 8 },
+  { id: 'docker', name: 'Docker', icon: 'docker', tier: 'solid', years: 4 },
+  { id: 'agile', name: 'Agile · Scrum', tier: 'solid', usedIn: ['harmonie', 'mpa', 'tempo'] },
+
+  // ── Explored: projects, school, side work ──────────────────────────────
+  { id: 'react', name: 'React', icon: 'react', tier: 'explored', years: 1 },
+  { id: 'node', name: 'Node.js · Express', icon: 'node', tier: 'explored', years: 2 },
+  { id: 'nuxt', name: 'Nuxt', icon: 'nuxt', tier: 'explored' },
+  { id: 'csharp', name: 'C# · .NET · Unity', icon: 'csharp', tier: 'explored', years: 1 },
+  { id: 'firebase', name: 'Firebase', icon: 'firebase', tier: 'explored', years: 1 },
+  { id: 'mongo', name: 'MongoDB', icon: 'mongo', tier: 'explored', years: 1 },
+  { id: 'android', name: 'Android', icon: 'android', tier: 'explored' },
 ]
+
+export function skillsIn(tier: SkillTier): Skill[] {
+  return SKILLS.filter(skill => skill.tier === tier)
+}

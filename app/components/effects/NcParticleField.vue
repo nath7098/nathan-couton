@@ -23,6 +23,7 @@ let context: CanvasRenderingContext2D | null = null
 let field: ParticleField | null = null
 let dpr = 1
 let accent = 'rgba(255,255,255,0.6)'
+let glow = 'rgba(200,255,235,0.9)'
 /** Resolved once from the element: ctx.font cannot read custom properties. */
 let fontFamily = 'monospace'
 
@@ -37,6 +38,7 @@ function readAccent() {
   if (!root.value) return
   const styles = getComputedStyle(root.value)
   accent = styles.getPropertyValue('--particle-color').trim() || accent
+  glow = styles.getPropertyValue('--firefly-color').trim() || glow
   fontFamily = styles.fontFamily || fontFamily
 }
 
@@ -100,7 +102,39 @@ function draw() {
     }
   }
 
-  if (props.preset === 'spores') context.globalCompositeOperation = 'lighter'
+  // Additive light reads as glow on a dark page and as grey smudges on paper.
+  const dark = document.documentElement.dataset.theme !== 'light'
+  if ((props.preset === 'spores' || props.preset === 'fireflies') && dark) context.globalCompositeOperation = 'lighter'
+
+  if (props.preset === 'fireflies') {
+    // Each light breathes on its own phase: a halo, then a core.
+    const now = performance.now() / 1000
+    const haloAlpha = dark ? 0.28 : 0.12
+    const coreAlpha = dark ? 0.9 : 0.55
+    for (let i = 0; i < field.count; i++) {
+      const seed = field.seedValue[i]!
+      const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now * (0.6 + seed) + seed * 40))
+      const x = field.x[i]!
+      const y = field.y[i]!
+      const size = field.size[i]!
+      const halo = context.createRadialGradient(x, y, 0, x, y, size * 7)
+      halo.addColorStop(0, glow)
+      halo.addColorStop(1, 'transparent')
+      context.globalAlpha = haloAlpha * pulse
+      context.fillStyle = halo
+      context.beginPath()
+      context.arc(x, y, size * 7, 0, Math.PI * 2)
+      context.fill()
+      context.globalAlpha = coreAlpha * pulse
+      context.fillStyle = glow
+      context.beginPath()
+      context.arc(x, y, size * 0.8, 0, Math.PI * 2)
+      context.fill()
+    }
+    context.globalAlpha = 1
+    context.globalCompositeOperation = 'source-over'
+    return
+  }
 
   for (let i = 0; i < field.count; i++) {
     const depth = 0.35 + field.seedValue[i]! * 0.65
@@ -124,6 +158,13 @@ function draw() {
 }
 
 const GLYPHS = ['0', '1', '{', '}', '<', '/', '>', ';', '=', '$']
+
+// The atmosphere changes its preset as the page goes down: a new field, same
+// canvas, no reallocation of the element.
+watch(() => props.preset, () => {
+  field = null
+  setup()
+})
 
 useFrameLoop((delta) => {
   if (!field) return
@@ -196,7 +237,12 @@ onMounted(() => {
   pointer-events: none;
   overflow: hidden;
   /* Read by the canvas each theme change; keeps colour in the token system. */
-  --particle-color: color-mix(in oklab, var(--secondary) 55%, var(--surface));
+  --particle-color: color-mix(in oklab, var(--brand) 55%, var(--text));
+  --firefly-color: oklch(0.9 0.12 172);
+}
+
+:root[data-theme='light'] .particles {
+  --firefly-color: oklch(0.6 0.12 172);
 }
 
 canvas {

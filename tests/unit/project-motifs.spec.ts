@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROJECTS, projectStatus } from '~/data/projects'
+import { ARCHIVE, CASE_STUDIES, STEPS } from '~/data/projects'
 import type { MotifKey } from '~/utils/project-motifs'
 import { MOTIF_HEIGHT, MOTIF_WIDTH, motifShapes } from '~/utils/project-motifs'
 
@@ -63,24 +63,43 @@ describe('project motifs', () => {
 })
 
 describe('projects', () => {
-  it('gives every project its own motif seed', () => {
-    const ids = PROJECTS.map(p => p.id)
+  it('gives every case study and archive entry its own id', () => {
+    const ids = [...CASE_STUDIES, ...ARCHIVE].map(p => p.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('only uses motifs that exist', () => {
-    for (const project of PROJECTS) expect(KEYS).toContain(project.motif)
+    for (const study of CASE_STUDIES) {
+      if (study.figure.kind === 'motif') expect(KEYS).toContain(study.figure.motif)
+    }
   })
 
-  it('gives every project its own motif', () => {
-    const motifs = PROJECTS.map(p => p.motif)
-    expect(new Set(motifs).size, 'two projects share a figure').toBe(motifs.length)
+  it('draws every diagram inside its viewBox, with edges between real nodes', () => {
+    for (const study of CASE_STUDIES) {
+      if (study.figure.kind !== 'graph') continue
+      const ids = new Set(study.figure.nodes.map(node => node.id))
+      for (const node of study.figure.nodes) {
+        expect(node.x - node.w / 2, `${study.id}/${node.id}`).toBeGreaterThanOrEqual(0)
+        expect(node.x + node.w / 2, `${study.id}/${node.id}`).toBeLessThanOrEqual(400)
+        expect(node.y - node.h / 2, `${study.id}/${node.id}`).toBeGreaterThanOrEqual(0)
+        expect(node.y + node.h / 2, `${study.id}/${node.id}`).toBeLessThanOrEqual(300)
+      }
+      for (const edge of study.figure.edges) {
+        expect(ids.has(edge.from) && ids.has(edge.to), `${study.id}: ${edge.from} → ${edge.to}`).toBe(true)
+      }
+    }
   })
 
-  it('reads the status off the links rather than storing it twice', () => {
-    expect(projectStatus(PROJECTS.find(p => p.id === 'integration')!)).toBe('closed')
-    expect(projectStatus(PROJECTS.find(p => p.id === 'prevoyance')!)).toBe('closed')
-    expect(projectStatus(PROJECTS.find(p => p.id === 'portfolio')!)).toBe('source')
-    expect(projectStatus(PROJECTS.find(p => p.id === 'tsp')!)).toBe('live')
+  it('lights something at every step of every diagram', () => {
+    for (const study of CASE_STUDIES) {
+      if (study.figure.kind !== 'graph') continue
+      for (const step of STEPS) {
+        expect(study.figure.nodes.some(node => node.lit.includes(step)), `${study.id} is dark at ${step}`).toBe(true)
+      }
+    }
+  })
+
+  it('never links client work under NDA', () => {
+    for (const study of CASE_STUDIES.filter(s => s.nda)) expect(study.links).toEqual([])
   })
 })

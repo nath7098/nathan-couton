@@ -53,7 +53,7 @@ const csp = [
   // See the note above: inline styles are Nuxt's own, injected at build.
   `style-src 'self' 'unsafe-inline'`,
   // Spotify and IGDB artwork until scripts/fetch-remote-assets.mjs is run.
-  `img-src 'self' data: https://i.scdn.co https://images.igdb.com`,
+  `img-src 'self' data:`,
   `font-src 'self' data:`,
   `media-src 'self'`,
   `connect-src 'self' https://api.emailjs.com`,

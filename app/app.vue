@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { LEGACY_HASHES } from '~/data/sections'
+
 const { t } = useI18n()
 const head = useLocaleHead({ seo: true })
 
@@ -11,10 +13,12 @@ useHead(() => ({
   script: [{
     // Captured before Nuxt boots: by the time a component's setup runs, the
     // initial hash is already gone from location (the router normalises the URL
-    // against the prerendered route, which has no fragment). NcRail reads this
-    // to restore a deep link.
+    // against the prerendered route, which has no fragment). useSections reads
+    // this to restore a deep link. The anchors of the old layout are
+    // translated on the way — `#experience` and `#education` are the Parcours
+    // now — and the address bar is corrected to match.
     key: 'nc-hash-capture',
-    innerHTML: 'window.__ncHash=(location.hash||"").replace("#","")',
+    innerHTML: `window.__ncHash=(function(m){var h=(location.hash||"").slice(1);if(m[h]){h=m[h];history.replaceState(null,"","#"+h)}return h})(${JSON.stringify(LEGACY_HASHES)})`,
     tagPosition: 'head',
   }],
 }))

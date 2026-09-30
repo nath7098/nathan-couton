@@ -10,6 +10,10 @@ import type { ValidationIssue } from '../../server/utils/contact-validation'
  */
 type Field = 'name' | 'email' | 'message'
 
+/** What the message is about. Optional; it prefixes the mail so it can be triaged. */
+export const SUBJECTS = ['job', 'mission', 'other'] as const
+export type Subject = (typeof SUBJECTS)[number]
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const MIN = { name: 2, message: 10 } as const
 const MAX_MESSAGE = 2000
@@ -19,6 +23,7 @@ export function useContactForm() {
   const toast = useToast()
 
   const values = reactive<Record<Field, string>>({ name: '', email: '', message: '' })
+  const subject = ref<Subject | null>(null)
   /** Honeypot. Hidden from people, irresistible to bots. */
   const company = ref('')
   const touched = reactive<Record<Field, boolean>>({ name: false, email: false, message: false })
@@ -70,6 +75,7 @@ export function useContactForm() {
           name: values.name,
           email: values.email,
           message: values.message,
+          ...(subject.value ? { subject: subject.value } : {}),
           company: company.value,
           elapsed: Date.now() - openedAt.value,
         },
@@ -79,6 +85,7 @@ export function useContactForm() {
       values.name = ''
       values.email = ''
       values.message = ''
+      subject.value = null
       for (const field of ['name', 'email', 'message'] as Field[]) touched[field] = false
       openedAt.value = Date.now()
     }
@@ -90,7 +97,7 @@ export function useContactForm() {
     }
   }
 
-  return { values, company, errors, isValid, status, touch, submit }
+  return { values, subject, company, errors, isValid, status, touch, submit }
 }
 
 export type { ValidationIssue }

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import en from '../../i18n/locales/en'
 import fr from '../../i18n/locales/fr'
-import { SCENES } from '~/data/scenes'
+import { SECTION_IDS } from '~/data/sections'
+import { COMMITS } from '~/data/parcours'
+import { ARCHIVE, CASE_STUDIES, STEPS } from '~/data/projects'
 
 type Json = Record<string, unknown>
 
@@ -35,12 +37,54 @@ describe('locales', () => {
     }
   })
 
-  it('defines a navigation label for every scene', () => {
-    for (const scene of SCENES) {
-      const key = scene.labelKey.split('.')
-      const lookup = (bundle: Json) => key.reduce<unknown>((acc, k) => (acc as Json)?.[k], bundle)
-      expect(lookup(fr as Json), `fr misses ${scene.labelKey}`).toBeTruthy()
-      expect(lookup(en as Json), `en misses ${scene.labelKey}`).toBeTruthy()
+  const lookup = (bundle: Json, path: string) =>
+    path.split('.').reduce<unknown>((acc, key) => (acc as Json)?.[key], bundle)
+
+  it('names every section, in both languages', () => {
+    for (const id of SECTION_IDS) {
+      for (const field of ['nav', 'title', 'file']) {
+        expect(lookup(fr as Json, `sections.${id}.${field}`), `fr sections.${id}.${field}`).toBeTruthy()
+        expect(lookup(en as Json, `sections.${id}.${field}`), `en sections.${id}.${field}`).toBeTruthy()
+      }
+    }
+  })
+
+  it('tells every commit of the Parcours', () => {
+    for (const commit of COMMITS) {
+      for (const bundle of [fr, en] as Json[]) {
+        expect(lookup(bundle, `parcours.${commit.id}.title`), commit.id).toBeTruthy()
+        expect(lookup(bundle, `parcours.${commit.id}.period`), commit.id).toBeTruthy()
+        expect(lookup(bundle, `parcours.${commit.id}.summary`), commit.id).toBeTruthy()
+      }
+    }
+  })
+
+  it('tells every case study in four beats, and every archive entry in a line', () => {
+    for (const bundle of [fr, en] as Json[]) {
+      for (const study of CASE_STUDIES) {
+        for (const step of STEPS) {
+          expect(lookup(bundle, `projects.cases.${study.id}.${step}`), `${study.id}.${step}`).toBeTruthy()
+        }
+        if (study.figure.kind === 'graph') {
+          for (const node of study.figure.nodes) {
+            expect(lookup(bundle, `projects.cases.${study.id}.nodes.${node.id}`), `${study.id}/${node.id}`).toBeTruthy()
+          }
+        }
+      }
+      for (const entry of ARCHIVE) {
+        expect(lookup(bundle, `projects.archive.${entry.id}.line`), entry.id).toBeTruthy()
+      }
+    }
+  })
+
+  it('carries none of the typos the audit found', () => {
+    const text = JSON.stringify(fr)
+    for (const typo of ['A propos', 'Contactez moi', 'Envoyez moi', 'ASSEYEZ VOUS', 'Revfonte', 'Sopra Baking', 'intéractive', 'les médecin ', 'connaissance sur']) {
+      expect(text, typo).not.toContain(typo)
+    }
+    const english = JSON.stringify(en)
+    for (const typo of ['It\'s purpose', 'a points cloud', 'detect deceases']) {
+      expect(english, typo).not.toContain(typo)
     }
   })
 

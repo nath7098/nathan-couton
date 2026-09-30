@@ -5,6 +5,8 @@ export const CONTACT = {
   /** Pretty-printed for display; `phone` stays raw for tel: and clipboard. */
   phoneDisplay: '06 46 89 82 23',
   resume: '/cv/CV_Nathan_Couton.pdf',
+  /** What the file is saved as: explicit, for a recruiter's downloads folder. */
+  resumeName: 'Nathan-Couton-CV-Developpeur-Fullstack-Java.pdf',
   social: [
     { id: 'linkedin', href: 'https://www.linkedin.com/in/nathan-couton/', label: 'LinkedIn' },
     { id: 'github', href: 'https://github.com/nath7098', label: 'GitHub' },

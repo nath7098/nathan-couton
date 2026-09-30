@@ -16,7 +16,14 @@ const ENTRY_HTML = join(STATIC_DIR, 'index.html')
 // The headroom above it is the app's own budget.
 // html covers the document including the inlined styles, so its budget is the
 // looser one; css is tracked separately to catch style bloat on its own.
-const BUDGETS = { js: 150 * 1024, css: 45 * 1024, html: 40 * 1024 }
+//
+// JS is counted in two parts. `js` is what the first screen needs: the entry
+// script and every `modulepreload`. `js-prefetch` is the sections below the
+// fold, hydrated only when they come into view — referenced as `prefetch`, so
+// the browser fetches them at idle priority, after the page is interactive.
+// Counting both as one figure is what made the budget read 96% when the page's
+// critical path had actually shrunk.
+const BUDGETS = { 'js': 140 * 1024, 'js-prefetch': 40 * 1024, 'css': 45 * 1024, 'html': 40 * 1024 }
 
 if (!existsSync(ENTRY_HTML)) {
   console.error(`✗ ${ENTRY_HTML} not found — run \`npm run build\` first.`)
@@ -31,6 +38,10 @@ const collect = (extension) => {
   return [...new Set(html.match(pattern) ?? [])]
 }
 
+/** JS files referenced only by `<link rel="prefetch">`. */
+const prefetched = new Set([...html.matchAll(/<link[^>]*rel="prefetch"[^>]*href="\/(_nuxt\/[A-Za-z0-9_.-]+\.js)"/g)]
+  .map(match => match[1]))
+
 // Nuxt inlines the prerendered page's styles, so most CSS lives in <style>
 // tags rather than behind a <link>. Counting only linked files understated it
 // by an order of magnitude.
@@ -39,10 +50,11 @@ const inlineCss = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
   .join('')
 
 const measured = {
-  js: collect('js').reduce((total, file) => total + gzipSize(file), 0),
-  css: collect('css').reduce((total, file) => total + gzipSize(file), 0)
+  'js': collect('js').filter(file => !prefetched.has(file)).reduce((total, file) => total + gzipSize(file), 0),
+  'js-prefetch': [...prefetched].reduce((total, file) => total + gzipSize(file), 0),
+  'css': collect('css').reduce((total, file) => total + gzipSize(file), 0)
     + (inlineCss ? gzipSync(Buffer.from(inlineCss)).length : 0),
-  html: gzipSync(Buffer.from(html)).length,
+  'html': gzipSync(Buffer.from(html)).length,
 }
 
 const kb = bytes => `${(bytes / 1024).toFixed(1)} kB`
@@ -53,7 +65,7 @@ for (const [kind, budget] of Object.entries(BUDGETS)) {
   const share = ((size / budget) * 100).toFixed(0)
   const over = size > budget
   failed ||= over
-  console.log(`${over ? '✗' : '✓'} ${kind.padEnd(4)} ${kb(size).padStart(9)} / ${kb(budget).padStart(9)}  (${share}%)`)
+  console.log(`${over ? '✗' : '✓'} ${kind.padEnd(11)} ${kb(size).padStart(9)} / ${kb(budget).padStart(9)}  (${share}%)`)
 }
 
 process.exit(failed ? 1 : 0)

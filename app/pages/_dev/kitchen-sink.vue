@@ -111,7 +111,7 @@ function fakeSubmit() {
           :label="tag.label"
           :tech="tag.tech"
           :details="tag.details"
-          @open="tagModal = { label: tag.label, details: tag.details!, accent: `var(--tech-${tag.tech}-accent)` }"
+          @open="tagModal = { label: tag.label, details: tag.details!, accent: `var(--brand)` }"
         />
       </div>
     </section>

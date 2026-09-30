@@ -38,8 +38,8 @@
   --step-2: clamp(1.5rem, 1.3rem + 0.9vw, 2.1rem);
   --step-3: clamp(1.9rem, 1.55rem + 1.7vw, 3rem);
   --step-4: clamp(2.4rem, 1.8rem + 3vw, 4.4rem);
-  --step-5: clamp(2.9rem, 2rem + 4.6vw, 6.2rem);
-  --step-6: clamp(3.2rem, 2rem + 6.4vw, 8.6rem);
+  --step-5: clamp(2.4rem, 1.4rem + 4.6vw, 6.2rem);
+  --step-6: clamp(2.8rem, 1.8rem + 6.4vw, 8.6rem);
 
   /* ── Motion ───────────────────────────────────────────────────────────── */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

@@ -16,12 +16,12 @@ import { createRandom } from '~/utils/particles'
 /**
  * The Greenpath scene — the contact section's choreography (SPEC §6.7).
  *
- * The contact scene is one viewport wide and fills it edge to edge. The rail
- * brings it in, parks, and hands the rest of the page's scroll to `--walk`,
- * which runs 0 → 1 while nothing else on the page moves at all. Over that
- * stretch the Knight walks from the left of the screen to its centre and sits
- * down on a bench, and the cavern separates into its layers behind and in
- * front of him.
+ * The stage fills the viewport edge to edge and is pinned by NcFinale; the
+ * walk is one segment of the finale's own `view-timeline` (see
+ * `finale-geometry.ts`), during which nothing else on the page moves at all.
+ * Over that stretch the Knight walks from the left of the screen to its centre
+ * and sits down on a bench, and the cavern separates into its layers behind
+ * and in front of him.
  *
  * ── What changed, and why ────────────────────────────────────────────────────
  * The previous version kept the scene three viewports wide and cancelled the
@@ -46,32 +46,36 @@ import { createRandom } from '~/utils/particles'
  * screen, on the ground line measured off the artwork. He sits in the middle
  * of the bench because the arithmetic cannot put him anywhere else.
  */
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const { reduced } = useMotionPreference()
-const rail = useRail()
+const finale = useFinale()
+const sections = useSections()
 
-/** One shared source of truth; the rail owns the range. */
-const { arrived: seated } = useContactWalk()
+/** One shared source of truth; the finale owns the range. */
+const seated = finale.arrived
+
+/**
+ * Still: no walk to play — below `--stage-wide`, or with reduced motion. The
+ * scene is drawn at its last frame, the Knight already on his bench.
+ */
+const still = computed(() => !finale.walking.value)
 
 /**
  * The fallback path has no scroll-driven animations, so the sprite cycle there
- * runs on time and has to be paused when the rail is still — a Knight marking
- * time on the spot reads as a bug. A watch on the rail's own smoothed velocity
- * is enough; this writes a class, never a per-frame style.
+ * runs on time and has to be paused when the page is still — a Knight marking
+ * time on the spot reads as a bug. A watch on the scroll delta is enough; this
+ * writes a class, never a per-frame style.
  */
 const striding = ref(false)
 let stillTimer = 0
-watch(rail.velocity, (value) => {
-  if (Math.abs(value) < 0.00004) return
+watch(finale.velocity, (value) => {
+  if (Math.abs(value) < 0.5) return
   striding.value = true
   window.clearTimeout(stillTimer)
   stillTimer = window.setTimeout(() => {
     striding.value = false
   }, 120)
 })
-
-/** The sign is drawn in the visitor's language, as in v1. */
-const signFile = computed(() => (locale.value === 'fr' ? 'sit-fr' : 'sit-en'))
 
 // ── Sitting down ─────────────────────────────────────────────────────────────
 // What the game plays when the Knight drops onto a bench, in the order it plays
@@ -138,10 +142,10 @@ function clearRest() {
 
 watch(seated, (value) => {
   clearRest()
-  // Only on the walk's own arrival: the stacked layout draws him already
-  // sitting, so there is no moment to punctuate, and reduced motion asked for
-  // none of this.
-  if (!value || reduced.value || !rail.isHorizontal.value) return
+  // Only on the walk's own arrival: a still scene draws him already sitting,
+  // so there is no moment to punctuate, and reduced motion asked for none of
+  // this.
+  if (!value || reduced.value || still.value) return
 
   flashing.value = true
   flashTimer = window.setTimeout(() => {
@@ -226,8 +230,8 @@ watch(volume, (value) => {
 watch(seated, (value) => {
   if (!value && playing.value) pause()
 })
-watch(rail.activeScene, (scene) => {
-  if (scene !== 'contact' && playing.value) pause()
+watch(sections.active, (section) => {
+  if (section !== 'contact' && playing.value) pause()
 })
 
 onBeforeUnmount(() => {
@@ -241,7 +245,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="hk"
-    :class="{ 'is-seated': seated, 'is-striding': striding }"
+    :class="{ 'is-seated': seated, 'is-striding': striding, 'is-still': still }"
     :style="{
       '--pan': PAN,
       '--ground-line': GROUND_LINE,
@@ -293,15 +297,20 @@ onBeforeUnmount(() => {
       >
 
       <!-- The sign invites you to sit, rides in with the bench, and steps
-           aside once the Knight has arrived. -->
-      <img
-        class="hk__sign"
-        :src="`/img/parallax/${signFile}.webp`"
-        :width="PARALLAX_SIZES[signFile]?.width"
-        :height="PARALLAX_SIZES[signFile]?.height"
-        alt=""
-        decoding="async"
-      >
+           aside once the Knight has arrived. Set in type rather than baked
+           into an image: the painted one read "ASSEYEZ VOUS", without its
+           hyphen, and could not be corrected or translated. -->
+      <p class="hk__sign">
+        <span
+          class="hk__sign-rule"
+          aria-hidden="true"
+        />
+        <span class="hk__sign-text">{{ t('finale.sign') }}</span>
+        <span
+          class="hk__sign-rule"
+          aria-hidden="true"
+        />
+      </p>
 
       <!-- Two sprites, one character: the strip walks, the sit pose lands. -->
       <div class="hk__knight hk__knight--walk" />
@@ -414,14 +423,6 @@ onBeforeUnmount(() => {
         </p>
       </div>
     </Transition>
-
-    <!-- The join with the scene before this one. Contact is the only scene
-         that paints edge to edge, so its leading edge is the one place on the
-         rail where the page background meets artwork at a hard vertical line. -->
-    <div
-      class="hk__seam"
-      aria-hidden="true"
-    />
 
     <p class="hk__credit">
       {{ t('contact.credits') }}
@@ -540,13 +541,45 @@ onBeforeUnmount(() => {
 }
 
 .hk__sign {
+  display: grid;
+  gap: calc(4 * var(--art));
+  justify-items: center;
   inset-block-start: var(--seat);
-  inline-size: calc(150 * var(--figure) * var(--art));
-  block-size: auto;
-  translate: -50% -175%;
+  inline-size: max-content;
+  margin: 0;
+  translate: -50% calc(-100% - 64 * var(--figure) * var(--art));
+  font-family: var(--font-display);
+  font-size: calc(17 * var(--figure) * var(--art));
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(242 240 228 / 92%);
+  text-shadow:
+    0 0 calc(8 * var(--art)) rgb(190 255 235 / 45%),
+    0 1px 2px rgb(0 0 0 / 70%);
   /* Gone before the form settles in, not just before he sits: the two would
      otherwise share the same corner of the screen for a third of the walk. */
   opacity: clamp(0, (0.82 - var(--walk)) * 7, 1);
+}
+
+/* The game's sign hangs between two fine rules with a diamond at the centre. */
+.hk__sign-rule {
+  position: relative;
+  inline-size: 110%;
+  block-size: 1px;
+  background: linear-gradient(to right, transparent, rgb(242 240 228 / 70%) 20% 80%, transparent);
+}
+
+.hk__sign-rule::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 50%;
+  inline-size: calc(5 * var(--art));
+  block-size: calc(5 * var(--art));
+  background: rgb(242 240 228 / 85%);
+  translate: -50% -50%;
+  rotate: 45deg;
 }
 
 .hk__knight {
@@ -700,7 +733,7 @@ onBeforeUnmount(() => {
    This is the whole point of the rewrite. Animating a shared `--walk` and
    deriving the transforms from it, as the old scene did, puts a full style
    recalculation of a full-screen layer stack in every single frame. */
-@supports (animation-timeline: scroll()) {
+@supports (animation-timeline: view()) {
   .hk__layer,
   .hk__bench,
   .hk__sign,
@@ -711,9 +744,12 @@ onBeforeUnmount(() => {
     animation-duration: auto;
     animation-timing-function: linear;
     animation-fill-mode: both;
-    animation-timeline: scroll(root block);
-    /* The walk owns the scroll left over once the track has parked. */
-    animation-range: calc(var(--rail-lock) * 100%) 100%;
+    animation-timeline: --finale;
+    /* The walk segment of the finale's pinned range. `contain` is exactly the
+       stretch during which the stage is stuck to the viewport. */
+    animation-range:
+      contain calc(var(--walk-from) * 100%)
+      contain calc(var(--walk-to) * 100%);
   }
 
   .hk__knight,
@@ -723,30 +759,9 @@ onBeforeUnmount(() => {
 
   .hk__sign {
     animation-name: hk-pan, hk-sign-fade;
-    animation-range: calc(var(--rail-lock) * 100%) 100%, calc(var(--rail-lock) * 100%) 100%;
-  }
-
-  .hk__seam {
-    animation-name: hk-seam;
-    animation-duration: auto;
-    animation-timing-function: linear;
-    animation-fill-mode: both;
-    animation-timeline: scroll(root block);
-    animation-range: calc(var(--rail-lock) * 100%) 100%;
-  }
-
-  /* `display` is discrete, so it flips on a frame rather than easing. It is
-     here rather than `opacity` alone because a layer at `opacity: 0` is still
-     composited over the moving track — measured, a strip that had faded to
-     nothing cost as much as one at full strength.
-
-     The strip cannot be kept out of the tree for the rail as well, which would
-     save a little more: an element that starts at `display: none` runs no
-     animation at all, so there would be nothing left to turn it back on. */
-  @keyframes hk-seam {
-    0% { display: block; opacity: 1; }
-    14% { display: block; opacity: 0; }
-    15%, 100% { display: none; opacity: 0; }
+    animation-range:
+      contain calc(var(--walk-from) * 100%) contain calc(var(--walk-to) * 100%),
+      contain calc(var(--walk-from) * 100%) contain calc(var(--walk-to) * 100%);
   }
 
   @keyframes hk-pan {
@@ -769,23 +784,23 @@ onBeforeUnmount(() => {
    Path A steps the strip along the scroll itself, so the legs advance with the
    distance walked and stop dead when the scroll does. `steps()` on a scroll
    timeline quantises background-position exactly onto frame boundaries. */
-@supports (animation-timeline: scroll()) {
+@supports (animation-timeline: view()) {
   .hk__knight--walk {
     animation-name: hk-advance, hk-step;
     animation-duration: auto, auto;
     animation-timing-function: linear, steps(8);
     animation-iteration-count: 1, 20;
     animation-fill-mode: both, both;
-    animation-timeline: scroll(root block), scroll(root block);
+    animation-timeline: --finale, --finale;
     animation-range:
-      calc(var(--rail-lock) * 100%) 100%,
-      calc(var(--rail-lock) * 100%) 100%;
+      contain calc(var(--walk-from) * 100%) contain calc(var(--walk-to) * 100%),
+      contain calc(var(--walk-from) * 100%) contain calc(var(--walk-to) * 100%);
   }
 }
 
 /* Path B cannot bind frames to distance, so the cycle runs on time and is
-   paused whenever the rail is still. */
-@supports not (animation-timeline: scroll()) {
+   paused whenever the page is still. */
+@supports not (animation-timeline: view()) {
   .hk__knight--walk {
     animation: hk-step 0.75s steps(8) infinite;
     animation-play-state: paused;
@@ -816,15 +831,14 @@ onBeforeUnmount(() => {
 /* A flipped tile carries `scale: -1 1`; `translate` is a separate property, so
    the two compose instead of one overwriting the other. */
 
-/* Decorative motion goes when motion is reduced. The walk itself does not: it
-   is the navigation, and freezing it would strand the form off screen. */
-:root[data-motion='reduced'] .hk__layer .hk__tile,
-:root[data-motion='reduced'] .hk__knight--walk {
+/* Decorative motion goes when motion is reduced — and so does the walk: the
+   finale collapses to its last frame (see NcFinale and `.is-still` below). */
+:root[data-motion='reduced'] .hk__layer .hk__tile {
   animation: none;
 }
 
-/* A gradient at the head and foot of the scene hands over to the page
-   background, so the header and the rail nav have something to sit on. */
+/* A shade at the head and foot of the scene, so the header has something to
+   sit on and the stage's edges fall away into the dark. */
 .hk::after {
   content: '';
   position: absolute;
@@ -832,63 +846,11 @@ onBeforeUnmount(() => {
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--background) 55%, transparent) 0%,
-    transparent 8%,
-    transparent 88%,
-    color-mix(in oklab, var(--background) 62%, transparent) 100%
+    rgb(4 12 16 / 55%) 0%,
+    transparent 12%,
+    transparent 86%,
+    rgb(4 12 16 / 60%) 100%
   );
-}
-
-/* ── The seam ──────────────────────────────────────────────────────────────
-   Contact is the only full-bleed scene, so where it meets Projects the page
-   background butts straight against the artwork: a hard vertical edge running
-   the full height of the screen, with a lit page on one side and a dark cavern
-   on the other.
-
-   A wash of the page background, fading out across the strip, carries the
-   colour over. It is deliberately wide — the join has to stop being an event
-   and become a gradient, and the cost of that is eating into the first fifth
-   of the cavern while the scene arrives, which is a good trade for an edge
-   nobody notices.
-
-   No `backdrop-filter` here, and that is the whole point of this version. A
-   blurred strip looks better in isolation and was what this started as, but the
-   filter puts the element on its own render surface, and that surface is
-   snapped to whole pixels while the scene's own edge sits on a fraction of one.
-   The two then disagree by exactly one column — measured, a single line of
-   untouched artwork at rgb(11,39,51) with the wash starting cleanly one pixel
-   later. A thin dark line down the full height of the screen, which is worse
-   than the edge it was there to hide. Without the filter the strip shares the
-   scene's box and covers it.
-
-   Gone once the scene has parked: past that its leading edge is off screen to
-   the left and the strip would be a sheet of page background lying over the
-   artwork for nothing. */
-.hk__seam {
-  position: absolute;
-  z-index: 1;
-  inset-block: 0;
-  /* A hair outside the box it is covering. The strip and the scene edge are
-     the same coordinate space, so this is belt and braces against a future
-     fractional layout reopening the gap the filter used to make. */
-  inset-inline-start: -2px;
-  inline-size: calc(22vw + 2px);
-  pointer-events: none;
-  /* Many stops rather than few: the eye finds the kink in a two-stop ramp
-     across a span this wide, and a kink reads as a band. */
-  background: linear-gradient(
-    to right,
-    var(--background) 0%,
-    var(--background) 6%,
-    color-mix(in oklab, var(--background) 88%, transparent) 20%,
-    color-mix(in oklab, var(--background) 62%, transparent) 38%,
-    color-mix(in oklab, var(--background) 34%, transparent) 58%,
-    color-mix(in oklab, var(--background) 14%, transparent) 78%,
-    transparent 100%
-  );
-  /* Path B has no timeline to range this over, so the strip lives for the
-     whole rail and fades as the walk starts. Path A below does better. */
-  opacity: clamp(0, 1 - var(--walk) * 8, 1);
 }
 
 /* ── The easter egg ────────────────────────────────────────────────────────*/
@@ -956,9 +918,11 @@ onBeforeUnmount(() => {
 
 .hk__credit {
   position: absolute;
+  z-index: 1;
   inset-block-end: var(--space-2xs);
   inset-inline-start: var(--space-s);
-  font-size: 0.62rem;
+  max-inline-size: calc(100% - 2 * var(--space-s));
+  font-size: var(--step--2);
   /* Not a themed token: what is behind this line is the artwork, which is the
      same dark green whichever theme is on. `--surface-faint` follows the theme
      and turned mid-grey on light, which is unreadable over lit grass. */
@@ -979,72 +943,45 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-/* ── Stacked layout ────────────────────────────────────────────────────────
-   No horizontal rail, so there is no walk to drive: the scene becomes a still
-   band of Greenpath at the foot of the section, with the Knight already on his
-   bench and the form in the normal flow above it.
+/* ── Still ─────────────────────────────────────────────────────────────────
+   No walk to play — below `--stage-wide`, or with reduced motion. The scene is
+   drawn at its last frame: every layer at rest, the
+   Knight on his bench, the sign already gone. Nothing is promoted to its own
+   layer, so the whole still paints once into the stage.
 
-   The band is the whole point. `--art` is normally `max(100vw / 1366,
-   100svh / 768)` so that a plate always covers the viewport — which on a phone
-   means covering a tall, narrow box with a wide, short painting, i.e. showing
-   about a third of its width blown up threefold. It read as a green blur.
-   Driving `--art` off the width alone instead shows the painting whole, at the
-   aspect it was drawn in, and every landmark inside it still lands where the
-   arithmetic says. */
-@media not all and (--rail) {
-  .hk {
-    --art: 0.0732vw;
-    --walk: 1;
+   It used to be a band a third of a phone's height, at the foot of the form:
+   a thumbnail of the one scene the site is remembered for. */
+.hk.is-still {
+  --walk: 1;
+}
 
-    inset-block-start: auto;
-    /* `.scene` insets its content by a gutter; the band has to bleed back over
-       it, or it stops short of the screen edge while `--art` — which assumes a
-       full-width band — keeps measuring against 100vw. */
-    inset-inline: calc(-1 * var(--gutter));
-    block-size: calc(768 * var(--art));
-  }
+.hk.is-still .hk__layer,
+.hk.is-still .hk__bench,
+.hk.is-still .hk__sign,
+.hk.is-still .hk__knight,
+.hk.is-still .hk__knight--walk,
+.hk.is-still .hk__rest {
+  animation: none;
+  transform: none;
+}
 
-  .hk__layer,
-  .hk__bench,
-  .hk__sign,
-  .hk__knight,
-  .hk__knight--walk,
-  .hk__rest {
-    animation: none;
-    transform: none;
-  }
+/* The walk's last frame, re-centred on this screen: on a wide screen the
+   bench lands at the centre with each row starting `depth × pan + bleed`
+   plates to its left and one plate is the viewport's width. Keeping that
+   offset from the centre, rather than centring the row itself, shows the same
+   composition on a narrow screen — centring the row put the join between two
+   mirrored plates in the middle of the screen, and the scene read as an
+   inkblot. */
+.hk.is-still .hk__layer {
+  inset-inline-start: calc(50% - (var(--depth) * var(--pan) + var(--bleed) + 0.5) * var(--plate));
+}
 
-  .hk__layer {
-    inset-inline-start: 0;
-  }
+.hk.is-still .hk__sign,
+.hk.is-still .hk__knight--walk {
+  opacity: 0;
+}
 
-  .hk__tile:nth-child(n + 2) {
-    display: none;
-  }
-
-  /* The invitation belongs to the walk; here he is already sitting. */
-  .hk__sign,
-  .hk__knight--walk {
-    opacity: 0;
-  }
-
-  .hk__knight--sit {
-    opacity: 1;
-  }
-
-  /* No rail, so no vertical join to soften: the band sits under the form in
-     normal flow and its edges are the section's own. */
-  .hk__seam {
-    display: none;
-  }
-
-  /* The bench easter egg belongs to the desktop scene: stacked, the form fills
-     the section and both the seat and its controls can only land on top of it.
-     The backdrop stays, the Knight stays sitting on his bench, the audio
-     element stays — there is just nothing here that can be clicked. */
-  .hk__controls,
-  .hk__seat {
-    display: none;
-  }
+.hk.is-still .hk__knight--sit {
+  opacity: 1;
 }
 </style>
