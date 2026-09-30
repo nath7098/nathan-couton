@@ -1,27 +1,18 @@
 /* ============================================================================
-   Design tokens — see docs/SPEC.md §4
-   Raw palette and tech colours are carried over verbatim from the v1 site
-   (src/assets/style/global.scss). Semantic tokens are themed below.
+   Design tokens — « Compile → Run »
+
+   One brand accent that never changes hue between themes, a neutral scale with
+   a faint indigo cast, and a warm counterpoint used sparingly. The v1 palette
+   swapped primary and secondary between the themes, which meant the name, the
+   braces and every skill bar changed colour when the theme did: there was no
+   colour you could call the site's own. There is now — the mint glow of the
+   lumaflies in Greenpath, which is where the page ends.
+
+   Tokens are semantic (`--bg`, `--text`, `--brand`…). The v1 names below them
+   are aliases kept for the primitives; new code uses the semantic ones.
    ========================================================================= */
 
 :root {
-  /* ── Raw palette ──────────────────────────────────────────────────────── */
-  --c-white: #f5f5f5;
-  --c-black: #212529;
-  --c-orange: #f05f40;
-  --c-green: #42b883;
-  --c-blue: #007acc;
-  --c-yellow: #c99513;
-  --c-red: #c3002f;
-  --c-purple: #563d7c;
-  --c-polytech: #009fe3;
-  --c-acii: #2d9ad5;
-  --c-iut-red: #bf1e2e;
-  /* Placeholder for the current employer's dot: a colour already in this
-     palette, not a brand value read off their site. Swap it when the real one
-     lands with the logo. */
-  --c-catamania: #405878;
-
   /* ── Spacing ──────────────────────────────────────────────────────────── */
   --space-3xs: 0.25rem;
   --space-2xs: 0.5rem;
@@ -33,14 +24,22 @@
   --space-2xl: 6rem;
   --space-3xl: 10rem;
 
-  /* ── Type scale (fluid, no breakpoints) ───────────────────────────────── */
-  --font-mono: 'JetBrains Mono', 'Roboto Mono', ui-monospace, 'SF Mono', monospace;
-  --step--1: clamp(0.78rem, 0.74rem + 0.2vw, 0.89rem);
-  --step-0: clamp(1rem, 0.95rem + 0.25vw, 1.15rem);
-  --step-1: clamp(1.3rem, 1.2rem + 0.5vw, 1.6rem);
-  --step-2: clamp(1.7rem, 1.5rem + 1vw, 2.4rem);
-  --step-3: clamp(2.2rem, 1.8rem + 2vw, 3.6rem);
-  --step-4: clamp(2.8rem, 2rem + 4vw, 5.5rem);
+  /* ── Type ─────────────────────────────────────────────────────────────── */
+  --font-display: 'Fraunces', 'Fraunces Fallback', 'Iowan Old Style', Georgia, serif;
+  --font-text: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Fluid, no breakpoints. The floor is 0.8rem: nothing a visitor has to read
+     is smaller than that (the project cards used to go down to 9px). */
+  --step--2: clamp(0.8rem, 0.78rem + 0.1vw, 0.86rem);
+  --step--1: clamp(0.875rem, 0.85rem + 0.15vw, 0.95rem);
+  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  --step-1: clamp(1.2rem, 1.1rem + 0.45vw, 1.45rem);
+  --step-2: clamp(1.5rem, 1.3rem + 0.9vw, 2.1rem);
+  --step-3: clamp(1.9rem, 1.55rem + 1.7vw, 3rem);
+  --step-4: clamp(2.4rem, 1.8rem + 3vw, 4.4rem);
+  --step-5: clamp(2.9rem, 2rem + 4.6vw, 6.2rem);
+  --step-6: clamp(3.2rem, 2rem + 6.4vw, 8.6rem);
 
   /* ── Motion ───────────────────────────────────────────────────────────── */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -58,71 +57,95 @@
   --radius-pill: 999px;
 
   /* ── Layout ───────────────────────────────────────────────────────────── */
-  --gutter: clamp(1rem, 6vw, 8rem);
-  --scene-count: 7;
+  --gutter: clamp(1rem, 5vw, 6rem);
+  --measure: 62ch;
+  --content: 78rem;
+  --header-h: 4.25rem;
 
-  /* ── Rail signals (written by useRail, read by every scene) ───────────── */
-  --rail-progress: 0;
-  --rail-velocity: 0;
-
-  /* There is deliberately no pointer signal here. The parallax in this site is
-     a camera move, and a camera move belongs to the travel: mixing in a little
-     sway on mouse position makes the world react to something the visitor is
-     not doing, and the illusion stops reading. A `--pointer-x` / `--pointer-y`
-     pair used to live here, along with the composable that wrote them and a
-     layer component that consumed them; all three are gone. */
+  /* ── Greenpath, sampled off the plates ────────────────────────────────── */
+  /* The colours the page drifts towards as it approaches the finale. They are
+     read off the artwork (moss of the ground, teal of the far wall, the indigo
+     of the cavern's shadows), so the transition lands *on* the painting rather
+     than next to it. */
+  --gp-moss: oklch(0.36 0.075 152);
+  --gp-teal: oklch(0.34 0.06 200);
+  --gp-indigo: oklch(0.24 0.055 262);
+  --gp-glow: oklch(0.88 0.12 172);
 }
 
-/* ── Semantic tokens ──────────────────────────────────────────────────────
-   Note the primary/secondary swap between themes: it is deliberate and
-   inherited from v1 — it gives the light theme its own identity. */
+/* ── Themes ────────────────────────────────────────────────────────────────
+   Contrast figures are against --bg, measured by the smoke test. */
 
 :root,
 [data-theme='dark'] {
-  --primary: var(--c-orange);
-  --secondary: var(--c-green);
-  --tertiary: var(--c-blue);
-  --danger: var(--c-red);
+  --bg: oklch(0.185 0.016 245);
+  --bg-raised: oklch(0.225 0.018 245);
+  --bg-sunken: oklch(0.155 0.015 245);
+  --line: oklch(0.32 0.02 245);
+  /* Non-text UI that must read on its own (field borders, graph lanes): 3:1. */
+  --line-strong: oklch(0.56 0.02 245);
 
-  --surface: var(--c-white);
-  --background: var(--c-black);
-  --surface-dim: color-mix(in oklab, var(--surface) 68%, var(--background));
-  /* Measured 4.2:1 on dark / 3.4:1 on light — clears the 3:1 floor for the
-     non-text UI strokes that use it (nav dots, dividers). */
-  --surface-faint: color-mix(in oklab, var(--surface) 50%, var(--background));
-  --editor: #000;
+  --text: oklch(0.95 0.006 245);
+  --text-dim: oklch(0.76 0.012 245);
+  --text-faint: oklch(0.64 0.014 245);
+
+  --brand: oklch(0.82 0.13 172);
+  --brand-ink: var(--brand);
+  --brand-soft: color-mix(in oklab, var(--brand) 14%, transparent);
+  --on-brand: oklch(0.2 0.03 200);
+
+  --warm: oklch(0.74 0.15 48);
+  --warm-ink: var(--warm);
+
+  --danger: oklch(0.7 0.17 25);
   --shadow-tint: #000;
-  --glass: color-mix(in oklab, var(--background) 62%, transparent);
-
-  /* Accents used for body text need a contrast-safe variant. On dark the raw
-     hues already clear 4.5:1, so they pass through untouched. */
-  --primary-text: var(--primary);
-  --secondary-text: var(--secondary);
+  --glass: color-mix(in oklab, var(--bg) 70%, transparent);
 
   color-scheme: dark;
 }
 
 [data-theme='light'] {
-  --primary: var(--c-green);
-  --secondary: var(--c-orange);
-  --tertiary: var(--c-yellow);
-  --danger: var(--c-purple);
+  --bg: oklch(0.975 0.006 90);
+  --bg-raised: oklch(0.995 0.002 90);
+  --bg-sunken: oklch(0.945 0.008 90);
+  --line: oklch(0.88 0.01 245);
+  --line-strong: oklch(0.58 0.016 245);
 
-  --surface: var(--c-black);
-  --background: var(--c-white);
-  --surface-dim: color-mix(in oklab, var(--surface) 68%, var(--background));
-  --surface-faint: color-mix(in oklab, var(--surface) 50%, var(--background));
-  --editor: #fff;
+  --text: oklch(0.22 0.018 245);
+  --text-dim: oklch(0.42 0.018 245);
+  --text-faint: oklch(0.5 0.018 245);
+
+  --brand: oklch(0.64 0.12 172);
+  /* The raw mint is a fill on paper, not text: 2.6:1. This is its text-safe
+     twin, same hue. */
+  --brand-ink: oklch(0.47 0.1 176);
+  --brand-soft: color-mix(in oklab, var(--brand) 16%, transparent);
+  --on-brand: oklch(0.99 0.004 90);
+
+  --warm: oklch(0.66 0.16 44);
+  --warm-ink: oklch(0.52 0.15 40);
+
+  --danger: oklch(0.52 0.18 25);
   --shadow-tint: #35405a;
-  --glass: color-mix(in oklab, var(--background) 62%, transparent);
-
-  /* Raw #42b883 is 2.3:1 on #f5f5f5 and #f05f40 is 3.1:1 — both fail AA for
-     text. These mixes are calibrated against measurements, not by eye:
-     4.7:1 and 5.5:1 respectively. SPEC §10.2. */
-  --primary-text: color-mix(in oklab, var(--primary) 60%, #0b2a1c);
-  --secondary-text: color-mix(in oklab, var(--secondary) 65%, #3a0f05);
+  --glass: color-mix(in oklab, var(--bg) 74%, transparent);
 
   color-scheme: light;
+}
+
+/* ── v1 names, as aliases ──────────────────────────────────────────────────
+   The primitives were written against these. They now resolve to the same
+   colour in both themes — no more swap. */
+:root {
+  --background: var(--bg);
+  --surface: var(--text);
+  --surface-dim: var(--text-dim);
+  --surface-faint: var(--line-strong);
+  --editor: var(--bg-raised);
+  --primary: var(--brand);
+  --primary-text: var(--brand-ink);
+  --secondary: var(--brand);
+  --secondary-text: var(--brand-ink);
+  --on-accent: var(--on-brand);
 }
 
 /* ── Elevation ────────────────────────────────────────────────────────────
@@ -137,122 +160,4 @@
   --shadow-3:
     0 8px 24px color-mix(in oklab, var(--shadow-tint) 24%, transparent),
     0 24px 64px color-mix(in oklab, var(--shadow-tint) 18%, transparent);
-}
-
-/* ── Tech accents ─────────────────────────────────────────────────────────
-   Carried over 1:1 from global.scss, plus the entries the content needed but
-   v1 never defined (android, nuxt, sass, node, docker, db engines, tools).
-   Consumed by NcTag through --tag-accent / --tag-bg. */
-:root {
-  --tech-vue-accent: #42b883;
-  --tech-vue-bg: rgb(53 73 94 / 40%);
-  --tech-vuex-accent: #42b883;
-  --tech-vuex-bg: rgb(53 73 94 / 40%);
-  --tech-pinia-accent: #c99513;
-  --tech-pinia-bg: rgb(247 211 54 / 40%);
-  --tech-vite-accent: #9499ff;
-  --tech-vite-bg: rgb(100 108 255 / 40%);
-  --tech-nuxt-accent: #00dc82;
-  --tech-nuxt-bg: rgb(0 220 130 / 30%);
-  --tech-react-accent: #61dbfb;
-  --tech-react-bg: rgb(97 219 251 / 40%);
-  --tech-jquery-accent: #78cff5;
-  --tech-jquery-bg: rgb(7 105 173 / 40%);
-  --tech-p5-accent: #ed225d;
-  --tech-p5-bg: rgb(237 34 93 / 40%);
-  --tech-bootstrap-accent: #563d7c;
-  --tech-bootstrap-bg: rgb(86 61 124 / 40%);
-  --tech-angular-accent: #c3002f;
-  --tech-angular-bg: rgb(234 234 234 / 40%);
-  --tech-java-accent: #ed8b00;
-  --tech-java-bg: rgb(0 115 150 / 40%);
-  --tech-js-accent: #f0db4f;
-  --tech-js-bg: rgb(240 219 79 / 40%);
-  --tech-ts-accent: #007acc;
-  --tech-ts-bg: rgb(0 122 204 / 40%);
-  --tech-unity-accent: #959595;
-  --tech-unity-bg: rgb(98 98 98 / 40%);
-  --tech-csharp-accent: #9b4993;
-  --tech-csharp-bg: rgb(104 40 118 / 40%);
-  --tech-cpp-accent: #d5e4f3;
-  --tech-cpp-bg: rgb(4 79 136 / 40%);
-  --tech-agile-accent: #ff66e5;
-  --tech-agile-bg: rgb(146 64 115 / 40%);
-  --tech-firebase-accent: #ffcb2b;
-  --tech-firebase-bg: rgb(245 130 13 / 40%);
-  --tech-html-accent: #f06529;
-  --tech-html-bg: rgb(227 76 38 / 40%);
-  --tech-css-accent: #2965f1;
-  --tech-css-bg: rgb(38 77 228 / 40%);
-  --tech-sass-accent: #cd6799;
-  --tech-sass-bg: rgb(205 103 153 / 35%);
-  --tech-flex-accent: #838a9b;
-  --tech-flex-bg: rgb(131 138 155 / 40%);
-  --tech-spring-accent: #6db33f;
-  --tech-spring-bg: rgb(109 179 63 / 40%);
-  --tech-kafka-accent: #d4d4d4;
-  --tech-kafka-bg: rgb(120 120 120 / 40%);
-  --tech-spark-accent: #e25a1c;
-  --tech-spark-bg: rgb(226 90 28 / 40%);
-  --tech-express-accent: #68a063;
-  --tech-express-bg: rgb(60 135 58 / 40%);
-  --tech-node-accent: #8cc84b;
-  --tech-node-bg: rgb(60 135 58 / 40%);
-  --tech-android-accent: #3ddc84;
-  --tech-android-bg: rgb(61 220 132 / 30%);
-  --tech-docker-accent: #2496ed;
-  --tech-docker-bg: rgb(36 150 237 / 35%);
-  --tech-dotnet-accent: #8a5cf5;
-  --tech-dotnet-bg: rgb(138 92 245 / 35%);
-  --tech-oracle-accent: #f80000;
-  --tech-oracle-bg: rgb(248 0 0 / 30%);
-  --tech-postgres-accent: #699eca;
-  --tech-postgres-bg: rgb(49 99 140 / 40%);
-  --tech-mysql-accent: #00758f;
-  --tech-mysql-bg: rgb(0 117 143 / 40%);
-  --tech-mongo-accent: #4faa41;
-  --tech-mongo-bg: rgb(79 170 65 / 35%);
-  --tech-intellij-accent: #fe315d;
-  --tech-intellij-bg: rgb(254 49 93 / 35%);
-  --tech-vscode-accent: #22a7f2;
-  --tech-vscode-bg: rgb(34 167 242 / 35%);
-  --tech-gitlab-accent: #fc6d26;
-  --tech-gitlab-bg: rgb(252 109 38 / 35%);
-  --tech-github-accent: #8b949e;
-  --tech-github-bg: rgb(139 148 158 / 35%);
-  --tech-illustrator-accent: #ff9a00;
-  --tech-illustrator-bg: rgb(255 154 0 / 35%);
-
-  /* Timeline dot accents (v1 dot colours). These are for dots and borders —
-     non-text UI, where 3:1 is the bar. */
-  --accent-green: var(--c-green);
-  --accent-polytech: var(--c-polytech);
-  --accent-acii: var(--c-acii);
-  --accent-iut-red: var(--c-iut-red);
-  --accent-catamania: var(--c-catamania);
-}
-
-/* Text variants of the same accents.
-   The raw hues fail AA as text: on black, iut-red is 3.44:1; on white, green
-   is 2.5:1, polytech 2.97:1, acii 3.14:1. Mixing 60% toward the surface colour
-   clears 4.5:1 for all four in both themes, measured. */
-:root,
-[data-theme='dark'] {
-  --accent-green-text: color-mix(in oklab, var(--c-green) 60%, #f5f5f5);
-  --accent-polytech-text: color-mix(in oklab, var(--c-polytech) 60%, #f5f5f5);
-  --accent-acii-text: color-mix(in oklab, var(--c-acii) 60%, #f5f5f5);
-  --accent-iut-red-text: color-mix(in oklab, var(--c-iut-red) 60%, #f5f5f5);
-  --accent-catamania-text: color-mix(in oklab, var(--c-catamania) 60%, #f5f5f5);
-  /* Text laid over a filled accent. Dark reads on both hues (4.7:1 on the
-     orange, 6.2:1 on the green) where --background did not. */
-  --on-accent: var(--c-black);
-}
-
-[data-theme='light'] {
-  --accent-green-text: color-mix(in oklab, var(--c-green) 60%, #101314);
-  --accent-polytech-text: color-mix(in oklab, var(--c-polytech) 60%, #101314);
-  --accent-acii-text: color-mix(in oklab, var(--c-acii) 60%, #101314);
-  --accent-iut-red-text: color-mix(in oklab, var(--c-iut-red) 60%, #101314);
-  --accent-catamania-text: color-mix(in oklab, var(--c-catamania) 60%, #101314);
-  --on-accent: var(--c-black);
 }

@@ -15,7 +15,6 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxt/eslint',
-    '@nuxt/fonts',
     '@nuxt/image',
     '@nuxtjs/color-mode',
     '@nuxtjs/i18n',
@@ -30,12 +29,18 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      link: [{ rel: 'icon', href: '/favicon.ico' }],
+      link: [
+        { rel: 'icon', href: '/favicon.ico' },
+        // The two faces the first screen paints with: the name, and the code
+        // around it. Everything else can arrive after.
+        { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/fraunces-latin-wght-normal.woff2', crossorigin: '' },
+        { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/jetbrains-mono-latin-400-normal.woff2', crossorigin: '' },
+      ],
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }],
     },
   },
 
-  css: ['~/assets/css/reset.css', '~/assets/css/tokens.css', '~/assets/css/typography.css', '~/assets/css/rail.css'],
+  css: ['~/assets/css/fonts.css', '~/assets/css/reset.css', '~/assets/css/tokens.css', '~/assets/css/typography.css', '~/assets/css/rail.css'],
 
   colorMode: {
     classSuffix: '',
@@ -112,10 +117,6 @@ export default defineNuxtConfig({
     },
   },
   eslint: { config: { stylistic: true } },
-
-  fonts: {
-    families: [{ name: 'JetBrains Mono', provider: 'google', weights: [400, 700] }],
-  },
 
   i18n: {
     defaultLocale: 'fr',

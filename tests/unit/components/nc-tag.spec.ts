@@ -59,10 +59,9 @@ describe('NcTag', () => {
     expect(wrapper.emitted('open')).toBeUndefined()
   })
 
-  it('wires the tech token pair so colour stays in tokens.css', () => {
+  it('carries no per-technology colour: tags are monochrome', () => {
     const wrapper = mount(NcTag, { props: { label: 'Java', tech: 'java' } })
-    const style = wrapper.attributes('style') ?? ''
-    expect(style).toContain('--tag-accent: var(--tech-java-accent)')
-    expect(style).toContain('--tag-bg: var(--tech-java-bg)')
+    expect(wrapper.attributes('style')).toBeUndefined()
+    expect(wrapper.text()).toBe('Java')
   })
 })

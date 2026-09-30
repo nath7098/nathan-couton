@@ -41,7 +41,7 @@ onMounted(() => {
   catch { /* ignore */ }
 
   // Total length is capped: 1.75s typing plus a beat, then it lifts.
-  const timer = window.setTimeout(dismiss, 2200)
+  const timer = window.setTimeout(dismiss, 1200)
 
   useEventListener(window, 'keydown', dismiss)
   useEventListener(window, 'pointerdown', dismiss)
@@ -95,12 +95,12 @@ onMounted(() => {
   /* steps() on a ch-based width is the typewriter; the caret blinks alongside. */
   inline-size: 0;
   animation:
-    nc-type 1.75s steps(19, end) 0.15s forwards,
-    nc-caret 0.6s step-end 4;
+    nc-type 0.9s steps(17, end) 0.1s forwards,
+    nc-caret 0.5s step-end 2;
 }
 
 @keyframes nc-type {
-  to { inline-size: 19ch; }
+  to { inline-size: 17ch; }
 }
 
 @keyframes nc-caret {

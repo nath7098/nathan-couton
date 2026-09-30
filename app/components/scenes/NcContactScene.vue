@@ -194,7 +194,7 @@ async function copyPhone() {
         </div>
 
         <NcButton
-          variant="solid"
+          variant="primary"
           type="submit"
           :loading="status === 'submitting'"
         >

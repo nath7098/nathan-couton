@@ -43,7 +43,7 @@ function toggleFilter(tech: TechKey) {
       <span class="projects__filters-label">{{ t('projectsSection.filterLabel') }}</span>
       <NcButton
         size="sm"
-        :variant="filter === null ? 'solid' : 'ghost'"
+        :variant="filter === null ? 'primary' : 'ghost'"
         @click="filter = null"
       >
         {{ t('projectsSection.filterAll') }}

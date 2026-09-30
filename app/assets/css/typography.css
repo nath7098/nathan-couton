@@ -1,41 +1,107 @@
-/* Typography — the {{ }} braces around headings are the site's signature
-   and are carried over from v1 (src/assets/style/main.scss). */
+/* Typography.
+
+   Three voices, each with one job:
+   - Fraunces (display) — the titles, and the name. It is the "world" half of
+     Compile → Run, and it is where the page ends up: the finale's sign is set
+     in it.
+   - JetBrains Mono — the code thread: file tabs, hashes, dates, labels, the
+     {{ }} braces. Never paragraphs.
+   - The system sans — everything you read for more than a line. */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  letter-spacing: -0.015em;
+  font-optical-sizing: auto;
+}
 
 h1 {
-  font-size: var(--step-4);
-  color: var(--primary-text);
+  font-size: var(--step-6);
+  line-height: 0.95;
 }
 
 h2 {
-  font-size: var(--step-2);
-  font-weight: 500;
+  font-size: var(--step-5);
+  line-height: 1;
 }
 
 h3 {
-  font-size: var(--step-1);
+  font-size: var(--step-2);
+  line-height: 1.15;
 }
 
-/* Applied by NcHeading when `braces` is on. The braces are decorative: they
-   are pseudo-elements so screen readers never announce them. */
+/* ── The braces ────────────────────────────────────────────────────────────
+   The site's signature, carried over from v1 — tightened. They used to float a
+   hundred-odd pixels off the name (a stray space in the slot, and an entrance
+   that never finished), which read as broken spacing rather than as code.
+
+   Mono and light against the serif: they are scaffolding around the word, and
+   `--code` (1 → 0 down the page) is how much scaffolding is left. The braces
+   fade as the page compiles into the world at the bottom of it. */
 .nc-braces::before,
 .nc-braces::after {
-  color: var(--secondary-text);
-  font-size: 1.15em;
-  line-height: 0;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.62em;
+  color: var(--brand-ink);
+  opacity: calc(0.25 + 0.75 * var(--code, 1));
+  vertical-align: 0.18em;
 }
 
 .nc-braces::before {
   content: '{{';
-  margin-inline-end: 0.15em;
+  margin-inline-end: 0.12em;
 }
 
 .nc-braces::after {
   content: '}}';
-  margin-inline-start: 0.15em;
+  margin-inline-start: 0.12em;
+}
+
+/* Small mono label: file tabs, dates, eyebrows. */
+.nc-mono {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.02em;
+}
+
+.nc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
 }
 
 .nc-mono-dim {
-  color: var(--surface-dim);
+  color: var(--text-dim);
+}
+
+/* ── Reveal on entry ───────────────────────────────────────────────────────
+   Opacity and a short lift, driven by the element's own passage into the
+   viewport. The resting state is the visible one: without scroll-driven
+   animations, without JS, with reduced motion or for Ctrl+F, the content is
+   simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .nc-reveal {
+      animation: nc-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+  }
+}
+
+@keyframes nc-reveal {
+  from {
+    opacity: 0;
+    translate: 0 1.5rem;
+  }
+}
+
+:root[data-motion='reduced'] .nc-reveal {
+  animation: none;
 }
 
 /* Visually hidden but reachable by assistive tech. */
@@ -57,8 +123,8 @@ h3 {
   left: var(--space-s);
   z-index: 9999;
   padding: var(--space-2xs) var(--space-s);
-  color: var(--background);
-  background: var(--secondary);
+  color: var(--on-brand);
+  background: var(--brand);
   border-radius: var(--radius-s);
   font-weight: 700;
   text-decoration: none;

@@ -22,7 +22,7 @@ const rail = useRail()
     </p>
 
     <NcButton
-      variant="code"
+      variant="primary"
       class="home__cta"
       @click="rail.goTo('about')"
     >

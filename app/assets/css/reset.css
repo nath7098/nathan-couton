@@ -18,11 +18,11 @@ html {
 
 body {
   min-height: 100svh;
-  font-family: var(--font-mono);
+  font-family: var(--font-text);
   font-size: var(--step-0);
   line-height: 1.6;
-  color: var(--surface);
-  background-color: var(--background);
+  color: var(--text);
+  background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -88,7 +88,7 @@ ol[role='list'] {
 
 /* Focus is never removed — only restyled. See SPEC §10.2. */
 :focus-visible {
-  outline: 2px solid var(--secondary);
+  outline: 2px solid var(--brand);
   outline-offset: 3px;
   border-radius: var(--radius-s);
 }
@@ -98,8 +98,8 @@ ol[role='list'] {
 }
 
 ::selection {
-  color: var(--background);
-  background-color: var(--secondary);
+  color: var(--on-brand);
+  background-color: var(--brand);
 }
 
 /* One source of truth for motion: [data-motion="reduced"] is set by

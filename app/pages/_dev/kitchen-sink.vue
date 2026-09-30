@@ -54,10 +54,10 @@ function fakeSubmit() {
         Buttons
       </h2>
       <div class="sink__row">
-        <NcButton variant="code">
+        <NcButton variant="primary">
           En savoir plus
         </NcButton>
-        <NcButton variant="solid">
+        <NcButton variant="primary">
           Envoyer
         </NcButton>
         <NcButton variant="ghost">
@@ -76,14 +76,14 @@ function fakeSubmit() {
           Suivant
         </NcButton>
         <NcButton
-          variant="solid"
+          variant="primary"
           :loading="loading"
           @click="fakeSubmit"
         >
           Envoyer
         </NcButton>
         <NcButton
-          variant="solid"
+          variant="primary"
           disabled
         >
           Désactivé
