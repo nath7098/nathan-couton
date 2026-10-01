@@ -32,6 +32,14 @@ useHead(() => ({
     key: 'nc-hash-capture',
     innerHTML: `window.__ncHash=(function(m){var h=(location.hash||"").slice(1);if(m[h]){h=m[h];history.replaceState(null,"","#"+h)}return h})(${JSON.stringify(LEGACY_HASHES)})`,
     tagPosition: 'head',
+  }, {
+    // The opening veil is in the prerendered HTML; this decides, before the
+    // first paint, whether it shows. Once per session, never with reduced
+    // motion, and never without JS (no class, no veil). Deciding later — in
+    // a component's onMounted — painted the page first and the veil over it.
+    key: 'nc-intro-gate',
+    innerHTML: `(function(){try{var k="nc-intro-played";if(sessionStorage.getItem(k)!=="1"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.classList.add("nc-intro");sessionStorage.setItem(k,"1")}}catch(e){}})()`,
+    tagPosition: 'head',
   }],
 }))
 </script>

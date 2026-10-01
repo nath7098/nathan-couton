@@ -7,84 +7,87 @@
  * is the first half of the page's bookend instead: `npm run build` here, and
  * `npm run contact` at the bottom, where the build finally runs.
  *
- * Rules kept from v1: once per session, skipped by any input, never blocking.
- * The page is painted underneath from the first frame; this is only a veil,
- * and it is gone in 1.1 seconds.
+ * Painted with the page, decided before it. The veil is in the prerendered
+ * HTML, hidden unless `<html>` carries `nc-intro` — which a tiny inline script
+ * in the head (app.vue, `nc-intro-gate`) sets on the first visit of a session
+ * when motion is allowed. Deciding here, after hydration, showed the site
+ * first and then dropped the veil over it.
+ *
+ * The whole sequence is CSS, lift included (1.1s, then 650ms), so it never
+ * waits on the app's JavaScript: a slow bundle cannot keep it up. Vue only
+ * adds the skip (any key, click or wheel) and removes the element once the
+ * lift has finished.
  */
 const { t } = useI18n()
-const { reduced } = useMotionPreference()
 
-const showing = ref(false)
+/** Rendered on both sides, so hydration matches; CSS decides what is seen. */
+const showing = ref(true)
 const leaving = ref(false)
+const root = ref<HTMLElement>()
 
-const KEY = 'nc-intro-played'
+function settle() {
+  showing.value = false
+  document.documentElement.classList.remove('nc-intro')
+}
+
+/** Removes the veil when whichever lift is running has finished. */
+function afterLift() {
+  const lift = root.value?.getAnimations()
+    .find(a => a instanceof CSSAnimation && /^intro-(lift|skip)$/.test(a.animationName))
+  if (!lift || lift.playState === 'finished') return settle()
+  // A skip replaces the lift, which rejects as cancelled: nothing to do then.
+  lift.finished.then(settle, () => {})
+}
 
 function dismiss() {
   if (leaving.value || !showing.value) return
   leaving.value = true
-  window.setTimeout(() => {
-    showing.value = false
-  }, 650)
+  nextTick(afterLift)
 }
 
 onMounted(() => {
-  let played = false
-  try {
-    played = sessionStorage.getItem(KEY) === '1'
+  if (!document.documentElement.classList.contains('nc-intro')) {
+    showing.value = false
+    return
   }
-  catch {
-    // Private mode or blocked storage: play it, it is only a veil.
-  }
-
-  if (played || reduced.value) return
-
-  showing.value = true
-  try {
-    sessionStorage.setItem(KEY, '1')
-  }
-  catch { /* ignore */ }
-
-  const timer = window.setTimeout(dismiss, 1100)
+  afterLift()
 
   useEventListener(window, 'keydown', dismiss)
   useEventListener(window, 'pointerdown', dismiss)
   useEventListener(window, 'wheel', dismiss, { passive: true })
-
-  onBeforeUnmount(() => clearTimeout(timer))
 })
 </script>
 
 <template>
-  <Transition name="nc-intro">
+  <div
+    v-if="showing"
+    ref="root"
+    class="intro"
+    :class="{ 'is-leaving': leaving }"
+  >
     <div
-      v-if="showing"
-      class="intro"
-      :class="{ 'is-leaving': leaving }"
+      class="intro__log"
+      aria-hidden="true"
     >
-      <div
-        class="intro__log"
-        aria-hidden="true"
-      >
-        <p class="intro__line intro__line--cmd">
-          <span class="intro__dollar">$</span> npm run build
-        </p>
-        <p class="intro__line intro__line--1">
-          {{ t('intro.compiling') }}
-        </p>
-        <p class="intro__line intro__line--2">
-          ✓ {{ t('intro.done') }}
-        </p>
-        <span class="intro__bar" />
-      </div>
-      <button
-        type="button"
-        class="intro__skip"
-        @click="dismiss"
-      >
-        {{ t('intro.skip') }}
-      </button>
+      <p class="intro__line intro__line--cmd">
+        <span class="intro__dollar">$</span> npm run build
+      </p>
+      <p class="intro__line intro__line--1">
+        {{ t('intro.compiling') }}
+      </p>
+      <p class="intro__line intro__line--2">
+        ✓ {{ t('intro.done') }}
+      </p>
+      <span class="intro__bar" />
     </div>
-  </Transition>
+    <button
+      type="button"
+      class="intro__skip"
+      @click="dismiss"
+    >
+      {{ t('intro.skip') }}
+    </button>
+  </div>
 </template>
 
 <style scoped>
@@ -92,6 +95,8 @@ onMounted(() => {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  /* Lifts on its own, upwards, whether or not the app has booted. */
+  animation: intro-lift 650ms var(--ease-in-out-quint, cubic-bezier(0.83, 0, 0.17, 1)) 1100ms forwards;
   display: grid;
   place-content: center;
   gap: var(--space-l);
@@ -147,6 +152,34 @@ onMounted(() => {
   to { scale: 1 1; }
 }
 
+/* A skip is a new animation, not a re-timed one: changing the delay of the
+   running lift would jump it to wherever the clock already is. */
+.intro.is-leaving {
+  animation: intro-skip 450ms var(--ease-in-out-quint, cubic-bezier(0.83, 0, 0.17, 1)) forwards;
+}
+
+@keyframes intro-lift {
+  /* From an explicit inset: `none` → inset() does not interpolate, it flips. */
+  from { clip-path: inset(0 0 0 0); }
+
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+@keyframes intro-skip {
+  /* From an explicit inset: `none` → inset() does not interpolate, it flips. */
+  from { clip-path: inset(0 0 0 0); }
+
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
 .intro__skip {
   padding: var(--space-3xs) var(--space-2xs);
   font-family: var(--font-mono);
@@ -155,13 +188,11 @@ onMounted(() => {
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
 }
+</style>
 
-/* The veil lifts off the page, upwards. */
-.nc-intro-leave-active {
-  transition: clip-path 650ms var(--ease-in-out-quint);
-}
-
-.nc-intro-leave-to {
-  clip-path: inset(0 0 100% 0);
+<style>
+/* Unscoped on purpose: the decision is a class on <html>, set before Vue. */
+html:not(.nc-intro) .intro {
+  display: none;
 }
 </style>

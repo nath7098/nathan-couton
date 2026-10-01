@@ -150,6 +150,34 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
   await page.close()
 }
 
+// ── The opening veil ───────────────────────────────────────────────────────
+// It must cover the very first paint — not arrive once the app has booted,
+// over a page already seen. So: with the app's JavaScript blocked outright,
+// the veil is still there (prerendered, decided by the inline gate), and it
+// still lifts on schedule — it never waits for the app. A second visit in the same session never sees it.
+{
+  const page = await browser.newPage()
+  await page.route('**/_nuxt/*.js', route => route.abort())
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'domcontentloaded' })
+  const seen = () => page.evaluate(() => {
+    const el = document.querySelector('.intro')
+    if (!el) return false
+    const style = getComputedStyle(el)
+    return style.display !== 'none' && style.visibility === 'visible'
+  })
+  const early = await seen()
+  await page.waitForTimeout(2500)
+  const late = await seen()
+  check(early && !late, `the opening veil is in the first paint, and lifts on time even without the app (${early} → ${late})`)
+
+  await page.unroute('**/_nuxt/*.js')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  const again = await seen()
+  await page.waitForTimeout(600)
+  check(!again && !(await seen()), 'a second visit in the same session never shows it')
+  await page.close()
+}
+
 // ── English home ───────────────────────────────────────────────────────────
 {
   const { page, problems } = await visit('/en')
