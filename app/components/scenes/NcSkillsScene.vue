@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TIERS, skillsIn } from '~/data/skills'
+import { TIERS, skillYears, skillsIn } from '~/data/skills'
 
 /**
  * Skills as `pom.xml` scopes — `compile`, `runtime`, `test` — which is to say:
@@ -63,9 +63,9 @@ function toCommit(event: MouseEvent, id: string) {
           />
           <span class="skill__name">{{ skill.name }}</span>
           <span
-            v-if="skill.years"
+            v-if="skillYears(skill)"
             class="skill__years"
-          >{{ t('skills.years', skill.years) }}</span>
+          >{{ t('skills.years', skillYears(skill)!) }}</span>
           <span
             v-if="skill.usedIn?.length"
             class="skill__used"

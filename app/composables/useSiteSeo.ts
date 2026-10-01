@@ -1,4 +1,5 @@
 import { CONTACT } from '~/data/contact'
+import { YEARS_OF_EXPERIENCE } from '~/data/now'
 
 /**
  * Page metadata and structured data (SPEC §10.3).
@@ -12,7 +13,7 @@ export function useSiteSeo() {
   const config = useRuntimeConfig()
   const site = config.public.siteUrl
 
-  const description = computed(() => t('seo.description'))
+  const description = computed(() => t('seo.description', { years: YEARS_OF_EXPERIENCE }))
   const title = computed(() => `Nathan Couton — ${t('seo.title')}`)
 
   useSeoMeta({

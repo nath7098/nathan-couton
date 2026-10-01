@@ -283,7 +283,7 @@ ne pilote aucun décor (seuls le curseur et le CTA magnétique y réagissent).
    compétences ou du hero : relancer, regarder, committer les deux PDF. Le
    site propose celui de la langue affichée (`useResume`).
 2. **Démos des projets publics** (captures ou vidéo de 10–20 s ≤ 1,5 Mo +
-   poster) : solveur TSP, AJL Peinture, HoloLens, SwalloWin. Les études de cas
+   poster) : HoloLens, Pink Amazones (le TSP a sa démo en ligne et une figure animée). Les études de cas
    ont leur figure ; un média réel s'ajouterait à côté.
 3. **Statut public** : `NOW.openToOffers` (`app/data/now.ts`) est à `false` —
    c'est au propriétaire de dire s'il est « ouvert aux échanges ».

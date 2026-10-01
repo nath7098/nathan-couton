@@ -109,6 +109,7 @@ const markerId = computed(() => `arrow-${props.caseId}`)
       <NcProjectMotif
         :motif="figure.motif"
         :seed="caseId"
+        animate
       />
     </div>
   </div>

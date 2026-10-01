@@ -27,7 +27,7 @@ const jiti = createJiti(import.meta.url, { alias: { '~': join(ROOT, 'app') } })
 const load = async path => jiti.import(join(ROOT, path))
 
 const { BRANCHES, COMMITS } = await load('app/data/parcours.ts')
-const { SKILLS, TIERS } = await load('app/data/skills.ts')
+const { SKILLS, TIERS, skillYears } = await load('app/data/skills.ts')
 const { CONTACT } = await load('app/data/contact.ts')
 const { NOW, CONTENT_AS_OF, YEARS_OF_EXPERIENCE } = await load('app/data/now.ts')
 const { FIGURE_IDS, HOBBY_IDS } = await load('app/data/about.ts')
@@ -135,7 +135,7 @@ function render(locale) {
       <div class="tier">
         <h3 class="tier__title">${escape(t(`skills.tiers.${tier}.title`))}</h3>
         <ul class="tier__list">${SKILLS.filter(skill => skill.tier === tier && skill.id !== 'intellij').map(skill => `
-          <li>${escape(skill.name)}${skill.years ? `<span class="tier__years">${skill.years}</span>` : ''}</li>`).join('')}
+          <li>${escape(skill.name)}${skillYears(skill) ? `<span class="tier__years">${skillYears(skill)}</span>` : ''}</li>`).join('')}
         </ul>
       </div>`).join('')
 
