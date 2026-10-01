@@ -29,7 +29,7 @@ const expect = (actual, wanted, label) => {
 }
 // Whatever the shell carries, this process is the unconfigured case.
 for (const key of Object.keys(process.env)) {
-  if (key.startsWith('NUXT_APPLE_MUSIC_')) delete process.env[key]
+  if (key.startsWith('NUXT_LASTFM_')) delete process.env[key]
 }
 
 const mod = await import(BUNDLE)
@@ -72,7 +72,7 @@ for (let i = 1; i <= 6; i++) {
   expect(response.status, i <= 5 ? 503 : 429, `request ${i} (remaining ${response.remaining})`)
 }
 
-console.log('soundtrack, Apple Music unconfigured')
+console.log('soundtrack, Last.fm unconfigured')
 {
   const res = await fetch('http://localhost:4180/api/soundtrack')
   expect(res.status, 200, 'answers')
@@ -83,9 +83,9 @@ console.log('soundtrack, Apple Music unconfigured')
 server.close()
 
 // Runtime config is read once, when the bundle loads: each configured
-// scenario runs in its own process, against a stand-in for Apple's API.
-for (const scenario of ['live', 'expired']) {
-  console.log(`soundtrack, Apple Music ${scenario}`)
+// scenario runs in its own process, against a stand-in for Last.fm's API.
+for (const scenario of ['live', 'invalid']) {
+  console.log(`soundtrack, Last.fm ${scenario}`)
   const child = spawnSync(process.execPath, [fileURLToPath(new URL('./test-api-soundtrack.mjs', import.meta.url)), scenario], {
     encoding: 'utf8',
   })

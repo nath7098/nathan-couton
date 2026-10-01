@@ -51,7 +51,7 @@ const AXE_PATH = '/__axe.js'
 const API_BUNDLE = '.vercel/output/functions/api/soundtrack.func/index.mjs'
 const api = existsSync(API_BUNDLE) ? (await import(`../${API_BUNDLE}`)).default : undefined
 for (const key of Object.keys(process.env)) {
-  if (key.startsWith('NUXT_APPLE_MUSIC_')) delete process.env[key]
+  if (key.startsWith('NUXT_LASTFM_')) delete process.env[key]
 }
 
 const server = createServer((req, res) => {
@@ -226,7 +226,7 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
   check(missing.length === 0, `prerendered HTML carries the content${missing.length ? ` — missing: ${missing.join(', ')}` : ''}`)
 }
 
-// ── The playlist: Apple Music when it answers, 2024 otherwise ───────────────
+// ── The playlist: Last.fm when it answers, 2024 otherwise ───────────────────
 {
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8')
   const rows = html.match(/<ol class="playlist"[^>]*>([\s\S]*?)<\/ol>/)?.[1].match(/<li/g)?.length ?? 0
@@ -238,7 +238,7 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
   await page.waitForTimeout(800)
   const fallback = await page.locator('.card--playlist .card__title').innerText()
   check(problems.length === 0 && fallback.includes('2024'),
-    `without Apple Music, the playlist stays the dated 2024 snapshot (${fallback}${problems.length ? ` — ${problems.join(' | ')}` : ''})`)
+    `without Last.fm, the playlist stays the dated 2024 snapshot (${fallback}${problems.length ? ` — ${problems.join(' | ')}` : ''})`)
   await page.close()
 
   // Live: what the API says replaces it once the profile is hydrated.
@@ -251,7 +251,7 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
     body: JSON.stringify({
       live: true,
       tracks: [
-        { title: 'Smoke Track', artist: 'Smoke Artist', href: 'https://music.apple.com/fr/song/1' },
+        { title: 'Smoke Track', artist: 'Smoke Artist', href: 'https://www.last.fm/music/Smoke+Artist/_/Smoke+Track' },
         { title: 'Unlinked Track', artist: 'Someone' },
       ],
       artists: ['Smoke Artist', 'Someone'],
@@ -265,7 +265,7 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
   const links = await live.locator('.card--playlist a.playlist__row').count()
   check(card.includes('En rotation') && card.includes('Smoke Track') && card.includes('Smoke Artist, Someone')
     && links === 1 && liveProblems.length === 0,
-  `with Apple Music, the playlist turns live once in view (${links} link${liveProblems.length ? ` — ${liveProblems.join(' | ')}` : ''})`)
+  `with Last.fm, the playlist turns live once in view (${links} link${liveProblems.length ? ` — ${liveProblems.join(' | ')}` : ''})`)
   await live.close()
 }
 

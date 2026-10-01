@@ -110,7 +110,7 @@ export default {
       soundtrack: 'Bande-son {year}',
       rotation: 'En rotation',
       artists: 'Top artistes cette année-là : {artists}.',
-      rotationArtists: 'Les plus écoutés ces derniers temps : {artists}.',
+      rotationArtists: 'Les plus écoutés ce mois-ci : {artists}.',
       gamesFile: 'jeux/favori',
       knight: 'Le décor de la dernière scène de ce site.',
       knightLink: 'Le rejoindre',

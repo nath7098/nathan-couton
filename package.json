@@ -26,8 +26,7 @@
     "test:api": "node scripts/test-api.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "shots": "node scripts/shots.mjs",
-    "cv": "node scripts/build-cv.mjs",
-    "apple-music:token": "node scripts/apple-music-token.mjs"
+    "cv": "node scripts/build-cv.mjs"
   },
   "dependencies": {
     "nuxt": "^4.5.2",

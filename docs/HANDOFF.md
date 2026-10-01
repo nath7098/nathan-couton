@@ -52,7 +52,7 @@ exécute.** Rien n'est « livré » tant que ça n'est pas vert.
 | `npm run dev` | développement |
 | `npm run check` | lint + typecheck + tests unitaires (rapide) |
 | `npm run smoke` | charge le build réel dans Chromium ; exige un `build` préalable |
-| `npm run test:api` | exerce `POST /api/contact` et `GET /api/soundtrack` (Apple simulé) sur le bundle déployé |
+| `npm run test:api` | exerce `POST /api/contact` et `GET /api/soundtrack` (Last.fm simulé) sur le bundle déployé |
 | `npm run lighthouse` | audit sur la sortie de build |
 | `npm run icons` | régénère le sprite et `app/utils/icon-names.ts` |
 | `npm run shots` | captures du parcours complet sur le build (6 configurations) — à regarder |
@@ -295,7 +295,7 @@ ne pilote aucun décor (seuls le curseur et le CTA magnétique y réagissent).
    petit, dans le profil).
 
 **Avant la bascule DNS :** `NUXT_EMAILJS_*` dans Vercel (sinon le formulaire
-répond 503), `NUXT_APPLE_MUSIC_*` (sinon la playlist reste celle de 2024), réencodage de `public/audio/hollow-knight-theme.mp3` (4,4 Mo),
+répond 503), `NUXT_LASTFM_*` (sinon la playlist reste celle de 2024), réencodage de `public/audio/hollow-knight-theme.mp3` (4,4 Mo),
 validation de la preview, puis DNS — en gardant les 301.
 
 **Points de vigilance :**
@@ -305,10 +305,12 @@ validation de la preview, puis DNS — en gardant les 301.
   À remesurer sur une vraie machine.
 - **JS critique 124 kB / 140.** Toute fonctionnalité lourde passe par un
   chargement à la demande, comme ⌘K.
-- **La playlist du profil vient d'Apple Music** (`GET /api/soundtrack`, voir
-  README « Bande-son Apple Music ») et retombe sur l'instantané Spotify 2024,
-  présenté comme tel, tant que les `NUXT_APPLE_MUSIC_*` ne sont pas renseignés
-  dans Vercel ou quand le jeton utilisateur a expiré (quelques mois).
+- **La playlist du profil vient de Last.fm** (écoutes Apple Music scrobblées,
+  top du mois ; `GET /api/soundtrack`, voir README « Bande-son (Last.fm) ») et
+  retombe sur l'instantané Spotify 2024, présenté comme tel, tant que les
+  `NUXT_LASTFM_*` ne sont pas renseignés dans Vercel ou que rien n'a été
+  scrobblé sur le mois. Apple Music direct a été écarté : MusicKit exige
+  l'abonnement payant Apple Developer.
 - **L'illustration Greenpath appartient à Team Cherry** : elle reste confinée au
   final, créditée sur la scène et dans le pied de page.
 

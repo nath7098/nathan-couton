@@ -60,13 +60,10 @@ export default defineNuxtConfig({
       privateKey: '',
     },
     // Read by GET /api/soundtrack. Without them, the profile shows the frozen
-    // 2024 soundtrack. See README, « Bande-son Apple Music ».
-    appleMusic: {
-      teamId: '',
-      keyId: '',
-      privateKey: '',
-      userToken: '',
-      storefront: 'fr',
+    // 2024 soundtrack. See README, « Bande-son (Last.fm) ».
+    lastfm: {
+      apiKey: '',
+      user: '',
     },
     public: {
       siteUrl: 'https://nathancouton.fr',
@@ -80,7 +77,7 @@ export default defineNuxtConfig({
     '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
   },
   future: { compatibilityVersion: 4 },
-  // The prerendered page's data (the Apple Music playlist) is inlined in the
+  // The prerendered page's data (the Last.fm playlist) is inlined in the
   // HTML, rather than fetched from _payload.json before hydration can start:
   // one round trip less on the critical path. The file still serves
   // client-side navigation.

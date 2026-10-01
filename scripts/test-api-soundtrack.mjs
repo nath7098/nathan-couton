@@ -1,13 +1,12 @@
 /**
- * GET /api/soundtrack with Apple Music configured, against a stand-in for
- * Apple's API. Run by scripts/test-api.mjs, one process per scenario, because
- * the bundle reads its runtime config once, when it loads:
+ * GET /api/soundtrack with Last.fm configured, against a stand-in for
+ * Last.fm's API. Run by scripts/test-api.mjs, one process per scenario,
+ * because the bundle reads its runtime config once, when it loads:
  *
- *   live     two pages of history → ranked tracks and artists, cached an hour
- *   expired  Apple answers 401 → the 2024 fallback, and a log saying how to fix it
+ *   live     top tracks and artists over a month, cached an hour
+ *   invalid  Last.fm rejects the key → the 2024 fallback, and a log naming the variable
  */
 import { createServer } from 'node:http'
-import { generateKeyPairSync, verify } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 const BUNDLE = fileURLToPath(new URL('../.vercel/output/functions/api/soundtrack.func/index.mjs', import.meta.url))
@@ -20,34 +19,27 @@ const expect = (actual, wanted, label) => {
   console.log(`  ${ok ? '✓' : '✗'} ${label} → ${actual}${ok ? '' : ` (expected ${wanted})`}`)
 }
 
-const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
-process.env.NUXT_APPLE_MUSIC_TEAM_ID = 'TEAM123'
-process.env.NUXT_APPLE_MUSIC_KEY_ID = 'KEY456'
-// As pasted into a single-line env var.
-process.env.NUXT_APPLE_MUSIC_PRIVATE_KEY = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString().trim().replace(/\n/g, '\\n')
-process.env.NUXT_APPLE_MUSIC_USER_TOKEN = 'user-token'
+process.env.NUXT_LASTFM_API_KEY = 'test-key'
+process.env.NUXT_LASTFM_USER = 'nath7098'
 
-const song = (name, artistName, id) => ({
-  id, type: 'songs', attributes: { name, artistName, url: `https://music.apple.com/fr/song/${id}` },
+const track = (name, artist) => ({
+  name, playcount: '12', artist: { name: artist }, url: `https://www.last.fm/music/${encodeURIComponent(artist)}/_/${encodeURIComponent(name)}`,
 })
-const PAGE_ONE = [
-  song('Rain', 'Sleep Token', '1'), song('Like A Villain', 'Bad Omens', '2'), song('Rain', 'Sleep Token', '1'),
-  ...Array.from({ length: 27 }, (_, i) => song(`Filler ${i}`, 'Periphery', String(100 + i))),
-]
-const PAGE_TWO = Array.from({ length: 20 }, (_, i) => song(`Older ${i}`, 'Bad Omens', String(200 + i)))
+const TOP_TRACKS = { toptracks: { track: [
+  track('Emergence', 'Sleep Token'), track('Ragnarok', 'Periphery'),
+  track('The Death of Peace of Mind', 'Bad Omens'), track('Granite', 'Sleep Token'),
+] } }
+const TOP_ARTISTS = { topartists: { artist: [{ name: 'Sleep Token' }, { name: 'Periphery' }, { name: 'Bad Omens' }, { name: 'Spiritbox' }] } }
 
 const calls = []
 const realFetch = globalThis.fetch
 globalThis.fetch = async (input, init) => {
-  const url = String(input)
-  if (!url.startsWith('https://api.music.apple.com/')) return realFetch(input, init)
-  calls.push({ url, headers: new Headers(init?.headers) })
-  if (scenario === 'expired') return new Response('{"errors":[]}', { status: 401 })
-  const second = url.includes('offset=30')
-  return Response.json({
-    data: second ? PAGE_TWO : PAGE_ONE,
-    ...(second ? {} : { next: '/v1/me/recent/played/tracks?types=songs,library-songs&offset=30' }),
-  })
+  const url = new URL(String(input))
+  if (url.hostname !== 'ws.audioscrobbler.com') return realFetch(input, init)
+  calls.push(url)
+  // Last.fm reports errors in the body, here with a 403.
+  if (scenario === 'invalid') return Response.json({ error: 10, message: 'Invalid API key' }, { status: 403 })
+  return Response.json(url.searchParams.get('method') === 'user.gettoptracks' ? TOP_TRACKS : TOP_ARTISTS)
 }
 
 const logged = []
@@ -64,25 +56,22 @@ expect(res.status, 200, 'answers')
 
 if (scenario === 'live') {
   expect(body.live, true, 'is live')
-  expect(body.tracks.map(t => t.title).join(' | '), 'Rain | Like A Villain | Filler 0 | Filler 1', 'tracks by plays, then recency')
-  expect(body.artists.join(', '), 'Periphery, Bad Omens, Sleep Token', 'artists by plays')
-  expect(body.tracks[0].href, 'https://music.apple.com/fr/song/1', 'links to Apple Music')
-  expect(calls.length, 2, 'reads both pages of the history')
+  expect(body.tracks.map(t => t.title).join(' | '), 'Emergence | Ragnarok | The Death of Peace of Mind | Granite', 'tracks in Last.fm\'s order')
+  expect(body.artists.join(', '), 'Sleep Token, Periphery, Bad Omens, Spiritbox', 'artists in Last.fm\'s order')
+  expect(body.tracks[0].href, 'https://www.last.fm/music/Sleep%20Token/_/Emergence', 'links to the Last.fm page')
   expect(res.headers.get('cache-control'), 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400', 'cached an hour on the CDN')
 
-  const auth = calls[0].headers.get('authorization')?.replace(/^Bearer /, '') ?? ''
-  const [h, p, s] = auth.split('.')
-  const signed = s && verify('sha256', Buffer.from(`${h}.${p}`), { key: publicKey, dsaEncoding: 'ieee-p1363' }, Buffer.from(s, 'base64url'))
-  expect(signed, true, 'developer token is signed with the MusicKit key')
-  expect(JSON.parse(Buffer.from(h, 'base64url').toString()).kid, 'KEY456', 'and names its key')
-  expect(calls[0].headers.get('music-user-token'), 'user-token', 'user token is sent')
+  expect(calls.map(url => url.searchParams.get('method')).sort().join(', '), 'user.gettopartists, user.gettoptracks', 'asks for top tracks and top artists')
+  const params = calls[0].searchParams
+  expect(`${params.get('user')} ${params.get('api_key')} ${params.get('period')} ${params.get('format')}`,
+    'nath7098 test-key 1month json', 'for the configured user, over a month, as JSON')
 
   await realFetch('http://localhost:4181/api/soundtrack')
-  expect(calls.length, 2, 'a warm instance does not ask Apple again')
+  expect(calls.length, 2, 'a warm instance does not ask Last.fm again')
 }
 else {
   expect(JSON.stringify(body), '{"live":false}', 'falls back')
-  expect(logged.some(line => line.includes('401') && line.includes('apple-music:token')), true, 'logs how to renew the token')
+  expect(logged.some(line => line.includes('error 10') && line.includes('NUXT_LASTFM_API_KEY')), true, 'logs which variable to check')
 }
 
 server.close()

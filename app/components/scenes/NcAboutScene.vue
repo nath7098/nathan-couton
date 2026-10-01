@@ -11,7 +11,7 @@ import { PARALLAX_SIZES } from '~/data/parallax-sizes'
  * it were live) with what a recruiter reads first: four figures and the facts
  * as a definition list — no bio to wade through, the hero already said it. The personal side is
  * still here — lower, smaller, and honest about its dates — under "off
- * screen": the playlist is what Apple Music says lately, or the 2024 snapshot
+ * screen": the playlist is this month's most played, or the 2024 snapshot
  * labelled as such. Its last card is the Knight, sitting: the visitor will meet him at
  * the bottom of the page.
  */
@@ -28,7 +28,7 @@ const figureValue: Record<(typeof FIGURE_IDS)[number], string> = {
 const knight = PARALLAX_SIZES['knight-sit']!
 
 /**
- * The playlist: Apple Music when it answers, the dated 2024 snapshot when it
+ * The playlist: Last.fm when it answers, the dated 2024 snapshot when it
  * does not. The prerender bakes in the list as of the deploy; once the card is
  * hydrated it asks again (the CDN keeps the answer an hour), and only a live
  * answer replaces what is shown — a lapsed token never swaps a current list
@@ -46,7 +46,7 @@ onMounted(async () => {
 const playlist = computed(() => soundtrack.value.live
   ? {
       title: t('about.offscreen.rotation'),
-      file: 'recently-played.m3u · Apple Music',
+      file: 'top-30d.m3u · Last.fm',
       tracks: soundtrack.value.tracks as readonly Track[],
       note: t('about.offscreen.rotationArtists', { artists: soundtrack.value.artists.join(', ') }),
     }

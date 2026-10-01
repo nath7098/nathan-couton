@@ -9,9 +9,10 @@
  * matters is drawn with the Knight's own sprite, because the visitor will meet
  * him at the bottom of the page.
  *
- * The playlist is live again, from Apple Music (GET /api/soundtrack) — still
- * text only, no artwork. What follows is its fallback: the 2024 snapshot,
- * shown and dated as such whenever Apple Music is unconfigured or unreachable.
+ * The playlist is live again: this month's most played, Apple Music plays
+ * scrobbled to Last.fm (GET /api/soundtrack) — still text only, no artwork.
+ * What follows is its fallback: the 2024 snapshot, shown and dated as such
+ * whenever Last.fm is unconfigured or unreachable.
  */
 export interface Track {
   artist: string
