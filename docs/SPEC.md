@@ -5,6 +5,11 @@
 > **Statut** : **validée le 21/09/2026** — arbitrages arrêtés au §13, développement lancé au lot L0.
 > **Langue du code** : anglais (identifiants, commentaires). **Langue du contenu** : FR + EN.
 
+> **⚠ Révision « Compile → Run » (30/09/2026)** — le §14 ci-dessous remplace
+> les §3 (rail horizontal), §6 (scènes) et une partie des §4–§5 et §8. Les
+> sections d'origine sont conservées pour l'historique des décisions ; en cas
+> de conflit, **le §14 fait foi**.
+
 ---
 
 ## 0. TL;DR
@@ -937,3 +942,52 @@ Photo de profil · Tours, département 37 · « Curieux - Esprit d'équipe » ·
 | `App.vue` | `availableLocales.includes(navigator.language)` échoue sur `fr-FR` | normalisation sur les 2 premières lettres |
 | `NcTag.vue` / `NcModal.vue` | détails injectés en chaîne HTML dans un slot | passage en texte |
 | Global | `!important` sur `.theme__switch` | résolu par la spécificité |
+
+---
+
+## 14. Révision « Compile → Run » (30/09/2026)
+
+Issue d'un audit croisé (analyse visuelle UX/UI + innovation portfolio) et des
+arbitrages du propriétaire. Elle lève la règle « exactement les informations et
+les 7 sections de v1 » : elle convenait à une migration, pas à une refonte.
+
+### 14.1 Arbitrages
+
+| Sujet | Décision |
+|---|---|
+| Cible | Recruteurs et ESN : profil lisible en 30 s, stack en texte, CV en un clic partout |
+| Direction | **Compile → Run** : la page naît éditeur de code et gagne profondeur, couleur et matière jusqu'à Greenpath |
+| Axe | **Code vertical, monde horizontal** : document vertical du hero aux projets ; le final est une section épinglée où la scène défile latéralement |
+| Hollow Knight | Final signature, préparé en amont (palette, particules, typographie, terminal) — crédit Team Cherry visible partout |
+| Ton | Titres et preuves sobres ; le vocabulaire code sert de fil (onglets de fichiers, `git log`, `pom.xml`, terminal) |
+| Sections | 6 : hero, profil, parcours (expériences + formation), compétences, projets, contact |
+| Preuves | Pas de captures (NDA) : figures d'architecture génériques ; démos pour les projets publics |
+
+### 14.2 Structure
+
+`index.ts` (hero) → `README.md` (profil) → `git log --graph` (parcours) →
+`pom.xml` (compétences) → `projets/` → `$ npm run contact` (final).
+Chaque section porte un onglet de fichier et un titre Fraunces entre
+accolades ; les accolades s'estompent de section en section (`--code`, 1 → 0).
+
+### 14.3 Le final
+
+`finale-geometry.ts` : segments `run` (le terminal tape la commande), `open`
+(six volets s'écartent sur Greenpath), `walk` (1,25 écran, contre 2,5 sur le
+rail), `hold`. Toutes les animations tournent sur la `view-timeline --finale`
+de la piste, en `contain`. Sous `--stage-wide` : pas de marche, le Chevalier
+est trouvé assis et le formulaire suit la scène dans le flux. Mouvement
+réduit : budget de scroll nul, dernière image.
+
+### 14.4 Design system
+
+Un accent de marque stable (vert d'eau Greenpath), neutres oklch légèrement
+indigo, contrepoint chaud rare. Fraunces (display), JetBrains Mono (fil code),
+sans-serif système (texte). Polices auto-hébergées. Tags monochromes. Plancher
+typographique 0,8 rem.
+
+### 14.5 Budgets
+
+JS critique (script + modulepreload) ≤ 140 kB gzip ; sections différées
+(prefetch) ≤ 40 kB. Les autres budgets du §10.1 sont inchangés.
+

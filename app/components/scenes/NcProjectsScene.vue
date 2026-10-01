@@ -1,248 +1,181 @@
 <script setup lang="ts">
-import { PROJECTS } from '~/data/projects'
-import type { TechKey } from '~/data/types'
+import { ARCHIVE, CASE_STUDIES } from '~/data/projects'
 
 /**
- * Scene 06 — projects.
+ * Projects — `projets/`.
  *
- * Main projects sit in two rows that drift at slightly different speeds. The
- * "other projects" panel extends the rail rather than opening a modal, which
- * keeps the scroll continuous (SPEC §13 #10).
+ * Four case studies told in full, then the archive as a plain list. v1 laid
+ * nine identical cards in a row behind a rainbow of sixteen technology
+ * filters, which put a 2018 learning project on the same footing as the
+ * current mission. The filter is gone with the rainbow: there is nothing to
+ * filter in four stories.
  */
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const showOther = ref(false)
-const filter = ref<TechKey | null>(null)
-
-const main = computed(() => PROJECTS.filter(p => p.group === 'main'))
-const other = computed(() => PROJECTS.filter(p => p.group === 'other'))
-
-/** Every tech present across the visible projects, in first-seen order. */
-const techs = computed(() => {
-  const pool = showOther.value ? PROJECTS : main.value
-  const seen = new Map<TechKey, string>()
-  for (const project of pool) {
-    for (const tag of project.tags) if (!seen.has(tag.tech)) seen.set(tag.tech, tag.label)
-  }
-  return [...seen].map(([tech, label]) => ({ tech, label }))
-})
-
-/** Filtering dims rather than removes, so nothing reflows under the pointer. */
-function dimmed(tags: { tech: TechKey }[]) {
-  return filter.value !== null && !tags.some(tag => tag.tech === filter.value)
-}
-
-function toggleFilter(tech: TechKey) {
-  filter.value = filter.value === tech ? null : tech
-}
+const href = (value: string) => value.replace('{locale}', locale.value)
 </script>
 
 <template>
   <div class="projects">
-    <div class="projects__filters">
-      <span class="projects__filters-label">{{ t('projectsSection.filterLabel') }}</span>
-      <NcButton
-        size="sm"
-        :variant="filter === null ? 'solid' : 'ghost'"
-        @click="filter = null"
-      >
-        {{ t('projectsSection.filterAll') }}
-      </NcButton>
-      <NcTag
-        v-for="item in techs"
-        :key="item.tech"
-        size="sm"
-        :label="item.label"
-        :tech="item.tech"
-        :pressed="filter === item.tech"
-        @toggle="toggleFilter(item.tech)"
-      />
+    <NcCaseStudy
+      v-for="(study, index) in CASE_STUDIES"
+      :key="study.id"
+      :study="study"
+      :index="index"
+    />
 
-      <NcButton
-        variant="ghost"
-        size="sm"
-        icon-end="chevron-right"
-        :aria-expanded="showOther"
-        class="projects__toggle"
-        :class="{ 'is-open': showOther }"
-        @click="showOther = !showOther"
-      >
-        {{ showOther ? t('projectsSection.otherToggleClose') : t('projectsSection.otherToggle') }}
-      </NcButton>
-    </div>
+    <section
+      class="archive nc-reveal"
+      aria-labelledby="archive-title"
+    >
+      <header class="archive__head">
+        <p
+          class="archive__file"
+          aria-hidden="true"
+        >
+          ls -l projets/archives
+        </p>
+        <h3
+          id="archive-title"
+          class="archive__title"
+        >
+          {{ t('projects.archiveTitle') }}
+        </h3>
+      </header>
 
-    <!-- The main projects and the extra panel share one row: opening the panel
-         extends the rail sideways instead of stacking below. The control that
-         opens it sits in the filter row, not at the end of the cards — with
-         nine projects the end of the row falls outside the viewport, and a
-         button you can only reach by scrolling the rail is not a button. -->
-    <div class="projects__rows">
-      <NcProjectCard
-        v-for="project in main"
-        :key="project.id"
-        :project="project"
-        :index="PROJECTS.indexOf(project)"
-        :total="PROJECTS.length"
-        class="projects__card"
-        :class="{ 'is-dimmed': dimmed(project.tags) }"
-      />
-
-      <div
-        class="projects__panel"
-        :class="{ 'is-open': showOther }"
-      >
-        <div class="projects__panel-inner">
-          <NcProjectCard
-            v-for="project in other"
-            :key="project.id"
-            :project="project"
-            :index="PROJECTS.indexOf(project)"
-            :total="PROJECTS.length"
-            class="projects__card"
-            :class="{ 'is-dimmed': dimmed(project.tags) }"
-          />
-        </div>
-      </div>
-    </div>
+      <ul class="archive__list">
+        <li
+          v-for="entry in ARCHIVE"
+          :key="entry.id"
+          class="archive__row"
+        >
+          <span class="archive__year">{{ entry.year }}</span>
+          <span class="archive__main">
+            <span class="archive__name">{{ t(`projects.archive.${entry.id}.title`) }}</span>
+            <span class="archive__line">{{ t(`projects.archive.${entry.id}.line`) }}</span>
+          </span>
+          <span class="archive__stack">{{ entry.stack.join(' · ') }}</span>
+          <span class="archive__links">
+            <a
+              v-for="link in entry.links"
+              :key="link.href"
+              :href="href(link.href)"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="t(link.kind === 'repo' ? 'projects.viewRepo' : 'projects.viewLive', { name: t(`projects.archive.${entry.id}.title`) })"
+            >
+              {{ t(link.kind === 'repo' ? 'projects.linkRepo' : 'projects.linkLive') }}
+              <NcIcon name="arrow-up-right" />
+            </a>
+          </span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .projects {
   display: grid;
-  gap: var(--space-s);
-  align-content: center;
 }
 
-.projects__filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-  align-items: center;
-
-  /* The scene is two and a half viewports wide, so a wrapping row would never
-     wrap — it would just run off the side of the screen, taking the toggle with
-     it. Opening the panel adds seven more technologies, which is exactly when
-     that happens. */
-  max-inline-size: calc(100vw - var(--gutter) * 2);
+.archive {
+  display: grid;
+  gap: var(--space-m);
+  padding-block-start: var(--space-xl);
+  border-block-start: 1px solid var(--line);
 }
 
-.projects__filters-label {
-  font-size: var(--step--1);
-  color: var(--surface-dim);
-  margin-inline-end: var(--space-2xs);
+.archive__file {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  color: var(--text-faint);
 }
 
-/* One row, not two.
-   SPEC §6.6 called for two stacked rows drifting at different speeds, but two
-   rows of cards do not fit a viewport's height alongside the scene title,
-   filters and the panel toggle.
-
-   It also called for alternating vertical offsets on a single row, to keep some
-   of that moving-sheet feel. That is gone too: every card is now exactly the
-   same height, and against eight identical rectangles a staggered baseline
-   stopped reading as movement and started reading as a misalignment. The row is
-   flat and the gaps are even. */
-.projects__rows {
-  display: flex;
-  gap: var(--space-s);
-  align-items: stretch;
+.archive__title {
+  font-size: var(--step-3);
 }
 
-.projects__card {
-  transition: opacity var(--dur-base) var(--ease-out-expo), filter var(--dur-base) var(--ease-out-expo);
+.archive__list {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.projects__card.is-dimmed {
-  opacity: 0.32;
-  filter: saturate(0.35);
-}
-
-/* Sits at the end of the filter row, separated from the technology pills so it
-   does not read as one of them. Not at the end of the card row: with nine
-   projects that end falls a screen and a half to the right, so the control that
-   reveals four of them only appeared once you had scrolled past them. */
-.projects__toggle {
-  flex: 0 0 auto;
-  margin-inline-start: var(--space-s);
-  color: var(--surface-dim);
-  border: 1px solid var(--surface-faint);
-  border-radius: var(--radius-pill);
-}
-
-.projects__toggle.is-open :deep(.nc-button__icon-end) {
-  transform: rotate(180deg);
+.archive__row {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 2.2fr) minmax(0, 1fr) 13rem;
+  gap: var(--space-2xs) var(--space-m);
+  align-items: baseline;
+  padding-block: var(--space-s);
+  border-block-end: 1px solid var(--line);
+  transition: background-color var(--dur-base) var(--ease-out-expo);
 }
 
 @media (hover: hover) {
-  .projects__toggle:hover {
-    color: var(--primary-text);
-    border-color: color-mix(in oklab, var(--primary) 50%, var(--surface-faint));
+  .archive__row:hover {
+    background: color-mix(in oklab, var(--brand) 5%, transparent);
   }
 }
 
-/* grid-template-columns 0fr → 1fr: the panel widens the rail in place.
+.archive__year {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--brand-ink);
+}
 
-   The padding is what lets a hovered card inside the panel lift without having
-   its top four pixels shaved off by the clip; the matching negative margin
-   keeps the panel the same height as the cards beside it, so the row still
-   stretches to one common height. */
-.projects__panel {
+.archive__main {
   display: grid;
-  grid-template-columns: 0fr;
-  padding-block: var(--space-2xs);
-  margin-block: calc(var(--space-2xs) * -1);
-  overflow: hidden;
-  transition: grid-template-columns var(--dur-slow) var(--ease-out-expo);
+  gap: 0.1rem;
 }
 
-.projects__panel.is-open {
-  grid-template-columns: 1fr;
+.archive__name {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 560;
 }
 
-/* The row inside the panel collapses to nothing when the panel is closed — that
-   is what makes the 0fr track work — but the cards in it must not. Letting them
-   shrink squeezed each one to a sliver, where a tag pill 2px wide wraps its own
-   label one letter per line: boxes 157px tall, hanging out of the bottom of the
-   scene. They keep their width and the panel clips them. */
-.projects__panel-inner {
+.archive__line {
+  font-size: var(--step--1);
+  color: var(--text-dim);
+}
+
+.archive__stack {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  color: var(--text-faint);
+}
+
+.archive__links {
   display: flex;
-  min-inline-size: 0;
-  gap: var(--space-m);
-  align-items: stretch;
+  gap: var(--space-s);
+  justify-content: flex-end;
+  font-size: var(--step--1);
 }
 
-.projects__rows > .projects__card,
-.projects__panel-inner > .projects__card {
-  flex: 0 0 auto;
+.archive__links a {
+  display: inline-flex;
+  gap: 0.2em;
+  align-items: center;
+  color: var(--text-dim);
 }
 
-@media not all and (min-width: 1024px) {
-  .projects__rows {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+@media (hover: hover) {
+  .archive__links a:hover {
+    color: var(--brand-ink);
+  }
+}
+
+@media (width < 800px) {
+  .archive__row {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
   }
 
-  /* The card carries a fixed width for the rail, where it is one of five in a
-     row. Stacked it is alone in its column and has to fill it, or it sits in a
-     343px column at 248px with the rest of the screen blank beside it. */
-  .projects__card {
-    inline-size: 100%;
-  }
-
-  .projects__panel {
-    grid-template-columns: 1fr;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows var(--dur-slow) var(--ease-out-expo);
-  }
-
-  .projects__panel.is-open {
-    grid-template-rows: 1fr;
-  }
-
-  .projects__panel-inner {
-    inline-size: auto;
-    flex-direction: column;
+  .archive__stack,
+  .archive__links {
+    grid-column: 2;
+    justify-content: flex-start;
   }
 }
 </style>

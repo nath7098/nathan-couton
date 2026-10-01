@@ -106,6 +106,28 @@ async function visit(path) {
   return { page, problems }
 }
 
+const SECTION_IDS = ['home', 'about', 'parcours', 'skills', 'projects', 'contact']
+
+/** A page at a size, with problems collected and the intro out of the way. */
+async function open(path, options = {}) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, ...options })
+  const problems = []
+  page.on('console', m => m.type() === 'error' && problems.push(`console: ${m.text()}`))
+  page.on('pageerror', e => problems.push(`pageerror: ${e.message}`))
+  page.on('response', r => r.status() >= 400 && problems.push(`HTTP ${r.status()} ${r.url()}`))
+  await page.goto(`http://localhost:${PORT}${path}`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(500)
+  await skipIntro(page)
+  await page.evaluate(() => document.fonts.ready)
+  return { page, problems }
+}
+
+/** Scrolls and waits two frames: scroll-driven animations settle on the next one. */
+const scrollToY = (page, y) => page.evaluate(async (top) => {
+  window.scrollTo({ top, behavior: 'instant' })
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+}, y)
+
 // ── French home ────────────────────────────────────────────────────────────
 {
   const { page, problems } = await visit('/')
@@ -113,18 +135,46 @@ async function visit(path) {
 
   const body = await page.locator('body').innerText()
   check(!body.includes('Internal Server Error'), '/ is not the Nuxt error page')
-  check(body.includes('Accueil'), '/ renders French navigation')
+  check(body.includes('Parcours') && body.includes('Projets'), '/ renders the French header navigation')
 
-  const scenes = await page.locator('main section[id]').count()
-  check(scenes === 7, `/ renders the seven scenes (got ${scenes})`)
+  const ids = await page.evaluate(() => [...document.querySelectorAll('main section[id]')].map(s => s.id))
+  check(JSON.stringify(ids) === JSON.stringify(SECTION_IDS), `/ renders the six sections in order (got ${ids.join(', ')})`)
 
   // Theme toggle flips the attribute the whole design system keys off.
   const before = await page.getAttribute('html', 'data-theme')
-  await page.locator('.theme-toggle').click()
+  await page.locator('.site-header__prefs .theme-toggle').first().click()
   await page.waitForTimeout(250)
   const after = await page.getAttribute('html', 'data-theme')
   check(before !== after, `theme toggle switches data-theme (${before} → ${after})`)
 
+  await page.close()
+}
+
+// ── The opening veil ───────────────────────────────────────────────────────
+// It must cover the very first paint — not arrive once the app has booted,
+// over a page already seen. So: with the app's JavaScript blocked outright,
+// the veil is still there (prerendered, decided by the inline gate), and it
+// still lifts on schedule — it never waits for the app. A second visit in the same session never sees it.
+{
+  const page = await browser.newPage()
+  await page.route('**/_nuxt/*.js', route => route.abort())
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'domcontentloaded' })
+  const seen = () => page.evaluate(() => {
+    const el = document.querySelector('.intro')
+    if (!el) return false
+    const style = getComputedStyle(el)
+    return style.display !== 'none' && style.visibility === 'visible'
+  })
+  const early = await seen()
+  await page.waitForTimeout(2500)
+  const late = await seen()
+  check(early && !late, `the opening veil is in the first paint, and lifts on time even without the app (${early} → ${late})`)
+
+  await page.unroute('**/_nuxt/*.js')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  const again = await seen()
+  await page.waitForTimeout(600)
+  check(!again && !(await seen()), 'a second visit in the same session never shows it')
   await page.close()
 }
 
@@ -134,215 +184,222 @@ async function visit(path) {
   check(problems.length === 0, `/en loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
 
   const body = await page.locator('body').innerText()
-  check(body.includes('Home'), '/en renders English navigation')
-  // i18n emits the full language tag configured for the locale (en-GB).
+  check(body.includes('Career') && body.includes('Projects'), '/en renders English navigation')
+
+  // The English page offers the English CV, and it exists.
+  const resumes = await page.evaluate(() => [...new Set([...document.querySelectorAll('a[download]')].map(a => a.getAttribute('href')))])
+  const status = await page.evaluate(async href => (await fetch(href)).status, resumes[0])
+  check(resumes.length === 1 && resumes[0].endsWith('_EN.pdf') && status === 200,
+    `/en offers the English CV (${resumes.join(', ')} → ${status})`)
   const lang = await page.getAttribute('html', 'lang')
   check(lang?.startsWith('en'), `/en sets an English lang attribute (got ${lang})`)
-  await page.close()
-}
-
-// ── Horizontal rail (desktop viewport) ─────────────────────────────────────
-{
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-  const problems = []
-  page.on('console', m => m.type() === 'error' && problems.push(`console: ${m.text()}`))
-  page.on('pageerror', e => problems.push(`pageerror: ${e.message}`))
-  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
-  await page.waitForTimeout(400)
-  await skipIntro(page)
-
-  check(problems.length === 0, `rail loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
-
-  const driver = await page.getAttribute('html', 'data-rail-driver')
-  console.log(`  · scroll driver: ${driver}`)
-
-  // The proxy must be tall enough to scroll the whole track.
-  const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight)
-  check(scrollHeight > 900 * 9, `scroll proxy is tall enough (${scrollHeight}px)`)
-
-  const trackX = () => page.evaluate(() => {
-    const el = document.querySelector('.rail__track')
-    return el ? el.getBoundingClientRect().left : null
-  })
-
-  const atTop = await trackX()
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2))
-  await page.waitForTimeout(500)
-  const atMiddle = await trackX()
-  check(atMiddle !== null && atMiddle < atTop - 200, `track slides left on scroll (${atTop} → ${atMiddle})`)
-
-  // Vertical position must not drift: this is a horizontal rail.
-  const trackY = await page.evaluate(() => document.querySelector('.rail__viewport')?.getBoundingClientRect().top)
-  check(Math.abs(trackY) < 2, `sticky viewport stays pinned (top ${trackY})`)
-
-  // Keyboard: ArrowRight advances a scene.
-  await page.evaluate(() => window.scrollTo(0, 0))
-  await page.waitForTimeout(400)
-  const firstActive = await page.getAttribute('.rail-nav__dot.is-active', 'aria-label')
-  await page.keyboard.press('ArrowRight')
-  await page.waitForTimeout(900)
-  const afterArrow = await page.getAttribute('.rail-nav__dot.is-active', 'aria-label')
-  check(firstActive !== afterArrow, `ArrowRight advances a scene (${firstActive} → ${afterArrow})`)
-
-  // End jumps to the last scene, Home returns.
-  await page.keyboard.press('End')
-  await page.waitForTimeout(1000)
-  const atEnd = await page.getAttribute('.rail-nav__dot.is-active', 'aria-label')
-  check(/contact/i.test(atEnd ?? ''), `End reaches the contact scene (${atEnd})`)
-
-  // The hash follows the active scene, so a position can be shared.
-  const hash = await page.evaluate(() => window.location.hash)
-  check(hash === '#contact', `hash mirrors the active scene (${hash})`)
-
-  await page.close()
-}
-
-// ── No scene overflows its viewport ────────────────────────────────────────
-{
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
-  await page.waitForTimeout(500)
-  await skipIntro(page)
-
-  // A scene is exactly one viewport tall and clips what does not fit, so
-  // scrollHeight tells us nothing — measure the children's boxes instead.
-  const overflowing = await page.evaluate(() => {
-    const out = []
-    for (const scene of document.querySelectorAll('[data-scene]')) {
-      const box = scene.getBoundingClientRect()
-      let top = Infinity
-      let bottom = -Infinity
-      for (const child of scene.querySelectorAll('*')) {
-        const rect = child.getBoundingClientRect()
-        if (rect.width === 0 && rect.height === 0) continue
-        top = Math.min(top, rect.top)
-        bottom = Math.max(bottom, rect.bottom)
-      }
-      const over = Math.max(box.top - top, bottom - box.bottom)
-      if (over > 4) out.push(`${scene.dataset.scene} (+${Math.round(over)}px)`)
-    }
-    return out
-  })
-  check(overflowing.length === 0, `no scene overflows vertically${overflowing.length ? ` — ${overflowing.join(', ')}` : ''}`)
   await page.close()
 }
 
 // ── Content is present in the prerendered HTML ─────────────────────────────
 {
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8')
-  // The point of SSR here: every scene's words ship in the HTML, so the site
-  // reads without JS and search engines see the whole page.
+  // Every section's words ship in the HTML, so the site reads without JS and
+  // search engines — and a recruiter's Ctrl+F — see the whole page.
   const expected = [
-    'Nathan Couton', 'Développeur Fullstack', 'ACII by Audensiel', 'Sopra Steria',
-    'Polytech Tours', 'IUT Angoulême', 'Prévoyance', 'Hololens', 'Sleep Token',
-    'Hollow Knight', 'Tours', 'contact@nathancouton.fr',
+    'Nathan Couton', 'Développeur fullstack', 'Harmonie Mutuelle', 'ACII by Audensiel', 'Catamania',
+    'Sopra Steria', 'Polytech Tours', 'Prévoyance', 'Kafka', 'Spring Batch', 'HoloLens',
+    'Sleep Token', 'Hollow Knight', 'contact@nathancouton.fr', 'CV_Nathan_Couton.pdf',
   ]
   const missing = expected.filter(text => !html.includes(text))
   check(missing.length === 0, `prerendered HTML carries the content${missing.length ? ` — missing: ${missing.join(', ')}` : ''}`)
 }
 
-// ── Deep link ──────────────────────────────────────────────────────────────
+// ── The document: layout, header, CV, search ───────────────────────────────
 {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-  await page.goto(`http://localhost:${PORT}/#skills`, { waitUntil: 'networkidle' })
-  await page.waitForTimeout(700)
-  await skipIntro(page)
-  const active = await page.getAttribute('.rail-nav__dot.is-active', 'aria-label')
-  check(/comp[ée]tences|skills/i.test(active ?? ''), `/#skills lands on the skills scene (${active})`)
+  const { page, problems } = await open('/')
+  check(problems.length === 0, `desktop loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
 
-  const scrolled = await page.evaluate(() => window.scrollY)
-  check(scrolled > 0, `/#skills actually moves the rail (scrollY ${scrolled})`)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  check(overflow <= 1, `no horizontal overflow at 1440 (${overflow}px)`)
+
+  // Nothing in the header may run past the screen, at any desktop width.
+  for (const width of [1440, 1280, 1024]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.waitForTimeout(150)
+    const spill = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll('.site-header > *, .site-header__tools > *')]
+      .filter(el => getComputedStyle(el).display !== 'none')
+      .map(el => el.getBoundingClientRect().right - window.innerWidth)))
+    check(spill <= 0, `the header fits at ${width}px (${Math.round(spill)}px over)`)
+  }
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  // The CV is one click away from anywhere: the header, the hero, the panel,
+  // the footer. And the file behind those links exists.
+  const resumes = await page.evaluate(() => [...document.querySelectorAll('a[download]')].map(a => a.getAttribute('href')))
+  check(resumes.length >= 3, `CV links in header, hero and contact (${resumes.length})`)
+  const status = await page.evaluate(async href => (await fetch(href)).status, resumes[0])
+  check(status === 200, `the CV link resolves (${resumes[0]} → ${status})`)
+
+  // Both faces actually load: they are self-hosted now, and a font that fails
+  // silently leaves the whole page in the system monospace.
+  const fonts = await page.evaluate(() => ({
+    mono: document.fonts.check('400 16px "JetBrains Mono"'),
+    display: document.fonts.check('560 32px "Fraunces"'),
+  }))
+  check(fonts.mono && fonts.display, `self-hosted fonts load (mono ${fonts.mono}, display ${fonts.display})`)
+
+  // Ctrl+F: the words are on the page, not behind a rail that cannot scroll
+  // to them.
+  const found = await page.evaluate(() => {
+    window.scrollTo(0, 0)
+    const ok = window.find('Mutuelle de Poitiers')
+    const range = ok ? window.getSelection().getRangeAt(0).getBoundingClientRect() : null
+    return { ok, visible: Boolean(range && range.top >= 0 && range.bottom <= window.innerHeight) }
+  })
+  check(found.ok && found.visible, `find-in-page reaches and shows the Parcours (${JSON.stringify(found)})`)
+
+  // ⌘K: the palette loads on demand, filters, and closes on Escape.
+  await page.keyboard.press('Control+k')
+  await page.waitForSelector('dialog.palette[open]', { timeout: 4000 }).catch(() => {})
+  await page.keyboard.type('mail')
+  const palette = await page.evaluate(() => ({
+    open: Boolean(document.querySelector('dialog.palette[open]')),
+    first: document.querySelector('.palette__item .palette__label')?.textContent?.trim(),
+  }))
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(200)
+  const closed = await page.evaluate(() => !document.querySelector('dialog.palette[open]'))
+  check(palette.open && /mail/i.test(palette.first ?? '') && closed,
+    `⌘K opens the command palette, filters and closes (${JSON.stringify(palette)}, closed ${closed})`)
+
+  // Header navigation lands a section under the header, and says so.
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.locator('.site-header__links a[href="#projects"]').click()
+  await page.waitForTimeout(1600)
+  const landed = await page.evaluate(() => ({
+    top: document.getElementById('projects').getBoundingClientRect().top,
+    header: document.querySelector('.site-header').getBoundingClientRect().height,
+    current: document.querySelector('.site-header__links a[aria-current]')?.getAttribute('href'),
+    hash: location.hash,
+  }))
+  check(Math.abs(landed.top - landed.header) <= 8, `header link lands #projects under the header (${Math.round(landed.top)} vs ${Math.round(landed.header)})`)
+  check(landed.current === '#projects', `and marks it current (${landed.current})`)
+  check(landed.hash === '#projects', `and mirrors it in the hash (${landed.hash})`)
+
+  // End reaches the footer: the address is there in plain text, never inert.
+  await page.keyboard.press('End')
+  await page.waitForTimeout(1200)
+  const foot = await page.evaluate(() => {
+    const el = document.querySelector('.site-footer__mail')
+    const r = el.getBoundingClientRect()
+    return { visible: r.top < window.innerHeight && r.bottom > 0, inert: Boolean(el.closest('[inert]')) }
+  })
+  check(foot.visible && !foot.inert, `End reaches the footer and its address (${JSON.stringify(foot)})`)
+
   await page.close()
 }
 
-// ── Stacked layout (phone viewport) ────────────────────────────────────────
-{
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
-  const problems = []
-  page.on('pageerror', e => problems.push(e.message))
-  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
-  await page.waitForTimeout(400)
-  await skipIntro(page)
-  check(problems.length === 0, `phone layout loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
-
-  const before = await page.evaluate(() => document.querySelector('.rail__track')?.getBoundingClientRect().left)
-  await page.evaluate(() => window.scrollTo(0, 1200))
-  await page.waitForTimeout(400)
-  const after = await page.evaluate(() => document.querySelector('.rail__track')?.getBoundingClientRect().left)
-  check(Math.abs((after ?? 0) - (before ?? 0)) < 2, 'phone layout does not slide sideways')
-
-  const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
-  check(!overflows, 'phone layout has no horizontal overflow')
+// ── Deep links ─────────────────────────────────────────────────────────────
+for (const [path, id] of [['/#skills', 'skills'], ['/#experience', 'parcours']]) {
+  const { page } = await open(path)
+  await page.waitForTimeout(600)
+  const at = await page.evaluate(sid => ({
+    top: document.getElementById(sid).getBoundingClientRect().top,
+    hash: location.hash,
+  }), id)
+  check(Math.abs(at.top) < 120 && at.hash === `#${id}`, `${path} lands on #${id} (${Math.round(at.top)}px, ${at.hash})`)
   await page.close()
 }
 
-// ── The contact walk ───────────────────────────────────────────────────────
-// The scene this section replaced cancelled the rail's own travel with a
-// counter-translating camera, and the two transforms never agreed frame to
-// frame: the whole thing shimmered while you scrolled. What replaced it rests
-// on one structural guarantee — the track is parked for every frame of the
-// walk, so the scene's own box does not move at all — and on the layers'
-// distances being ordered by depth. Neither is visible in a screenshot, and
-// both are exactly the kind of thing a refactor quietly breaks.
+// ── Legacy paths still answer with a redirect ──────────────────────────────
 {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
-  await skipIntro(page)
-  await page.waitForTimeout(500)
+  const config = JSON.parse(readFileSync('.vercel/output/config.json', 'utf8'))
+  const routes = JSON.stringify(config.routes ?? [])
+  check(routes.includes('/experience') && routes.includes('/#parcours'),
+    '/experience is redirected to /#parcours in the deploy config')
+}
 
-  const lock = await page.evaluate(() =>
-    parseFloat(getComputedStyle(document.querySelector('.rail')).getPropertyValue('--rail-lock')))
-  check(lock > 0 && lock < 1, `walk budget exists (track parks at ${(lock * 100).toFixed(1)}% of scroll)`)
+// ── The finale ─────────────────────────────────────────────────────────────
+// The rail version cancelled the track's travel with a counter-translating
+// camera and shimmered. What replaced it rests on one structural guarantee —
+// the stage is pinned by `sticky` for every frame of the walk, so nothing
+// moves but the scene's own layers — and on the layers' distances being
+// ordered by depth. Neither shows in a screenshot.
+{
+  const { page, problems } = await open('/')
+  check(problems.length === 0, `finale page loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
 
-  /** Samples the scene, the Knight and two layers at one point of the walk. */
-  const sampleAt = walk => page.evaluate(async ({ walk, lock }) => {
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    window.scrollTo(0, (lock + (1 - lock) * walk) * max)
-    // Two frames: scroll-driven animations settle on the next rendered frame.
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
-
-    const box = (sel) => {
-      const el = document.querySelector(sel)
-      return el ? el.getBoundingClientRect() : null
-    }
-    const scene = box('[data-scene="contact"]')
-    const knight = box('.hk__knight--walk')
-    const seated = box('.hk__knight--sit')
-    const bench = box('.hk__bench')
-    const panel = document.querySelector('.contact__panel')
-    // Anchored on the whole file name: `background-far` also contains
-    // "ground", and matching it instead made the ground plane look as slow as
-    // the far wall — a green test over a scene that was plainly wrong.
-    const layerX = (file) => {
-      const img = document.querySelector(`.hk__layer img[src$="/${file}.webp"]`)
-      return img ? img.closest('.hk__layer').getBoundingClientRect().left : null
-    }
+  const geo = await page.evaluate(() => {
+    const finale = document.querySelector('.finale')
+    const track = document.querySelector('.finale__track')
+    const style = getComputedStyle(finale)
+    const r = track.getBoundingClientRect()
     return {
-      scene: scene && { left: scene.left, top: scene.top, width: scene.width, height: scene.height },
-      panel: panel && { opacity: parseFloat(getComputedStyle(panel).opacity), inert: panel.hasAttribute('inert') },
-      knight: knight && { left: knight.left, right: knight.right, bottom: knight.bottom },
-      seated: seated && { left: seated.left, right: seated.right },
-      bench: bench && { left: bench.left, right: bench.right },
-      far: layerX('background-far'),
-      ground: layerX('ground'),
-      front: layerX('front-shadows'),
+      top: r.top + window.scrollY,
+      range: r.height - window.innerHeight,
+      openFrom: parseFloat(style.getPropertyValue('--open-from')),
+      walkFrom: parseFloat(style.getPropertyValue('--walk-from')),
+      walkTo: parseFloat(style.getPropertyValue('--walk-to')),
     }
-  }, { walk, lock })
+  })
+  check(geo.range > 900 && geo.walkTo > geo.walkFrom && geo.walkFrom > geo.openFrom,
+    `finale has a pinned budget (${Math.round(geo.range)}px; open ${geo.openFrom.toFixed(2)}, walk ${geo.walkFrom.toFixed(2)}→${geo.walkTo.toFixed(2)})`)
+
+  const at = fraction => geo.top + fraction * geo.range
+
+  /** Samples the stage, the Knight and three layers at one point of the walk. */
+  const sampleAt = async (walk) => {
+    await scrollToY(page, at(geo.walkFrom + (geo.walkTo - geo.walkFrom) * walk))
+    return page.evaluate(() => {
+      const box = (sel) => {
+        const el = document.querySelector(sel)
+        return el ? el.getBoundingClientRect() : null
+      }
+      const stage = box('.finale__stage')
+      const knight = box('.hk__knight--walk')
+      const seated = box('.hk__knight--sit')
+      const bench = box('.hk__bench')
+      const panel = document.querySelector('.panel')
+      // Anchored on the whole file name: `background-far` also contains
+      // "ground", and matching it made the ground look as slow as the wall.
+      const layerX = (file) => {
+        const img = document.querySelector(`.hk__layer img[src$="/${file}.webp"]`)
+        return img ? img.closest('.hk__layer').getBoundingClientRect().left : null
+      }
+      return {
+        stage: stage && { top: stage.top, height: stage.height },
+        panel: { opacity: parseFloat(getComputedStyle(panel).opacity), inert: panel.inert },
+        knight: knight && { left: knight.left },
+        seated: seated && { left: seated.left, right: seated.right },
+        bench: bench && { left: bench.left, right: bench.right },
+        far: layerX('background-far'),
+        ground: layerX('ground'),
+        front: layerX('front-shadows'),
+      }
+    })
+  }
+
+  // 0. The threshold: the terminal covers the stage while the command runs,
+  //    and its shutters are gone by the time the walk starts.
+  await scrollToY(page, at(geo.openFrom * 0.6))
+  const running = await page.evaluate(() => ({
+    screen: parseFloat(getComputedStyle(document.querySelector('.term__screen')).opacity),
+    shutter: document.querySelector('.term__shutter').getBoundingClientRect().left,
+  }))
+  await scrollToY(page, at(geo.walkFrom))
+  const opened = await page.evaluate(() => [...document.querySelectorAll('.term__shutter')]
+    .every((shutter) => {
+      const r = shutter.getBoundingClientRect()
+      return r.right <= 0 || r.left >= window.innerWidth
+    }))
+  check(running.screen > 0.9 && running.shutter < 2, `the terminal covers the stage while it runs (opacity ${running.screen})`)
+  check(opened, 'its shutters have slid off screen when the walk begins')
 
   const steps = [0, 0.2, 0.4, 0.6, 0.8, 1]
   const frames = []
   for (const walk of steps) frames.push(await sampleAt(walk))
 
-  // 1. The scene fills the viewport and does not budge. This is the whole
-  //    point: nothing is cancelling anything, so there is nothing to shimmer.
-  const pinned = frames.every(f => f.scene
-    && Math.abs(f.scene.left) < 1 && Math.abs(f.scene.top) < 1
-    && Math.abs(f.scene.width - 1440) < 1 && Math.abs(f.scene.height - 900) < 1)
-  check(pinned, `contact scene stays pinned full screen for the whole walk (${
-    frames.map(f => Math.round(f.scene?.left ?? NaN)).join(', ')})`)
+  // 1. The stage is pinned full screen for the whole walk.
+  const pinned = frames.every(f => f.stage && Math.abs(f.stage.top) < 1 && Math.abs(f.stage.height - 900) < 1)
+  check(pinned, `the stage stays pinned full screen for the whole walk (${frames.map(f => Math.round(f.stage?.top ?? NaN)).join(', ')})`)
 
-  // 2. Layers are ordered by depth: the far wall barely slides, the ground
-  //    carries the Knight, the foreground tears past.
+  // 2. Layers are ordered by depth.
   const travelled = key => Math.abs((frames.at(-1)[key] ?? 0) - (frames[0][key] ?? 0))
   const far = travelled('far')
   const ground = travelled('ground')
@@ -350,7 +407,7 @@ async function visit(path) {
   check(far > 0 && far < ground && ground < front,
     `layers separate by depth (far ${Math.round(far)}px < ground ${Math.round(ground)}px < front ${Math.round(front)}px)`)
 
-  // 3. Every layer moves the same way every step — no reversal, no stall.
+  // 3. Every layer moves the same way every step.
   const monotonic = ['far', 'ground', 'front'].every(key =>
     frames.every((f, i) => i === 0 || f[key] <= frames[i - 1][key] + 0.5))
   check(monotonic, 'every layer slides left, every step of the walk')
@@ -360,10 +417,7 @@ async function visit(path) {
   check(advances && frames.at(-1).knight.left > frames[0].knight.left + 100,
     `the Knight walks right (${Math.round(frames[0].knight.left)}px → ${Math.round(frames.at(-1).knight.left)}px)`)
 
-  // 5. And lands sitting in the middle of the bench, at the middle of the
-  //    screen. The bench and the Knight are pinned to the same numbers, so
-  //    this is arithmetic rather than tuning — which is exactly why a drift
-  //    here means an edit broke the relationship.
+  // 5. And sits in the middle of the bench, in the middle of the screen.
   const last = frames.at(-1)
   const seatedMid = (last.seated.left + last.seated.right) / 2
   const benchMid = (last.bench.left + last.bench.right) / 2
@@ -371,46 +425,17 @@ async function visit(path) {
     `the Knight sits in the middle of the bench (${Math.round(seatedMid)} vs ${Math.round(benchMid)})`)
   check(Math.abs(benchMid - 720) < 8, `the bench lands at the centre of the screen (${Math.round(benchMid)})`)
 
-  // 6. Arriving just short of the lock, the rail finishes the approach itself,
-  //    so the walk always starts from a clean full-screen frame. And it only
-  //    ever pulls forward: being *inside* the walk must never drag you back to
-  //    the start of it.
-  const settle = offsetFraction => page.evaluate(async ({ lock, offsetFraction }) => {
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    const target = lock * max
-    window.scrollTo(0, target + offsetFraction * window.innerHeight)
-    await new Promise(r => setTimeout(r, 1400))
-    return { rest: window.scrollY, target }
-  }, { lock, offsetFraction })
-
-  const approach = await settle(-0.3)
-  check(Math.abs(approach.rest - approach.target) < 4,
-    `stopping short of the contact scene snaps it into place (${Math.round(approach.rest)} → ${Math.round(approach.target)})`)
-
-  const inside = await settle(0.3)
-  check(inside.rest > inside.target + 100,
-    `a walk already under way is never dragged back (${Math.round(inside.rest)} vs ${Math.round(inside.target)})`)
-
-  const early = await settle(-2)
-  check(Math.abs(early.rest - (early.target - 2 * 900)) < 4,
-    `scrolling stops elsewhere on the rail are left alone (${Math.round(early.rest)})`)
-
-  // 7. The form belongs to the bench: it is not on screen at all while he is
-  //    still walking, and it is `inert` while it is not, so a form nobody can
-  //    see is not one a keyboard can land in either.
+  // 6. The form is not there while he walks, and takes no tab stops.
   const away = frames.slice(0, -1)
   check(away.every(f => f.panel.opacity < 0.01), `the form stays away for the whole walk (${
     away.map(f => f.panel.opacity.toFixed(2)).join(', ')})`)
   check(away.every(f => f.panel.inert), 'and is inert while it is away, so it takes no tab stops')
 
-  // 8. Sitting down is played, in two beats: he flares white, then sheds motes
-  //    once he is back to normal. Polled rather than slept on — what matters is
-  //    that both beats happen and in that order, not the millisecond they land.
+  // 7. Sitting down is played in two beats: he flares white, then sheds motes.
   await sampleAt(0.5)
-  await page.waitForTimeout(600)
-  const rest = await page.evaluate(async () => {
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    window.scrollTo(0, max)
+  await page.waitForTimeout(400)
+  const rest = await page.evaluate(async (target) => {
+    window.scrollTo({ top: target, behavior: 'instant' })
     const seen = { flashAt: -1, motesAt: -1 }
     for (let t = 0; t < 2000; t += 40) {
       if (seen.flashAt < 0 && document.querySelector('.hk__flash')) seen.flashAt = t
@@ -419,26 +444,154 @@ async function visit(path) {
       await new Promise(r => setTimeout(r, 40))
     }
     return seen
-  })
+  }, at(1))
   check(rest.flashAt >= 0, `the Knight flares white as he sits (at ${rest.flashAt}ms)`)
   check(rest.motesAt > rest.flashAt,
     `and sheds motes once he is back to normal (flare ${rest.flashAt}ms → motes ${rest.motesAt}ms)`)
 
-  // 9. And the form arrives on that cue, clear of the bench.
+  // 8. The form arrives on that cue, clear of the bench.
   await page.waitForTimeout(1200)
   const panel = await page.evaluate(() => {
-    const el = document.querySelector('.contact__panel')
+    const el = document.querySelector('.panel')
     const r = el.getBoundingClientRect()
-    return { left: r.left, opacity: parseFloat(getComputedStyle(el).opacity), inert: el.hasAttribute('inert') }
+    return { left: r.left, opacity: parseFloat(getComputedStyle(el).opacity), inert: el.inert }
   })
-  check(panel.opacity > 0.95 && !panel.inert,
-    `the form arrives once he is on the bench (opacity ${panel.opacity.toFixed(2)})`)
+  check(panel.opacity > 0.95 && !panel.inert, `the form arrives once he is on the bench (opacity ${panel.opacity.toFixed(2)})`)
   check(panel.left > last.bench.right, `the form clears the bench (${Math.round(panel.left)} > ${Math.round(last.bench.right)})`)
+
+  // 9. Over the artwork the header lets it breathe: no blurred band.
+  const header = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')).backdropFilter)
+  check(header === 'none', `the header drops its glass over the scene (${header})`)
+
+  // 10. Every plate is decoded by the time the stage is pinned.
+  const plates = await page.evaluate(() => [...document.querySelectorAll('.hk__tile img')].every(img => img.complete && img.naturalWidth > 0))
+  check(plates, 'every plate of the scene has loaded')
+
+  // 11. Coming to rest just short of the stage carries the visitor onto it;
+  //     a finale already under way is never dragged back.
+  const settle = offset => page.evaluate(async ({ target, offset }) => {
+    window.scrollTo({ top: target + offset * window.innerHeight, behavior: 'instant' })
+    await new Promise(r => setTimeout(r, 1400))
+    return window.scrollY
+  }, { target: geo.top, offset })
+  const approach = await settle(-0.3)
+  check(Math.abs(approach - geo.top) < 4, `stopping short of the finale snaps onto the stage (${Math.round(approach)} → ${Math.round(geo.top)})`)
+  const inside = await settle(0.3)
+  check(inside > geo.top + 100, `a finale already under way is never dragged back (${Math.round(inside)})`)
+  const early = await settle(-2)
+  check(Math.abs(early - (geo.top - 1800)) < 4, `scrolls that stop elsewhere are left alone (${Math.round(early)})`)
+
+  // 12. The header's Contact link lands on the form, ready.
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.locator('.site-header__links a[href="#contact"]').click()
+  await page.waitForTimeout(2600)
+  const ready = await page.evaluate(() => {
+    const el = document.querySelector('.panel')
+    return { opacity: parseFloat(getComputedStyle(el).opacity), inert: el.inert }
+  })
+  check(ready.opacity > 0.95 && !ready.inert, `the Contact link lands on the form, ready (opacity ${ready.opacity.toFixed(2)})`)
 
   await page.close()
 }
 
-// ── Frame budget while scrolling the rail ──────────────────────────────────
+// ── Phone ──────────────────────────────────────────────────────────────────
+{
+  const { page, problems } = await open('/', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  check(problems.length === 0, `phone layout loads clean${problems.length ? ` — ${problems.join(' | ')}` : ''}`)
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  check(overflow <= 1, `phone layout has no horizontal overflow (${overflow}px)`)
+
+  // No walk here: the stage opens on the Knight already seated, and the form
+  // follows it in the flow, never inert.
+  const phone = await page.evaluate(async () => {
+    const track = document.querySelector('.finale__track')
+    const r = track.getBoundingClientRect()
+    const top = r.top + window.scrollY
+    window.scrollTo({ top: top + (r.height - window.innerHeight) * 0.9, behavior: 'instant' })
+    await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const stage = document.querySelector('.finale__stage').getBoundingClientRect()
+    const sit = getComputedStyle(document.querySelector('.hk__knight--sit')).opacity
+    const panel = document.querySelector('.panel')
+    const p = panel.getBoundingClientRect()
+    return { stageTop: stage.top, sit: parseFloat(sit), inert: panel.inert, after: p.top + window.scrollY >= top + r.height - 2 }
+  })
+  check(Math.abs(phone.stageTop) < 1, `the phone stage pins too (top ${phone.stageTop})`)
+  check(phone.sit === 1, 'the Knight is found already seated on a phone')
+  check(!phone.inert && phone.after, 'the form follows the stage and is never inert on a phone')
+
+  // A light parallax while the stage is pinned: from the shutters opening to
+  // the end of the range, the near planes slide in by their depth and the far
+  // ones stay put, then everything settles on the still composition.
+  const drift = await page.evaluate(async () => {
+    const track = document.querySelector('.finale__track')
+    const r = track.getBoundingClientRect()
+    const top = r.top + window.scrollY
+    const range = r.height - window.innerHeight
+    const openFrom = parseFloat(getComputedStyle(track).getPropertyValue('--open-from'))
+    const frame = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const layerX = (file) => {
+      const img = document.querySelector(`.hk__layer img[src$="/${file}.webp"]`)
+      return img.closest('.hk__layer').getBoundingClientRect().left
+    }
+    const sample = async (fraction) => {
+      window.scrollTo({ top: top + fraction * range, behavior: 'instant' })
+      await frame()
+      const seated = document.querySelector('.hk__knight--sit').getBoundingClientRect()
+      const bench = document.querySelector('.hk__bench').getBoundingClientRect()
+      return {
+        far: layerX('background-2'),
+        ground: layerX('ground'),
+        front: layerX('front-shadows'),
+        stageTop: document.querySelector('.finale__stage').getBoundingClientRect().top,
+        seatedMid: (seated.left + seated.right) / 2,
+        benchMid: (bench.left + bench.right) / 2,
+      }
+    }
+    const from = await sample(openFrom)
+    const to = await sample(1)
+    return { from, to, drifting: document.querySelector('.hk').classList.contains('is-drifting') }
+  })
+  const moved = key => Math.round(drift.from[key] - drift.to[key])
+  const byDepth = moved('front') > moved('ground') && moved('ground') > 20 && Math.abs(moved('far')) < 1
+  check(drift.drifting && byDepth,
+    `the phone scene drifts by depth (front ${moved('front')}px, ground ${moved('ground')}px, far ${moved('far')}px)`)
+  check(Math.abs(drift.from.stageTop) < 1 && Math.abs(drift.to.stageTop) < 1, 'the phone stage stays pinned while it drifts')
+  check(Math.abs(drift.to.seatedMid - drift.to.benchMid) < 6 && Math.abs(drift.to.benchMid - 195) < 6,
+    `the drift settles with the Knight on the bench, centred (${Math.round(drift.to.seatedMid)} / ${Math.round(drift.to.benchMid)})`)
+
+  // The menu opens and its links work.
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.locator('.site-header__menu-button').click()
+  await page.waitForTimeout(300)
+  const opened = await page.evaluate(() => document.querySelector('#site-menu').matches(':popover-open'))
+  await page.locator('#site-menu a[href="#parcours"]').click()
+  await page.waitForTimeout(3000)
+  const menuLanded = await page.evaluate(() => Math.round(document.getElementById('parcours').getBoundingClientRect().top))
+  check(opened && Math.abs(menuLanded - 68) < 12, `the phone menu opens and navigates (open ${opened}, #parcours at ${menuLanded}px)`)
+  await page.close()
+}
+
+// ── Reduced motion ─────────────────────────────────────────────────────────
+{
+  const { page } = await open('/', { reducedMotion: 'reduce' })
+  const reduced = await page.evaluate(() => {
+    const track = document.querySelector('.finale__track').getBoundingClientRect()
+    const panel = document.querySelector('.panel')
+    return {
+      track: track.height,
+      term: getComputedStyle(document.querySelector('.term')).display,
+      inert: panel.inert,
+      sit: parseFloat(getComputedStyle(document.querySelector('.hk__knight--sit')).opacity),
+    }
+  })
+  check(Math.abs(reduced.track - 900) < 2, `reduced motion spends no scroll on the finale (${reduced.track}px)`)
+  check(reduced.term === 'none' && !reduced.inert && reduced.sit === 1,
+    `and shows its last frame: no terminal, Knight seated, form ready (${JSON.stringify(reduced)})`)
+  await page.close()
+}
+
+// ── Frame budget while scrolling the page ──────────────────────────────────
 {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' })
@@ -513,7 +666,7 @@ async function visit(path) {
     const serious = results.violations.filter(v => ['serious', 'critical'].includes(v.impact))
     const minor = results.violations.filter(v => !['serious', 'critical'].includes(v.impact))
 
-    const detail = serious.map(v => `${v.id} (${v.nodes.length})`).join(', ')
+    const detail = serious.map(v => `${v.id} (${v.nodes.length}: ${v.nodes.slice(0, 4).map(n => n.target.join(' ')).join(' | ')})`).join(', ')
     check(serious.length === 0, `axe ${label} — no serious/critical violations${detail ? `: ${detail}` : ''}`)
     if (minor.length) {
       console.log(`  · ${label}: ${minor.length} minor/moderate — ${minor.map(v => v.id).join(', ')}`)
@@ -565,11 +718,13 @@ for (const scheme of ['light', 'dark']) {
     }
 
     const targets = [
-      ['scene title', '.scene__title'],
-      ['scene number', '.scene__number'],
-      ['scene hint', '.scene__hint'],
-      ['brand', '.page__brand'],
-      ['nav label', '.rail-nav__label'],
+      ['section title', '.section__title'],
+      ['header link', '.site-header__link'],
+      ['brand', '.site-header__brand'],
+      ['hero overline', '.hero__overline'],
+      ['hero statement', '.hero__statement'],
+      ['commit period', '.commit__period'],
+      ['skill years', '.skill__years'],
       ['locale link', '.locale-switch__link[aria-current]'],
     ]
     return targets.map(([name, sel]) => {

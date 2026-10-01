@@ -1,75 +1,93 @@
 <script setup lang="ts">
 /**
- * Opening sequence — v1's typewriter logo, kept (SPEC §6.1).
+ * The opening — the page compiling itself, once.
  *
- * Three rules it did not have: it plays once per session, it can be skipped by
- * any input, and it never blocks. The page content is in the DOM and painted
- * underneath from the first frame; this is only a veil on top, so it costs
- * nothing in LCP terms.
+ * v1 typed the header's logo for two seconds and a quarter: the same
+ * `<Nathan Couton />` the visitor would see a moment later, for nothing. This
+ * is the first half of the page's bookend instead: `npm run build` here, and
+ * `npm run contact` at the bottom, where the build finally runs.
+ *
+ * Painted with the page, decided before it. The veil is in the prerendered
+ * HTML, hidden unless `<html>` carries `nc-intro` — which a tiny inline script
+ * in the head (app.vue, `nc-intro-gate`) sets on the first visit of a session
+ * when motion is allowed. Deciding here, after hydration, showed the site
+ * first and then dropped the veil over it.
+ *
+ * The whole sequence is CSS, lift included (1.1s, then 650ms), so it never
+ * waits on the app's JavaScript: a slow bundle cannot keep it up. Vue only
+ * adds the skip (any key, click or wheel) and removes the element once the
+ * lift has finished.
  */
 const { t } = useI18n()
-const { reduced } = useMotionPreference()
 
-const showing = ref(false)
+/** Rendered on both sides, so hydration matches; CSS decides what is seen. */
+const showing = ref(true)
 const leaving = ref(false)
+const root = ref<HTMLElement>()
 
-const KEY = 'nc-intro-played'
+function settle() {
+  showing.value = false
+  document.documentElement.classList.remove('nc-intro')
+}
+
+/** Removes the veil when whichever lift is running has finished. */
+function afterLift() {
+  const lift = root.value?.getAnimations()
+    .find(a => a instanceof CSSAnimation && /^intro-(lift|skip)$/.test(a.animationName))
+  if (!lift || lift.playState === 'finished') return settle()
+  // A skip replaces the lift, which rejects as cancelled: nothing to do then.
+  lift.finished.then(settle, () => {})
+}
 
 function dismiss() {
   if (leaving.value || !showing.value) return
   leaving.value = true
-  window.setTimeout(() => {
-    showing.value = false
-  }, 700)
+  nextTick(afterLift)
 }
 
 onMounted(() => {
-  let played = false
-  try {
-    played = sessionStorage.getItem(KEY) === '1'
+  if (!document.documentElement.classList.contains('nc-intro')) {
+    showing.value = false
+    return
   }
-  catch {
-    // Private mode or blocked storage: play it, it is only a veil.
-  }
-
-  if (played || reduced.value) return
-
-  showing.value = true
-  try {
-    sessionStorage.setItem(KEY, '1')
-  }
-  catch { /* ignore */ }
-
-  // Total length is capped: 1.75s typing plus a beat, then it lifts.
-  const timer = window.setTimeout(dismiss, 2200)
+  afterLift()
 
   useEventListener(window, 'keydown', dismiss)
   useEventListener(window, 'pointerdown', dismiss)
   useEventListener(window, 'wheel', dismiss, { passive: true })
-
-  onBeforeUnmount(() => clearTimeout(timer))
 })
 </script>
 
 <template>
-  <Transition name="nc-intro">
+  <div
+    v-if="showing"
+    ref="root"
+    class="intro"
+    :class="{ 'is-leaving': leaving }"
+  >
     <div
-      v-if="showing"
-      class="intro"
-      :class="{ 'is-leaving': leaving }"
+      class="intro__log"
+      aria-hidden="true"
     >
-      <p class="intro__logo">
-        &lt;Nathan Couton /&gt;
+      <p class="intro__line intro__line--cmd">
+        <span class="intro__dollar">$</span> npm run build
       </p>
-      <button
-        type="button"
-        class="intro__skip"
-        @click="dismiss"
-      >
-        {{ t('intro.skip') }}
-      </button>
+      <p class="intro__line intro__line--1">
+        {{ t('intro.compiling') }}
+      </p>
+      <p class="intro__line intro__line--2">
+        ✓ {{ t('intro.done') }}
+      </p>
+      <span class="intro__bar" />
     </div>
-  </Transition>
+    <button
+      type="button"
+      class="intro__skip"
+      @click="dismiss"
+    >
+      {{ t('intro.skip') }}
+    </button>
+  </div>
 </template>
 
 <style scoped>
@@ -77,58 +95,104 @@ onMounted(() => {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  /* Lifts on its own, upwards, whether or not the app has booted. */
+  animation: intro-lift 650ms var(--ease-in-out-quint, cubic-bezier(0.83, 0, 0.17, 1)) 1100ms forwards;
   display: grid;
   place-content: center;
   gap: var(--space-l);
   justify-items: center;
-  background: var(--background);
+  background: var(--bg);
 }
 
-.intro__logo {
-  max-inline-size: 100%;
-  overflow: hidden;
-  font-size: clamp(1.5rem, 5vw, 3.5rem);
-  font-weight: 700;
-  color: var(--secondary-text);
-  white-space: nowrap;
-  border-inline-end: 3px solid var(--primary);
-  /* steps() on a ch-based width is the typewriter; the caret blinks alongside. */
-  inline-size: 0;
-  animation:
-    nc-type 1.75s steps(19, end) 0.15s forwards,
-    nc-caret 0.6s step-end 4;
+.intro__log {
+  display: grid;
+  gap: var(--space-3xs);
+  min-inline-size: min(22rem, 80vw);
+  font-family: var(--font-mono);
+  font-size: clamp(0.95rem, 0.8rem + 0.5vw, 1.25rem);
+  color: var(--text-dim);
 }
 
-@keyframes nc-type {
-  to { inline-size: 19ch; }
+.intro__line {
+  opacity: 0;
+  animation: intro-in 180ms var(--ease-out-expo) forwards;
 }
 
-@keyframes nc-caret {
-  0%, 100% { border-inline-end-color: var(--primary); }
-  50% { border-inline-end-color: transparent; }
+.intro__line--cmd {
+  color: var(--text);
+}
+
+.intro__line--1 { animation-delay: 250ms; }
+
+.intro__line--2 {
+  color: var(--brand-ink);
+  animation-delay: 700ms;
+}
+
+.intro__dollar {
+  color: var(--warm-ink);
+}
+
+.intro__bar {
+  display: block;
+  block-size: 2px;
+  margin-block-start: var(--space-2xs);
+  background: var(--brand);
+  transform-origin: left;
+  scale: 0 1;
+  animation: intro-bar 650ms var(--ease-out-expo) 150ms forwards;
+}
+
+@keyframes intro-in {
+  from { opacity: 0; translate: 0 0.4rem; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes intro-bar {
+  to { scale: 1 1; }
+}
+
+/* A skip is a new animation, not a re-timed one: changing the delay of the
+   running lift would jump it to wherever the clock already is. */
+.intro.is-leaving {
+  animation: intro-skip 450ms var(--ease-in-out-quint, cubic-bezier(0.83, 0, 0.17, 1)) forwards;
+}
+
+@keyframes intro-lift {
+  /* From an explicit inset: `none` → inset() does not interpolate, it flips. */
+  from { clip-path: inset(0 0 0 0); }
+
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+@keyframes intro-skip {
+  /* From an explicit inset: `none` → inset() does not interpolate, it flips. */
+  from { clip-path: inset(0 0 0 0); }
+
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+    pointer-events: none;
+  }
 }
 
 .intro__skip {
   padding: var(--space-3xs) var(--space-2xs);
-  font-size: var(--step--1);
-  color: var(--surface-dim);
-  border: 1px solid var(--surface-faint);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  color: var(--text-dim);
+  border: 1px solid var(--line);
   border-radius: var(--radius-s);
-  opacity: 0;
-  animation: nc-fade-in 300ms ease 1.2s forwards;
 }
+</style>
 
-@keyframes nc-fade-in {
-  to { opacity: 1; }
-}
-
-/* The veil retracts towards the corner, as v1's did. */
-.nc-intro-leave-active {
-  transition: clip-path 700ms var(--ease-in-out-quint), opacity 700ms var(--ease-out-expo);
-}
-
-.nc-intro-leave-to {
-  clip-path: circle(0% at 0% 0%);
-  opacity: 0;
+<style>
+/* Unscoped on purpose: the decision is a class on <html>, set before Vue. */
+html:not(.nc-intro) .intro {
+  display: none;
 }
 </style>

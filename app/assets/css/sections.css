@@ -1,0 +1,35 @@
+/* ============================================================================
+   The document and its finale.
+
+   Everything above the finale is ordinary flow. The only structural rule here
+   is negative: nothing between <html> and the finale may create a scroll
+   container (`overflow` other than visible or clip on the block axis) or skip
+   rendering (`content-visibility`). Either one breaks `position: sticky` on
+   the stage and detaches the finale's `view-timeline` from the document's
+   scroll — the scene would sit still while the page moved.
+   ========================================================================= */
+
+/* Registered so path B can interpolate them, and so a registered initial value
+   stands in for them where nothing sets one. See NcFinale. */
+@property --walk {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --open {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --run {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}

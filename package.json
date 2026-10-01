@@ -23,9 +23,10 @@
     "verify": "npm run check && npm run build && npm run test:api && npm run smoke && npm run lighthouse && node scripts/check-budgets.mjs",
     "icons": "node scripts/build-sprite.mjs",
     "sprites": "node scripts/build-knight-sprites.mjs && node scripts/build-scene-props.mjs",
-    "assets:fetch": "node --experimental-strip-types scripts/fetch-remote-assets.mjs",
     "test:api": "node scripts/test-api.mjs",
-    "lighthouse": "node scripts/lighthouse.mjs"
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "shots": "node scripts/shots.mjs",
+    "cv": "node scripts/build-cv.mjs"
   },
   "dependencies": {
     "nuxt": "^4.5.2",
@@ -34,7 +35,6 @@
   "devDependencies": {
     "@csstools/postcss-global-data": "^4.0.0",
     "@nuxt/eslint": "^1.17.0",
-    "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.1.0",
     "@nuxt/test-utils": "^3.19.2",
     "@nuxtjs/color-mode": "^4.0.1",

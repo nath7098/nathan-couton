@@ -3,12 +3,15 @@
 Portfolio de Nathan Couton, refonte en **Nuxt 4** du site
 [nath7098/personal-website](https://gitlab.com/nath7098/personal-website) (Vue 3 + Vite).
 
-La navigation est une **page unique à défilement horizontal** : on scrolle, le contenu
-file de gauche à droite à travers sept scènes. Parallax multi-couches, particules
-canvas et transitions CSS sur mesure — aucune librairie de composants UI.
+**Compile → Run.** La page défile comme un fichier — hero, profil, parcours en
+`git log --graph`, compétences, études de cas — puis, au seuil du contact,
+`$ npm run contact` s'ouvre sur une scène épinglée où le Chevalier de Hollow
+Knight traverse Greenpath et s'assoit sur un banc. Animations pilotées par le
+scroll, particules canvas, polices auto-hébergées — aucune librairie de
+composants UI.
 
 > **La spécification fait foi : [`docs/SPEC.md`](docs/SPEC.md).**
-> Elle décrit le rail, le design system, chaque scène, les budgets et le plan de lots.
+> Son §14 (révision « Compile → Run ») prime sur les sections d'origine.
 >
 > **Vous reprenez le projet ? Lisez [`docs/HANDOFF.md`](docs/HANDOFF.md)** —
 > état d'avancement, règle de vérification, et la liste des pièges de cette
@@ -36,7 +39,8 @@ npm run dev          # http://localhost:3000
 | `npm run smoke` | charge le build réel dans Chromium et échoue sur toute erreur |
 | `npm run verify` | la séquence complète, comme la CI |
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
-| `npm run assets:fetch` | rapatrie les pochettes Spotify / jaquettes IGDB en local |
+| `npm run shots` | captures du parcours complet sur le build, à regarder |
+| `npm run cv [dossier]` | régénère les CV PDF (fr, en) depuis les données du site ; aperçus PNG dans le dossier donné |
 | `npm run test:api` | exerce `POST /api/contact` sur le bundle construit |
 | `npm run lighthouse` | audit Lighthouse sur la sortie de build |
 
@@ -48,10 +52,10 @@ permet de pointer un binaire Chromium déjà présent.
 ```
 app/
 ├── assets/css/     tokens, reset, typographie, breakpoints nommés
-├── components/     primitives/ · rail/ · effects/ · scenes/
-├── composables/    useRail, useMotionPreference, …
-├── data/           scènes, projets, compétences, contact (TypeScript typé)
-└── pages/index.vue page unique, monte les sept scènes
+├── components/     primitives/ · layout/ · finale/ · scenes/ · effects/
+├── composables/    useSections, useFinale, useMotionPreference, …
+├── data/           sections, parcours, projets, compétences, now (TypeScript typé)
+└── pages/index.vue page unique : cinq sections, puis le final
 i18n/locales/       fr.json (défaut) · en.json
 server/api/         contact.post.ts — unique fonction serverless
 ```
@@ -69,8 +73,8 @@ est retirée du build de production, elle ne coûte donc rien au bundle livré.
   custom properties. Un accent qui porte du texte utilise `--primary-text` /
   `--secondary-text`, contrastés pour le thème clair.
 - **Mouvement** : n'animer que `transform`, `opacity`, `filter` et des custom
-  properties. `prefers-reduced-motion` est respecté partout — sauf les animations
-  pilotées par le scroll, qui sont le mécanisme du rail et non de la décoration.
+  properties. `prefers-reduced-motion` est respecté partout : le final se replie
+  alors sur sa dernière image (Chevalier assis, formulaire prêt).
 - **Effets plein écran** : les mesurer avant de les garder. `mix-blend-mode` et
   `skewY` appliqués à la surface du rail coûtaient chacun la moitié du budget de
   frame ; `npm run smoke` surveille désormais le temps de frame au défilement.
@@ -78,11 +82,8 @@ est retirée du build de production, elle ne coûte donc rien au bundle livré.
 - **Icônes** : uniquement via `<NcIcon name="…" />`, dont les noms sont générés
   par `npm run icons`. Ajouter une icône = éditer `scripts/build-sprite.mjs`
   (logo de marque) ou déposer un SVG dans `app/assets/icons/ui/`.
-- **Images tierces** : les pochettes Spotify et les jaquettes IGDB pointent encore
-  vers leurs CDN d'origine. Ces URL peuvent expirer ; `npm run assets:fetch` les
-  rapatrie dans `public/img/remote/`, après quoi il faut faire pointer
-  `app/data/about.ts` dessus. En attendant, une tuile dont l'image échoue affiche
-  proprement son nom au lieu d'une image cassée.
+- **Aucune image tierce** : tout ce que la page affiche est servi par le site
+  (CSP `img-src 'self'`). La « bande-son 2024 » est du texte daté.
 - **i18n** : les messages sont importés statiquement dans `i18n/i18n.config.ts`.
   Ne pas repasser à `langDir` : le serveur de développement répond alors 404 sur
   les fichiers de locale et chaque `t()` retombe silencieusement sur la clé brute,
@@ -107,27 +108,18 @@ autour de 1,5 Mo serait bienvenu.
 
 1. Renseigner `NUXT_EMAILJS_*` dans les variables d'environnement Vercel, sinon
    le formulaire répond 503.
-2. Lancer `npm run assets:fetch` puis faire pointer `app/data/about.ts` sur
-   `/img/remote/` — les pochettes Spotify dépendent encore d'un CDN tiers.
+2. Mettre à jour `public/cv/CV_Nathan_Couton.pdf` (il s'arrête à la Mutuelle de
+   Poitiers).
 3. Réencoder `public/audio/hollow-knight-theme.mp3` (4,4 Mo → ~1,5 Mo).
 4. Valider la preview Vercel, puis basculer les DNS. Garder le VPS quelques
    jours en repli ; les redirections 301 doivent être en place avant.
 
 ## Mesures
 
-Lighthouse desktop sur la sortie de build : **98 perf · 100 a11y · 96 best
-practices · 100 SEO**. LCP 1,0 s, CLS 0,005, TBT 20 ms. Les 96 en best
-practices tiennent aux pochettes Spotify injoignables depuis l'environnement de
-build ; servies localement, le score atteint 100.
+Lighthouse desktop sur la sortie de build (rendu logiciel) : **93 perf · 100
+a11y · 100 best practices · 100 SEO**. LCP 1,4 s, CLS 0, TBT 0 ms. JS critique
+124 kB gzip, sections sous la ligne de flottaison hydratées à l'approche.
 
 ## État d'avancement
 
-| Lot | Contenu | État |
-|---|---|---|
-| L0 | Socle : projet, tokens, thèmes, i18n, CI | ✅ |
-| L1 | Rail horizontal, navigation, mode vertical mobile | ✅ |
-| L2 | Bibliothèque de primitives, sprite SVG | ✅ |
-| L3 | Contenu des sept scènes | ✅ |
-| L4 | Parallax, particules, transitions | ✅ |
-| L5 | Formulaire de contact, scène Hollow Knight | ✅ |
-| L6 | Perf, SEO, finition | ✅ (bascule DNS à faire) |
+Voir [`docs/HANDOFF.md`](docs/HANDOFF.md) §1 : lots L0–L16 livrés, bascule DNS à faire.

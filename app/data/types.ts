@@ -15,5 +15,3 @@ export interface Tag {
   /** i18n key for the explanation shown in the modal. */
   detailsKey?: string
 }
-
-export type AccentKey = 'green' | 'polytech' | 'acii' | 'iut-red' | 'catamania'

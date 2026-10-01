@@ -9,8 +9,10 @@
 @custom-media --below-md (width < 768px);
 @custom-media --below-lg (width < 1024px);
 
-/* The horizontal rail needs room, a fine pointer and an actual viewport height. */
-@custom-media --rail (width >= 1024px) and (height >= 600px) and (pointer: fine);
+/* The finale's walk needs room and an actual viewport height. Below this the
+   stage still pins for the terminal, and the Knight is found already seated.
+   Mirrors STAGE_WIDE_QUERY in app/composables/useFinale.ts. */
+@custom-media --stage-wide (width >= 1024px) and (height >= 600px);
 
 @custom-media --can-hover (hover: hover) and (pointer: fine);
 @custom-media --motion-ok (prefers-reduced-motion: no-preference);

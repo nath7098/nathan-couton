@@ -1,8 +1,22 @@
 <script setup lang="ts">
+import { LEGACY_HASHES } from '~/data/sections'
+
 const { t } = useI18n()
 const head = useLocaleHead({ seo: true })
 
 useMotionPreference()
+
+// ⌘K / Ctrl+K opens the command palette. The palette's own code is only
+// fetched the first time it is asked for.
+const palette = useState('nc-palette', () => false)
+onMounted(() => {
+  useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault()
+      palette.value = !palette.value
+    }
+  })
+})
 
 useHead(() => ({
   htmlAttrs: head.value.htmlAttrs,
@@ -11,10 +25,20 @@ useHead(() => ({
   script: [{
     // Captured before Nuxt boots: by the time a component's setup runs, the
     // initial hash is already gone from location (the router normalises the URL
-    // against the prerendered route, which has no fragment). NcRail reads this
-    // to restore a deep link.
+    // against the prerendered route, which has no fragment). useSections reads
+    // this to restore a deep link. The anchors of the old layout are
+    // translated on the way — `#experience` and `#education` are the Parcours
+    // now — and the address bar is corrected to match.
     key: 'nc-hash-capture',
-    innerHTML: 'window.__ncHash=(location.hash||"").replace("#","")',
+    innerHTML: `window.__ncHash=(function(m){var h=(location.hash||"").slice(1);if(m[h]){h=m[h];history.replaceState(null,"","#"+h)}return h})(${JSON.stringify(LEGACY_HASHES)})`,
+    tagPosition: 'head',
+  }, {
+    // The opening veil is in the prerendered HTML; this decides, before the
+    // first paint, whether it shows. Once per session, never with reduced
+    // motion, and never without JS (no class, no veil). Deciding later — in
+    // a component's onMounted — painted the page first and the veil over it.
+    key: 'nc-intro-gate',
+    innerHTML: `(function(){try{var k="nc-intro-played";if(sessionStorage.getItem(k)!=="1"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.classList.add("nc-intro");sessionStorage.setItem(k,"1")}}catch(e){}})()`,
     tagPosition: 'head',
   }],
 }))
@@ -33,6 +57,10 @@ useHead(() => ({
     <NcNoise />
     <NcCursor />
     <NcIntro />
+    <LazyNcCommandPalette
+      v-if="palette"
+      @close="palette = false"
+    />
   </div>
 </template>
 

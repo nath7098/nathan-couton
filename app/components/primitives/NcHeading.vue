@@ -2,18 +2,23 @@
 /**
  * Headings, with the {{ }} braces that are the site's signature.
  *
- * The braces are pseudo-elements so assistive tech reads the text alone, and
- * they animate in from the sides when the heading enters.
+ * The braces are pseudo-elements (see `.nc-braces` in typography.css), so
+ * assistive tech reads the text alone. They sit tight against the word and
+ * fade with `--code` as the page compiles down into its finale.
+ *
+ * They used to slide in from the sides on a scroll signal that only reached
+ * its end once the section was already leaving the screen — so at rest they
+ * hung a hundred pixels off the name, at 65% opacity.
  */
 const props = withDefaults(defineProps<{
   level?: 1 | 2 | 3
   braces?: boolean
   /** Visual size, if it should differ from the semantic level. */
-  size?: 2 | 3 | 4
+  size?: 2 | 3 | 4 | 5 | 6
 }>(), { level: 2, braces: true, size: undefined })
 
 const tag = computed(() => `h${props.level}` as const)
-const step = computed(() => `var(--step-${props.size ?? (props.level === 1 ? 4 : props.level === 2 ? 3 : 1)})`)
+const step = computed(() => `var(--step-${props.size ?? (props.level === 1 ? 6 : props.level === 2 ? 5 : 2)})`)
 </script>
 
 <template>
@@ -30,24 +35,6 @@ const step = computed(() => `var(--step-${props.size ?? (props.level === 1 ? 4 :
 <style scoped>
 .nc-heading {
   font-size: var(--heading-size);
-  color: var(--primary-text);
-  line-height: 1.1;
-}
-
-.nc-heading::before,
-.nc-heading::after {
-  display: inline-block;
-  transition: transform var(--dur-slow) var(--ease-out-expo), opacity var(--dur-slow) var(--ease-out-expo);
-}
-
-/* Braces converge on the text as the scene sweeps in. */
-.nc-heading::before {
-  opacity: calc(0.3 + 0.7 * var(--scene-progress, 1));
-  transform: translateX(calc((1 - var(--scene-progress, 1)) * -0.6em));
-}
-
-.nc-heading::after {
-  opacity: calc(0.3 + 0.7 * var(--scene-progress, 1));
-  transform: translateX(calc((1 - var(--scene-progress, 1)) * 0.6em));
+  color: var(--text);
 }
 </style>

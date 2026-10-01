@@ -2,8 +2,9 @@
 import type { TechKey } from '~/data/types'
 
 /**
- * Tech pill. Colour comes from the --tech-* token pair, so the palette stays in
- * one place.
+ * Tech pill. Monochrome: a stack is read, not colour-matched. The v1 tags
+ * carried each technology's brand colour, and a row of them — sixteen in the
+ * old projects filter — was a rainbow that fought the page for attention.
  *
  * Three shapes, and only three: a tag with `details` is a button that opens the
  * modal, a tag with `pressed` is a toggle button that reports its own state,
@@ -15,13 +16,14 @@ import type { TechKey } from '~/data/types'
  */
 const props = withDefaults(defineProps<{
   label: string
-  tech: TechKey
+  /** What the label names. Kept for meaning and tests; it no longer colours the pill. */
+  tech?: TechKey
   /** Explanatory text; makes the tag open a modal when present. */
   details?: string
   /** Present makes the tag a toggle button, and carries its state. */
   pressed?: boolean
   size?: 'sm' | 'md'
-}>(), { details: undefined, pressed: undefined, size: 'md' })
+}>(), { tech: undefined, details: undefined, pressed: undefined, size: 'md' })
 
 const emit = defineEmits<{ open: [], toggle: [] }>()
 
@@ -40,10 +42,6 @@ function onClick() {
     :is="interactive ? 'button' : 'span'"
     class="nc-tag"
     :class="[`nc-tag--${size}`, { 'is-interactive': interactive }]"
-    :style="{
-      '--tag-accent': `var(--tech-${tech}-accent)`,
-      '--tag-bg': `var(--tech-${tech}-bg)`,
-    }"
     :type="interactive ? 'button' : undefined"
     :aria-pressed="isToggle ? String(pressed) : undefined"
     @click="onClick"
@@ -56,22 +54,23 @@ function onClick() {
 .nc-tag {
   display: inline-flex;
   align-items: center;
-  padding: 0.15em 0.65em 0.25em;
-  font-size: var(--step--1);
-  font-family: inherit;
-  color: inherit;
-  background: transparent;
-  border: 2px solid var(--tag-accent, var(--surface-faint));
+  padding: 0.2em 0.7em 0.25em;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.3;
+  color: var(--text-dim);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
+  white-space: nowrap;
   transition:
-    background-color var(--dur-base) var(--ease-out-expo),
-    transform var(--dur-fast) var(--ease-spring);
+    color var(--dur-base) var(--ease-out-expo),
+    border-color var(--dur-base) var(--ease-out-expo),
+    background-color var(--dur-base) var(--ease-out-expo);
 }
 
 .nc-tag--sm {
-  font-size: 0.7rem;
-  padding: 0.1em 0.5em 0.2em;
-  border-width: 1.5px;
+  padding: 0.12em 0.6em 0.18em;
 }
 
 .nc-tag.is-interactive {
@@ -80,18 +79,15 @@ function onClick() {
 
 @media (hover: hover) {
   .nc-tag.is-interactive:hover {
-    background: var(--tag-bg);
-    transform: translateY(-1px);
+    color: var(--brand-ink);
+    border-color: var(--brand);
   }
-}
-
-.nc-tag.is-interactive:active {
-  transform: translateY(0);
 }
 
 /* A pressed toggle keeps its fill so the state survives the pointer leaving. */
 .nc-tag[aria-pressed='true'] {
-  background: var(--tag-bg);
-  box-shadow: 0 0 0 2px var(--tag-accent);
+  color: var(--on-brand);
+  background: var(--brand);
+  border-color: var(--brand);
 }
 </style>

@@ -6,8 +6,7 @@ import { MOTIF_HEIGHT, MOTIF_WIDTH, motifShapes } from '~/utils/project-motifs'
  * The figure behind a project card's text. Geometry comes from
  * `project-motifs.ts`; this component only draws it.
  *
- * Nothing animates until the card is hovered, so eight of these on screen cost
- * eight static SVGs and no frame time.
+ * Static: drawn once, no frame time.
  */
 const props = defineProps<{ motif: MotifKey, seed: string }>()
 
@@ -81,15 +80,15 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
   fill: var(--motif-ink, currentcolor);
 }
 
-/* Drawn most of the way at rest: enough to read as a figure, short enough that
-   finishing the line is still a reveal. */
+/* Drawn in full at rest. It used to stop at 42% and wait for a hover — which
+   read as an empty slot to anyone who did not hover. */
 .motif__path {
   fill: none;
   stroke: var(--motif-ink, currentcolor);
-  stroke-width: 1.1;
+  stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-dasharray: var(--len);
-  stroke-dashoffset: calc(var(--len) * 0.58 * (1 - var(--motif-lit, 0)));
+  stroke-dashoffset: calc(var(--len) * 0.58 * (1 - var(--motif-lit, 1)));
   transition: stroke-dashoffset 900ms var(--ease-out-expo) calc(var(--n) * 55ms);
 }
 

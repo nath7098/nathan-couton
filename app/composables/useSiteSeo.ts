@@ -13,7 +13,7 @@ export function useSiteSeo() {
   const site = config.public.siteUrl
 
   const description = computed(() => t('seo.description'))
-  const title = computed(() => `Nathan Couton — ${t('home.position')}`)
+  const title = computed(() => `Nathan Couton — ${t('seo.title')}`)
 
   useSeoMeta({
     title: () => title.value,
@@ -55,7 +55,7 @@ export function useSiteSeo() {
             '@type': 'Person',
             '@id': `${site}/#person`,
             'name': 'Nathan Couton',
-            'jobTitle': t('home.position'),
+            'jobTitle': t('seo.jobTitle'),
             'email': `mailto:${CONTACT.email}`,
             'url': site,
             'image': `${site}/nc_logo_static.png`,
@@ -71,9 +71,11 @@ export function useSiteSeo() {
               { '@type': 'CollegeOrUniversity', 'name': 'IUT Angoulême' },
             ],
             'knowsAbout': [
-              'Vue.js', 'Nuxt', 'TypeScript', 'JavaScript', 'Java', 'Spring',
-              'Angular', 'Node.js', 'SQL', 'Web development',
+              'Java', 'Spring Boot', 'Spring Batch', 'Kafka', 'Angular', 'Vue.js',
+              'TypeScript', 'Hibernate', 'Bonita', 'SQL', 'Oracle', 'PostgreSQL', 'Web development',
             ],
+            'worksFor': { '@type': 'Organization', 'name': 'Catamania' },
+            'subjectOf': { '@type': 'DigitalDocument', 'name': 'CV', 'url': `${site}${CONTACT.resume[locale.value === 'en' ? 'en' : 'fr']}` },
           },
           {
             '@type': 'WebSite',

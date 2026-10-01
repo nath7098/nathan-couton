@@ -6,6 +6,8 @@ export interface ContactPayload {
   name: string
   email: string
   message: string
+  /** What the message is about, if the sender said. */
+  subject?: 'job' | 'mission' | 'other'
   /** Honeypot: must stay empty. Real people never see this field. */
   company?: string
   /** Milliseconds the form was open before submitting. */
@@ -13,11 +15,13 @@ export interface ContactPayload {
 }
 
 export interface ValidationIssue {
-  field: 'name' | 'email' | 'message' | 'form'
+  field: 'name' | 'email' | 'message' | 'subject' | 'form'
   code: string
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+export const SUBJECTS = ['job', 'mission', 'other'] as const
 
 export const LIMITS = {
   name: { min: 2, max: 120 },
@@ -50,6 +54,10 @@ export function validateContact(input: unknown): ValidationIssue[] {
   if (!message) issues.push({ field: 'message', code: 'required' })
   else if (message.length < LIMITS.message.min) issues.push({ field: 'message', code: 'tooShort' })
   else if (message.length > LIMITS.message.max) issues.push({ field: 'message', code: 'tooLong' })
+
+  if (body.subject !== undefined && !(SUBJECTS as readonly unknown[]).includes(body.subject)) {
+    issues.push({ field: 'subject', code: 'invalid' })
+  }
 
   // Bots fill every field they find, including the hidden one.
   if (typeof body.company === 'string' && body.company.trim() !== '') {

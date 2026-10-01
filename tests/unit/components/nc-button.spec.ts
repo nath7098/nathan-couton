@@ -36,15 +36,23 @@ describe('NcButton', () => {
     expect(wrapper.attributes('disabled')).toBeUndefined()
   })
 
-  it('keeps the label free of the code decoration', () => {
+  it('renders the variant as a class and the label as text', () => {
     const wrapper = mount(NcButton, {
-      props: { variant: 'code' },
-      slots: { default: 'En savoir plus' },
+      props: { variant: 'primary' },
+      slots: { default: 'Télécharger le CV' },
       global: { stubs },
     })
-    // The @click.prevent="…" wrapper is pseudo-element only, so assistive tech
-    // and tests see the label alone.
-    expect(wrapper.text()).toBe('En savoir plus')
-    expect(wrapper.classes()).toContain('nc-button--code')
+    expect(wrapper.text()).toBe('Télécharger le CV')
+    expect(wrapper.classes()).toContain('nc-button--primary')
+  })
+
+  it('passes download through to a link', () => {
+    const wrapper = mount(NcButton, {
+      props: { href: '/cv.pdf' },
+      attrs: { download: 'cv.pdf' },
+      global: { stubs },
+    })
+    expect(wrapper.element.tagName).toBe('A')
+    expect(wrapper.attributes('download')).toBe('cv.pdf')
   })
 })

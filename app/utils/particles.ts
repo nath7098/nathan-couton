@@ -8,7 +8,7 @@
  */
 
 export type ParticlePreset
-  = | 'code-rain' | 'dust' | 'constellation' | 'embers' | 'grid-pulse' | 'spores'
+  = | 'code-rain' | 'dust' | 'constellation' | 'embers' | 'grid-pulse' | 'spores' | 'fireflies'
 
 export interface FieldOptions {
   preset: ParticlePreset
@@ -28,6 +28,8 @@ const BASE_COUNT: Record<ParticlePreset, number> = {
   'embers': 55,
   'grid-pulse': 90,
   'spores': 65,
+  // Sparse on purpose: a handful of lights, the first of Greenpath's.
+  'fireflies': 22,
 }
 
 /** Small, fast, seedable PRNG (mulberry32) — reproducible fields. */
@@ -112,6 +114,13 @@ export class ParticleField {
         this.vy[i] = -(4 + r() * 12)
         this.size[i] = 1.2 + r() * 2.6
         break
+      case 'fireflies':
+        this.x[i] = r() * this.width
+        this.y[i] = r() * this.height
+        this.vx[i] = (r() - 0.5) * 10
+        this.vy[i] = (r() - 0.5) * 10
+        this.size[i] = 1.4 + r() * 1.8
+        break
       case 'grid-pulse':
         this.x[i] = r() * this.width
         this.y[i] = r() * this.height
@@ -138,7 +147,7 @@ export class ParticleField {
       this.y[i]! += this.vy[i]! * delta
 
       // Brownian wander for the floating presets.
-      if (this.preset === 'dust' || this.preset === 'constellation') {
+      if (this.preset === 'dust' || this.preset === 'constellation' || this.preset === 'fireflies') {
         this.vx[i]! += (this.random() - 0.5) * 2 * delta
         this.vy[i]! += (this.random() - 0.5) * 2 * delta
         this.vx[i] = Math.max(-12, Math.min(12, this.vx[i]!))

@@ -24,3 +24,6 @@ node_modules
 
 # Vercel
 .vercel
+
+# Screenshots from scripts/shots.mjs
+shots/

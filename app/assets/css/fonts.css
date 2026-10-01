@@ -1,0 +1,65 @@
+/* ============================================================================
+   Self-hosted fonts.
+
+   They used to come from `@nuxt/fonts` and its Google provider, which fails
+   without a word when Google cannot be reached from the build machine: the
+   build goes green, no @font-face is emitted, and the whole site renders in
+   whatever monospace the visitor's system happens to have. Committed files
+   cannot fail that way.
+
+   - Fraunces (variable, wght 100–900) — the display face. OFL.
+   - JetBrains Mono 400 / 700 — the code thread. OFL.
+   Latin subset only; both from Fontsource.
+
+   Body text uses the system sans-serif stack and costs nothing.
+   ========================================================================= */
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-wght-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-wght-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+}
+
+/* Metric-matched fallbacks, so swapping the real face in does not reflow the
+   hero. Values from the fonts' own metrics against Georgia and Courier New. */
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia'), local('Times New Roman');
+  size-adjust: 104%;
+  ascent-override: 94%;
+  descent-override: 25%;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono Fallback';
+  src: local('Courier New'), local('DejaVu Sans Mono');
+  size-adjust: 100%;
+  ascent-override: 102%;
+  descent-override: 30%;
+}

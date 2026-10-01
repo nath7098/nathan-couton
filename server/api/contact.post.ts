@@ -8,6 +8,8 @@ import { validateContact, type ContactPayload } from '../utils/contact-validatio
  * somewhere to enforce a rate limit. Everything else about the site is static.
  */
 
+const SUBJECT_LABELS = { job: 'Poste / CDI', mission: 'Mission via ESN', other: 'Autre' } as const
+
 const WINDOW_MS = 60 * 60 * 1000
 const MAX_PER_WINDOW = 5
 
@@ -69,7 +71,10 @@ export default defineEventHandler(async (event) => {
       template_params: {
         name: body.name.trim(),
         email: body.email.trim(),
-        content: body.message.trim(),
+        // The template has no subject field; a first line does the triage.
+        content: body.subject
+          ? `[${SUBJECT_LABELS[body.subject]}]\n\n${body.message.trim()}`
+          : body.message.trim(),
       },
     },
     ignoreResponseError: true,
