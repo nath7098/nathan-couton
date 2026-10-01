@@ -64,8 +64,8 @@ const playlist = computed(() => soundtrack.value.live
       <img
         src="/img/about/profile-pic.jpg"
         :alt="t('about.portraitAlt')"
-        width="706"
-        height="706"
+        width="800"
+        height="1000"
         loading="lazy"
         decoding="async"
       >
@@ -253,7 +253,7 @@ const playlist = computed(() => soundtrack.value.live
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  object-position: 62% 40%;
+  object-position: 50% 35%;
   filter: grayscale(1) contrast(1.05);
 }
 
