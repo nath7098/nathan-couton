@@ -43,9 +43,6 @@ function toCommit(event: MouseEvent, id: string) {
         >
           {{ t(`skills.tiers.${tier}.title`) }}
         </h3>
-        <p class="tier__hint">
-          {{ t(`skills.tiers.${tier}.hint`) }}
-        </p>
       </header>
 
       <ul class="tier__list">
@@ -115,11 +112,6 @@ function toCommit(event: MouseEvent, id: string) {
 
 .tier--daily .tier__title {
   color: var(--brand-ink);
-}
-
-.tier__hint {
-  font-size: var(--step--1);
-  color: var(--text-dim);
 }
 
 .tier__list {

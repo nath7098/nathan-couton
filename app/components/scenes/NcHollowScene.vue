@@ -61,6 +61,23 @@ const seated = finale.arrived
 const still = computed(() => !finale.walking.value)
 
 /**
+ * Drifting: the still scene on a phone, with motion allowed. There is no walk
+ * to play there, but the stage is still pinned while the shutters open and
+ * the hold runs out, and a scene that does not move at all through that
+ * stretch reads as a picture. The nearer planes slide in by a fraction of
+ * their depth and settle on the still composition; the far ones do not move,
+ * which is both the depth cue and fewer layers promoted on a phone.
+ */
+const drifting = computed(() => still.value && !reduced.value)
+
+/** The nearest depth that drifts; everything behind it stays put. */
+const DRIFT_FROM = 0.5
+
+function layerClass(layer: ParallaxLayer) {
+  return [`is-${layer.repeat}`, layer.motion ? `is-${layer.motion}` : '', { 'is-near': layer.depth >= DRIFT_FROM }]
+}
+
+/**
  * The fallback path has no scroll-driven animations, so the sprite cycle there
  * runs on time and has to be paused when the page is still — a Knight marking
  * time on the spot reads as a bug. A watch on the scroll delta is enough; this
@@ -245,7 +262,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="hk"
-    :class="{ 'is-seated': seated, 'is-striding': striding, 'is-still': still }"
+    :class="{ 'is-seated': seated, 'is-striding': striding, 'is-still': still, 'is-drifting': drifting }"
     :style="{
       '--pan': PAN,
       '--ground-line': GROUND_LINE,
@@ -263,7 +280,7 @@ onBeforeUnmount(() => {
         v-for="layer in BACKDROP_LAYERS"
         :key="layer.file"
         class="hk__layer"
-        :class="[`is-${layer.repeat}`, layer.motion ? `is-${layer.motion}` : '']"
+        :class="layerClass(layer)"
         :style="layerStyle(layer)"
       >
         <picture
@@ -354,7 +371,7 @@ onBeforeUnmount(() => {
         v-for="layer in FOREGROUND_LAYERS"
         :key="layer.file"
         class="hk__layer"
-        :class="[`is-${layer.repeat}`, layer.motion ? `is-${layer.motion}` : '']"
+        :class="layerClass(layer)"
         :style="layerStyle(layer)"
       >
         <picture
@@ -454,6 +471,8 @@ onBeforeUnmount(() => {
   /* Outside the strict minimum coverage, so rounding never shows a sliver of
      page background down the edge of the screen. Mirrors BLEED in the data. */
   --bleed: 0.08;
+  /* How far a plane at depth 1 drifts on a phone, in screen widths. */
+  --drift: 0.25;
 
   /* Where feet and bench legs land, measured off the plates. The seat follows
      from the bench's own geometry, so scaling the bench moves the seat with
@@ -983,5 +1002,28 @@ onBeforeUnmount(() => {
 
 .hk.is-still .hk__knight--sit {
   opacity: 1;
+}
+
+/* ── Drifting ──────────────────────────────────────────────────────────────
+   The still scene, on a phone with motion allowed: from the moment the
+   shutters open to the end of the pinned range, the planes nearer than
+   `DRIFT_FROM` slide in from the right by `depth × --drift` screen widths and
+   settle on the composition above. The bench and the seated Knight ride the
+   ground, and so do the seat and the music controls above it. Path B has no
+   scroll timeline, and simply stays still. */
+@supports (animation-timeline: view()) {
+  .hk.is-still.is-drifting :is(.hk__layer.is-near, .hk__bench, .hk__knight--sit, .hk__rest, .hk__seat, .hk__controls) {
+    animation-name: hk-drift;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: --finale;
+    animation-range: contain calc(var(--open-from) * 100%) contain 100%;
+  }
+
+  @keyframes hk-drift {
+    from { transform: translate3d(calc(var(--depth, 1) * var(--drift) * 100vw), 0, 0); }
+    to { transform: translate3d(0, 0, 0); }
+  }
 }
 </style>

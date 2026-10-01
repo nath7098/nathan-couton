@@ -94,11 +94,11 @@ function follow(event: MouseEvent, id: SectionId) {
       <button
         type="button"
         class="site-header__palette"
-        :aria-label="t('palette.open')"
         :title="t('palette.open')"
         @click="palette = true"
       >
         <kbd>{{ isMac ? '⌘' : 'Ctrl' }}</kbd><kbd>K</kbd>
+        <span class="nc-sr-only">{{ t('palette.open') }}</span>
       </button>
 
       <div class="site-header__prefs">

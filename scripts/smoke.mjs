@@ -486,6 +486,46 @@ for (const [path, id] of [['/#skills', 'skills'], ['/#experience', 'parcours']])
   check(phone.sit === 1, 'the Knight is found already seated on a phone')
   check(!phone.inert && phone.after, 'the form follows the stage and is never inert on a phone')
 
+  // A light parallax while the stage is pinned: from the shutters opening to
+  // the end of the range, the near planes slide in by their depth and the far
+  // ones stay put, then everything settles on the still composition.
+  const drift = await page.evaluate(async () => {
+    const track = document.querySelector('.finale__track')
+    const r = track.getBoundingClientRect()
+    const top = r.top + window.scrollY
+    const range = r.height - window.innerHeight
+    const openFrom = parseFloat(getComputedStyle(track).getPropertyValue('--open-from'))
+    const frame = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const layerX = (file) => {
+      const img = document.querySelector(`.hk__layer img[src$="/${file}.webp"]`)
+      return img.closest('.hk__layer').getBoundingClientRect().left
+    }
+    const sample = async (fraction) => {
+      window.scrollTo({ top: top + fraction * range, behavior: 'instant' })
+      await frame()
+      const seated = document.querySelector('.hk__knight--sit').getBoundingClientRect()
+      const bench = document.querySelector('.hk__bench').getBoundingClientRect()
+      return {
+        far: layerX('background-2'),
+        ground: layerX('ground'),
+        front: layerX('front-shadows'),
+        stageTop: document.querySelector('.finale__stage').getBoundingClientRect().top,
+        seatedMid: (seated.left + seated.right) / 2,
+        benchMid: (bench.left + bench.right) / 2,
+      }
+    }
+    const from = await sample(openFrom)
+    const to = await sample(1)
+    return { from, to, drifting: document.querySelector('.hk').classList.contains('is-drifting') }
+  })
+  const moved = key => Math.round(drift.from[key] - drift.to[key])
+  const byDepth = moved('front') > moved('ground') && moved('ground') > 20 && Math.abs(moved('far')) < 1
+  check(drift.drifting && byDepth,
+    `the phone scene drifts by depth (front ${moved('front')}px, ground ${moved('ground')}px, far ${moved('far')}px)`)
+  check(Math.abs(drift.from.stageTop) < 1 && Math.abs(drift.to.stageTop) < 1, 'the phone stage stays pinned while it drifts')
+  check(Math.abs(drift.to.seatedMid - drift.to.benchMid) < 6 && Math.abs(drift.to.benchMid - 195) < 6,
+    `the drift settles with the Knight on the bench, centred (${Math.round(drift.to.seatedMid)} / ${Math.round(drift.to.benchMid)})`)
+
   // The menu opens and its links work.
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.locator('.site-header__menu-button').click()

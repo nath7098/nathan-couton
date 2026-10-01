@@ -2,7 +2,7 @@
 import { STEPS, type CaseStudy, type Step } from '~/data/projects'
 
 /**
- * One case study: four beats of text beside a figure that follows them.
+ * One case study: three short beats of text beside a figure that follows them.
  *
  * The text scrolls; the figure stays (sticky) and lights the part of the
  * architecture the paragraph in the middle of the screen is about. That is one
@@ -78,12 +78,6 @@ onMounted(() => {
           :figure="study.figure"
           :case-id="study.id"
         />
-        <p
-          v-if="study.nda"
-          class="case__figure-note"
-        >
-          {{ t('projects.ndaNote') }}
-        </p>
       </div>
 
       <ol class="case__steps">
@@ -201,12 +195,6 @@ onMounted(() => {
   gap: var(--space-2xs);
 }
 
-.case__figure-note {
-  font-family: var(--font-mono);
-  font-size: var(--step--2);
-  color: var(--text-faint);
-}
-
 .case__steps {
   display: grid;
   gap: 0;
@@ -271,7 +259,6 @@ onMounted(() => {
 }
 
 /* The figure lights what the step in the middle of the screen is about. */
-.case[data-step='context'] :deep(:is(.figure__node, .figure__edge):not([data-lit~='context'])),
 .case[data-step='problem'] :deep(:is(.figure__node, .figure__edge):not([data-lit~='problem'])),
 .case[data-step='work'] :deep(:is(.figure__node, .figure__edge):not([data-lit~='work'])),
 .case[data-step='outcome'] :deep(:is(.figure__node, .figure__edge):not([data-lit~='outcome'])) {

@@ -250,8 +250,11 @@ pendant toute la marche ; les calques se séparent par profondeur ; le
 Chevalier finit au milieu du banc, au milieu de l'écran ; le formulaire est
 `inert` et invisible pendant la marche, puis arrive en dégageant le banc ;
 s'asseoir se joue en deux temps (lueur, puis particules) ; en mouvement
-réduit, le final est sa dernière image ; sur téléphone, le Chevalier est assis
-et le formulaire suit dans le flux.
+réduit, le final est sa dernière image ; sur téléphone, le Chevalier est assis,
+les plans de profondeur ≥ 0,5 glissent légèrement (`is-drifting`, de
+l'ouverture des volets à la fin de la plage, `--drift` × profondeur × largeur
+d'écran) puis se posent sur la composition figée, et le formulaire suit dans
+le flux.
 
 Les pièges de la pose assise (échelle calée sur le masque, ancrage sur les
 hanches), du raccourci `animation` sur les sprites et de `translate` +

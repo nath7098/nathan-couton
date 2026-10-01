@@ -20,8 +20,8 @@ export interface ProjectLink {
   kind: 'repo' | 'live'
 }
 
-/** The four beats every case study is told in. */
-export const STEPS = ['context', 'problem', 'work', 'outcome'] as const
+/** The three beats every case study is told in; the context is its pitch. */
+export const STEPS = ['problem', 'work', 'outcome'] as const
 export type Step = (typeof STEPS)[number]
 
 export interface FigureNode {
@@ -71,14 +71,14 @@ export const CASE_STUDIES: readonly CaseStudy[] = [
     figure: {
       kind: 'graph',
       nodes: [
-        { id: 'inbound', x: 70, y: 60, w: 112, h: 44, role: 'source', lit: ['context', 'problem', 'outcome'] },
+        { id: 'inbound', x: 70, y: 60, w: 112, h: 44, role: 'source', lit: ['problem', 'outcome'] },
         { id: 'kafka', x: 200, y: 60, w: 96, h: 44, role: 'bus', tech: 'Kafka', lit: ['problem', 'work', 'outcome'] },
         { id: 'batch', x: 330, y: 60, w: 112, h: 44, role: 'process', tech: 'Spring Batch', lit: ['problem', 'work', 'outcome'] },
         { id: 'spark', x: 330, y: 150, w: 112, h: 44, role: 'process', tech: 'Spark', lit: ['problem', 'work', 'outcome'] },
         { id: 'store', x: 200, y: 150, w: 96, h: 44, role: 'store', lit: ['work', 'outcome'] },
         { id: 'api', x: 200, y: 240, w: 112, h: 44, role: 'process', tech: 'Spring Boot', lit: ['work', 'outcome'] },
-        { id: 'ui', x: 330, y: 240, w: 112, h: 44, role: 'ui', tech: 'Angular', lit: ['context', 'work', 'outcome'] },
-        { id: 'squad', x: 70, y: 240, w: 112, h: 44, role: 'actor', lit: ['context', 'outcome'] },
+        { id: 'ui', x: 330, y: 240, w: 112, h: 44, role: 'ui', tech: 'Angular', lit: ['work', 'outcome'] },
+        { id: 'squad', x: 70, y: 240, w: 112, h: 44, role: 'actor', lit: ['outcome'] },
       ],
       edges: [
         { from: 'inbound', to: 'kafka', lit: ['problem', 'work', 'outcome'] },
@@ -100,7 +100,7 @@ export const CASE_STUDIES: readonly CaseStudy[] = [
     figure: {
       kind: 'graph',
       nodes: [
-        { id: 'members', x: 200, y: 30, w: 170, h: 36, role: 'actor', lit: ['context', 'problem', 'outcome'] },
+        { id: 'members', x: 200, y: 30, w: 170, h: 36, role: 'actor', lit: ['problem', 'outcome'] },
         { id: 'spa', x: 200, y: 95, w: 230, h: 40, role: 'ui', tech: 'Vue.js 2 · Vuex', lit: ['work', 'outcome'] },
         { id: 'api', x: 200, y: 160, w: 230, h: 40, role: 'process', tech: 'Spring Boot · Security', lit: ['work', 'outcome'] },
         { id: 'domain', x: 200, y: 222, w: 230, h: 40, role: 'process', tech: 'Java EE 8 · Hibernate', lit: ['problem', 'work', 'outcome'] },
@@ -132,7 +132,7 @@ export const CASE_STUDIES: readonly CaseStudy[] = [
     figure: {
       kind: 'graph',
       nodes: [
-        { id: 'document', x: 110, y: 70, w: 160, h: 48, role: 'ui', lit: ['context', 'problem', 'work', 'outcome'] },
+        { id: 'document', x: 110, y: 70, w: 160, h: 48, role: 'ui', lit: ['problem', 'work', 'outcome'] },
         { id: 'timeline', x: 290, y: 70, w: 160, h: 48, role: 'process', tech: 'view-timeline', lit: ['work', 'outcome'] },
         { id: 'finale', x: 110, y: 170, w: 160, h: 48, role: 'bus', lit: ['problem', 'work', 'outcome'] },
         { id: 'world', x: 290, y: 170, w: 160, h: 48, role: 'store', lit: ['work', 'outcome'] },
