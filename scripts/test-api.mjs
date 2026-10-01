@@ -1,6 +1,7 @@
 /**
- * Exercises POST /api/contact against the built serverless bundle, over real
- * HTTP — the artefact that actually ships, not the source.
+ * Exercises POST /api/contact and GET /api/soundtrack against the built
+ * serverless bundle, over real HTTP — the artefact that actually ships, not
+ * the source.
  *
  * EmailJS is deliberately left unconfigured: a valid message then stops at 503
  * instead of sending, so the run never posts anything, while validation, the
@@ -10,6 +11,7 @@
  */
 import { createServer } from 'node:http'
 import { existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 // Resolved against the repo root, not the caller's cwd.
@@ -25,6 +27,11 @@ const expect = (actual, wanted, label) => {
   if (!ok) failures++
   console.log(`  ${ok ? '✓' : '✗'} ${label} → ${actual}${ok ? '' : ` (expected ${wanted})`}`)
 }
+// Whatever the shell carries, this process is the unconfigured case.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith('NUXT_APPLE_MUSIC_')) delete process.env[key]
+}
+
 const mod = await import(BUNDLE)
 const handler = mod.default ?? mod.handler
 
@@ -65,10 +72,32 @@ for (let i = 1; i <= 6; i++) {
   expect(response.status, i <= 5 ? 503 : 429, `request ${i} (remaining ${response.remaining})`)
 }
 
+console.log('soundtrack, Apple Music unconfigured')
+{
+  const res = await fetch('http://localhost:4180/api/soundtrack')
+  expect(res.status, 200, 'answers')
+  expect(JSON.stringify(await res.json()), '{"live":false}', 'says it is not live')
+  expect(res.headers.get('cache-control'), 'public, max-age=60, s-maxage=600', 'cached briefly')
+}
+
 server.close()
+
+// Runtime config is read once, when the bundle loads: each configured
+// scenario runs in its own process, against a stand-in for Apple's API.
+for (const scenario of ['live', 'expired']) {
+  console.log(`soundtrack, Apple Music ${scenario}`)
+  const child = spawnSync(process.execPath, [fileURLToPath(new URL('./test-api-soundtrack.mjs', import.meta.url)), scenario], {
+    encoding: 'utf8',
+  })
+  process.stdout.write(child.stdout)
+  if (child.status !== 0) {
+    failures++
+    process.stderr.write(child.stderr)
+  }
+}
 
 if (failures) {
   console.error(`\n✗ ${failures} API check(s) failed.`)
   process.exit(1)
 }
-console.log('\n✓ contact API passed')
+console.log('\n✓ API passed')

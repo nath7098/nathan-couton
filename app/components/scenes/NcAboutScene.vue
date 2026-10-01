@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FIGURE_IDS, HOBBY_IDS, SOUNDTRACK, SOUNDTRACK_YEAR, TOP_ARTISTS } from '~/data/about'
+import { FIGURE_IDS, HOBBY_IDS, SOUNDTRACK, SOUNDTRACK_YEAR, TOP_ARTISTS, type Track } from '~/data/about'
 import { NOW, YEARS_OF_EXPERIENCE } from '~/data/now'
 import { PARALLAX_SIZES } from '~/data/parallax-sizes'
 
@@ -11,7 +11,8 @@ import { PARALLAX_SIZES } from '~/data/parallax-sizes'
  * it were live) with what a recruiter reads first: four figures and the facts
  * as a definition list — no bio to wade through, the hero already said it. The personal side is
  * still here — lower, smaller, and honest about its dates — under "off
- * screen". Its last card is the Knight, sitting: the visitor will meet him at
+ * screen": the playlist is what Apple Music says lately, or the 2024 snapshot
+ * labelled as such. Its last card is the Knight, sitting: the visitor will meet him at
  * the bottom of the page.
  */
 const { t } = useI18n()
@@ -25,6 +26,36 @@ const figureValue: Record<(typeof FIGURE_IDS)[number], string> = {
 }
 
 const knight = PARALLAX_SIZES['knight-sit']!
+
+/**
+ * The playlist: Apple Music when it answers, the dated 2024 snapshot when it
+ * does not. The prerender bakes in the list as of the deploy; once the card is
+ * hydrated it asks again (the CDN keeps the answer an hour), and only a live
+ * answer replaces what is shown — a lapsed token never swaps a current list
+ * back for 2024.
+ */
+const { data: soundtrack } = useAsyncData('soundtrack', () => $fetch('/api/soundtrack'), {
+  default: () => ({ live: false as const }),
+})
+
+onMounted(async () => {
+  const fresh = await $fetch('/api/soundtrack').catch(() => undefined)
+  if (fresh?.live) soundtrack.value = fresh
+})
+
+const playlist = computed(() => soundtrack.value.live
+  ? {
+      title: t('about.offscreen.rotation'),
+      file: 'recently-played.m3u · Apple Music',
+      tracks: soundtrack.value.tracks as readonly Track[],
+      note: t('about.offscreen.rotationArtists', { artists: soundtrack.value.artists.join(', ') }),
+    }
+  : {
+      title: t('about.offscreen.soundtrack', { year: SOUNDTRACK_YEAR }),
+      file: `top-${SOUNDTRACK_YEAR}.m3u`,
+      tracks: SOUNDTRACK,
+      note: t('about.offscreen.artists', { artists: TOP_ARTISTS.join(', ') }),
+    })
 </script>
 
 <template>
@@ -102,29 +133,31 @@ const knight = PARALLAX_SIZES['knight-sit']!
       <div class="profile__cards">
         <article class="card card--playlist nc-reveal">
           <h3 class="card__title">
-            {{ t('about.offscreen.soundtrack', { year: SOUNDTRACK_YEAR }) }}
+            {{ playlist.title }}
           </h3>
           <p class="card__file">
-            top-{{ SOUNDTRACK_YEAR }}.m3u
+            {{ playlist.file }}
           </p>
           <ol class="playlist">
             <li
-              v-for="(track, index) in SOUNDTRACK"
-              :key="track.title"
+              v-for="(track, index) in playlist.tracks"
+              :key="`${track.title}·${track.artist}`"
             >
-              <a
+              <component
+                :is="track.href ? 'a' : 'span'"
+                class="playlist__row"
                 :href="track.href"
-                target="_blank"
-                rel="noopener noreferrer"
+                :target="track.href ? '_blank' : undefined"
+                :rel="track.href ? 'noopener noreferrer' : undefined"
               >
                 <span class="playlist__n">{{ String(index + 1).padStart(2, '0') }}</span>
                 <span class="playlist__title">{{ track.title }}</span>
                 <span class="playlist__artist">{{ track.artist }}</span>
-              </a>
+              </component>
             </li>
           </ol>
           <p class="card__note">
-            {{ t('about.offscreen.artists', { artists: TOP_ARTISTS.join(', ') }) }}
+            {{ playlist.note }}
           </p>
         </article>
 
@@ -378,7 +411,7 @@ const knight = PARALLAX_SIZES['knight-sit']!
   list-style: none;
 }
 
-.playlist a {
+.playlist__row {
   display: grid;
   grid-template-columns: 2.2ch 1fr;
   column-gap: var(--space-s);

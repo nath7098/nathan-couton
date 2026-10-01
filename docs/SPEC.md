@@ -986,7 +986,17 @@ indigo, contrepoint chaud rare. Fraunces (display), JetBrains Mono (fil code),
 sans-serif système (texte). Polices auto-hébergées. Tags monochromes. Plancher
 typographique 0,8 rem.
 
-### 14.5 Budgets
+### 14.5 Bande-son Apple Music (01/10/2026)
+
+Lève la règle « données figées » du §9.3 pour la seule playlist : elle lit
+l'historique d'écoute Apple Music via `GET /api/soundtrack` (fonction Vercel,
+réponse gardée une heure par le CDN). Le HTML prérendu porte la liste du jour
+du déploiement ; le navigateur la rafraîchit quand le profil est hydraté.
+Texte seulement (pas de pochettes : `img-src 'self'`). Titre « En rotation »,
+fichier `recently-played.m3u`. Repli : la « Bande-son 2024 » datée, dès
+qu'Apple ne répond pas ou que le jeton utilisateur a expiré.
+
+### 14.6 Budgets
 
 JS critique (script + modulepreload) ≤ 140 kB gzip ; sections différées
 (prefetch) ≤ 40 kB. Les autres budgets du §10.1 sont inchangés.

@@ -41,7 +41,8 @@ npm run dev          # http://localhost:3000
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
 | `npm run shots` | captures du parcours complet sur le build, à regarder |
 | `npm run cv [dossier]` | régénère les CV PDF (fr, en) depuis les données du site ; aperçus PNG dans le dossier donné |
-| `npm run test:api` | exerce `POST /api/contact` sur le bundle construit |
+| `npm run test:api` | exerce `POST /api/contact` et `GET /api/soundtrack` sur le bundle construit |
+| `npm run apple-music:token` | obtient le jeton utilisateur Apple Music (voir plus bas) |
 | `npm run lighthouse` | audit Lighthouse sur la sortie de build |
 
 `npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
@@ -57,7 +58,7 @@ app/
 ├── data/           sections, parcours, projets, compétences, now (TypeScript typé)
 └── pages/index.vue page unique : cinq sections, puis le final
 i18n/locales/       fr.json (défaut) · en.json
-server/api/         contact.post.ts — unique fonction serverless
+server/api/         contact.post.ts · soundtrack.get.ts (Apple Music) — les seules fonctions serverless
 ```
 
 La galerie de composants vit sur `/_dev/kitchen-sink` en développement. Sa route
@@ -83,7 +84,7 @@ est retirée du build de production, elle ne coûte donc rien au bundle livré.
   par `npm run icons`. Ajouter une icône = éditer `scripts/build-sprite.mjs`
   (logo de marque) ou déposer un SVG dans `app/assets/icons/ui/`.
 - **Aucune image tierce** : tout ce que la page affiche est servi par le site
-  (CSP `img-src 'self'`). La « bande-son 2024 » est du texte daté.
+  (CSP `img-src 'self'`). La playlist Apple Music est du texte, sans pochettes.
 - **i18n** : les messages sont importés statiquement dans `i18n/i18n.config.ts`.
   Ne pas repasser à `langDir` : le serveur de développement répond alors 404 sur
   les fichiers de locale et chaque `t()` retombe silencieusement sur la clé brute,
@@ -99,6 +100,46 @@ Variables d'environnement : voir `.env.example`. **Sans les identifiants
 EmailJS, le formulaire répond 503** et l'utilisateur voit le message d'erreur
 qui rappelle l'adresse directe — c'est le comportement voulu, mais il faut
 renseigner `NUXT_EMAILJS_*` dans Vercel pour que l'envoi fonctionne.
+
+## Bande-son Apple Music
+
+La carte « En rotation » du profil montre ce que Nathan écoute ces derniers
+temps sur Apple Music. `GET /api/soundtrack` lit l'historique d'écoute (les
+50 derniers titres : c'est tout ce qu'Apple conserve, sans dates), classe les
+titres par nombre d'écoutes puis par fraîcheur, et les artistes par nombre
+d'écoutes. Le prérendu fige la liste au moment du déploiement ; une fois le
+profil hydraté, le navigateur redemande la liste, que le CDN Vercel garde une
+heure. **Sans configuration, ou si Apple refuse, la carte affiche la
+« Bande-son 2024 » figée** (`app/data/about.ts`) — rien ne casse.
+
+Mise en place (une fois) :
+
+1. **Clé MusicKit** — compte Apple Developer (programme payant). Dans
+   *Certificates, Identifiers & Profiles* : *Identifiers* → créer un *Media ID*
+   avec le service MusicKit ; *Keys* → créer une clé, cocher *Media Services
+   (MusicKit…)* et ce Media ID, télécharger `AuthKey_XXXXXXXXXX.p8` (Apple ne
+   le redonne pas). Noter le *Key ID* et le *Team ID* (en haut à droite).
+2. **Jeton utilisateur** — dans `.env` à la racine (jamais commité) :
+   ```bash
+   NUXT_APPLE_MUSIC_TEAM_ID=XXXXXXXXXX
+   NUXT_APPLE_MUSIC_KEY_ID=XXXXXXXXXX
+   APPLE_MUSIC_KEY_FILE=/chemin/absolu/vers/AuthKey_XXXXXXXXXX.p8
+   ```
+   puis `npm run apple-music:token`, ouvrir `http://localhost:4321`, se
+   connecter avec le compte Apple Music et autoriser (autoriser la fenêtre
+   surgissante si le navigateur la bloque). Le jeton s'affiche dans le terminal.
+3. **Vercel** → *Settings* → *Environment Variables*, en Production (et
+   Preview si voulu) : `NUXT_APPLE_MUSIC_TEAM_ID`, `NUXT_APPLE_MUSIC_KEY_ID`,
+   `NUXT_APPLE_MUSIC_PRIVATE_KEY` (le contenu du `.p8`, collé tel quel ; des
+   `\n` littéraux sont aussi acceptés), `NUXT_APPLE_MUSIC_USER_TOKEN`, et
+   éventuellement `NUXT_APPLE_MUSIC_STOREFRONT` (`fr` par défaut, pour les liens).
+4. **Redéployer** : les variables ne s'appliquent qu'aux nouveaux déploiements.
+
+**Renouvellement** : Apple laisse expirer le jeton utilisateur au bout de
+quelques mois. La carte repasse alors sur 2024 et les logs Vercel affichent
+`[soundtrack] Apple Music replied 401 … renew NUXT_APPLE_MUSIC_USER_TOKEN`.
+Refaire les étapes 2 à 4 (seul le jeton change). Le jeton développeur, lui,
+est signé à la volée par la fonction et n'expire jamais.
 
 Le thème musical (`public/audio/`) pèse 4,4 Mo et est repris tel quel de v1. Il
 se charge uniquement quand on le demande (`preload="none"`), mais un réencodage

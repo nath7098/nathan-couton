@@ -59,6 +59,15 @@ export default defineNuxtConfig({
       publicKey: '',
       privateKey: '',
     },
+    // Read by GET /api/soundtrack. Without them, the profile shows the frozen
+    // 2024 soundtrack. See README, « Bande-son Apple Music ».
+    appleMusic: {
+      teamId: '',
+      keyId: '',
+      privateKey: '',
+      userToken: '',
+      storefront: 'fr',
+    },
     public: {
       siteUrl: 'https://nathancouton.fr',
     },
@@ -71,10 +80,16 @@ export default defineNuxtConfig({
     '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
   },
   future: { compatibilityVersion: 4 },
+  // The prerendered page's data (the Apple Music playlist) is inlined in the
+  // HTML, rather than fetched from _payload.json before hydration can start:
+  // one round trip less on the critical path. The file still serves
+  // client-side navigation.
+  experimental: { payloadExtraction: 'client' },
   compatibilityDate: '2025-09-01',
 
-  // Everything is prerendered and served from Vercel's CDN. The only function
-  // that ships is POST /api/contact (added in L5).
+  // Everything is prerendered and served from Vercel's CDN. The functions that
+  // ship are POST /api/contact (L5) and GET /api/soundtrack, which the CDN
+  // caches for an hour.
   nitro: {
     preset: 'vercel',
     prerender: {

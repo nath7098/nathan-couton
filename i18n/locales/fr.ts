@@ -108,7 +108,9 @@ export default {
     offscreen: {
       title: 'hors écran',
       soundtrack: 'Bande-son {year}',
+      rotation: 'En rotation',
       artists: 'Top artistes cette année-là : {artists}.',
+      rotationArtists: 'Les plus écoutés ces derniers temps : {artists}.',
       gamesFile: 'jeux/favori',
       knight: 'Le décor de la dernière scène de ce site.',
       knightLink: 'Le rejoindre',
