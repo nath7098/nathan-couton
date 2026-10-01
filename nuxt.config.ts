@@ -102,6 +102,12 @@ export default defineNuxtConfig({
     server: {
       fs: { allow: ['..', '.'] },
     },
+    // The build's year-month, the "now" every computed date on the page
+    // counts from (app/data/now.ts). One value for the server and the client
+    // bundle of a build, so prerender and hydration always agree.
+    define: {
+      __NC_BUILT__: JSON.stringify(new Date().toISOString().slice(0, 7)),
+    },
   },
 
   typescript: { strict: true, typeCheck: false },

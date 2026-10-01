@@ -6,9 +6,12 @@ import { MOTIF_HEIGHT, MOTIF_WIDTH, motifShapes } from '~/utils/project-motifs'
  * The figure behind a project card's text. Geometry comes from
  * `project-motifs.ts`; this component only draws it.
  *
- * Static: drawn once, no frame time.
+ * Static by default: drawn once, no frame time. With `animate`, a path is
+ * traced over and over and the dots along it pulse as the trace reaches them
+ * — the TSP solver's tour being walked, which is what its demo does. CSS only,
+ * and the static drawing with reduced motion.
  */
-const props = defineProps<{ motif: MotifKey, seed: string }>()
+const props = defineProps<{ motif: MotifKey, seed: string, animate?: boolean }>()
 
 const shapes = computed(() => motifShapes(props.motif, props.seed))
 </script>
@@ -16,6 +19,7 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
 <template>
   <svg
     class="motif"
+    :class="{ 'is-animated': animate }"
     :viewBox="`0 0 ${MOTIF_WIDTH} ${MOTIF_HEIGHT}`"
     preserveAspectRatio="xMidYMid meet"
     aria-hidden="true"
@@ -32,6 +36,7 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
         :cy="shape.y"
         :r="shape.r"
         :opacity="shape.o"
+        :style="shape.at === undefined ? undefined : { '--at': shape.at }"
       />
       <rect
         v-else-if="shape.kind === 'bar'"
@@ -94,5 +99,39 @@ const shapes = computed(() => motifShapes(props.motif, props.seed))
 
 :root[data-motion='reduced'] .motif__path {
   transition: none;
+}
+
+/* ── Animated: the tour being walked ──────────────────────────────────────
+   One 6s cycle: the trace runs for the first 60%, holds, fades, restarts.
+   A city pulses `at × 60%` into the cycle — the moment the trace reaches it. */
+@media (prefers-reduced-motion: no-preference) {
+  .motif.is-animated .motif__path {
+    transition: none;
+    animation: motif-trace 6s linear infinite;
+  }
+
+  .motif.is-animated .motif__dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: motif-visit 6s var(--ease-out-expo, ease-out) infinite;
+    animation-delay: calc(var(--at, 0) * 3.6s);
+  }
+}
+
+:root[data-motion='reduced'] .motif.is-animated :is(.motif__path, .motif__dot) {
+  animation: none;
+}
+
+@keyframes motif-trace {
+  0% { stroke-dashoffset: var(--len); opacity: 1; }
+  60%, 88% { stroke-dashoffset: 0; opacity: 1; }
+  97% { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: var(--len); opacity: 0; }
+}
+
+@keyframes motif-visit {
+  0% { scale: 1; }
+  5% { scale: 2.2; }
+  18%, 100% { scale: 1; }
 }
 </style>

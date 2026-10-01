@@ -2,7 +2,7 @@ export default {
   seo: {
     title: 'Fullstack Java developer',
     jobTitle: 'Fullstack Java developer',
-    description: 'Nathan Couton, fullstack Java developer (Spring Boot, Angular, Vue.js) in Tours, France. Five years with IT consultancies in insurance and social protection. Career, skills, projects, resume.',
+    description: 'Nathan Couton, fullstack Java developer (Spring Boot, Angular, Vue.js) in Tours, France. {years} years with IT consultancies in insurance and social protection. Career, skills, projects, resume.',
     keywords: 'fullstack developer, Java developer, Spring Boot, Angular, Vue.js, consultancy, insurance, Tours, resume, portfolio',
   },
   parcours: {
@@ -14,9 +14,9 @@ export default {
       role: 'Fullstack Java developer · assignment via Catamania',
       summary: 'Performance, Insurance and Solvency tribe: income-protection, borrower and health processes, from the incoming flow to the screen.',
       points: [
-        'Java 21 and Spring Boot 4, Kafka, Spring Batch and Spark, PostgreSQL and Hibernate; screens in Angular 19.',
+        'Java 21, Spring Boot 4, Kafka and Spring Batch on PostgreSQL and Hibernate; Angular 19 micro-frontends; Spark for data analysis.',
         'Bonita: started from zero, shipped the latest process end to end on my own.',
-        'Health went live in March, first income-protection flows in production — plus an AI code-review agent for the team.',
+        'Health went live in March 2026, first income-protection flows in production — and AI growing in the team, including a code-review agent.',
       ],
     },
     'vue-training': {
@@ -33,7 +33,7 @@ export default {
       points: [
         'Java EE 8, Spring Boot and Hibernate back end; APIs secured with Spring Security.',
         'Vue.js 2 and Vuex front end in TypeScript.',
-        'Three-week sprints, code reviews.',
+        'I also kicked off the development and architecture of the funeral-cover product.',
       ],
     },
     'tempo': {
@@ -150,9 +150,9 @@ export default {
         title: 'Data flow integration',
         pitch: 'Income-protection, borrower and health processes for the Performance, Insurance and Solvency tribe, from the incoming flow to the screen. An Agile squad of eight.',
         problem: 'Flows to integrate in bulk, business processes to orchestrate, and a health overhaul to ship alongside.',
-        work: 'Kafka and Spring Batch for the flows, Bonita for the processes, Spring Boot APIs on PostgreSQL, Angular screens.',
-        outcome: 'Health live since March, first income-protection flows integrated. Plus an AI code-review agent (skills, MCP), shared with the team.',
-        figureLabel: 'Diagram of the chain: incoming flows, Kafka event bus, Spring Batch processing, Bonita processes, PostgreSQL database, Spring Boot API, Angular screens.',
+        work: 'Kafka and Spring Batch for the flows, Bonita for the processes, Spring Boot APIs on PostgreSQL, Angular micro-frontends — and Spark at the end of the chain for analysis.',
+        outcome: 'Health live since March 2026, first income-protection flows integrated. And AI is gaining ground in the team: a code-review agent (skills, MCP) I shared.',
+        figureLabel: 'Diagram of the chain: incoming flows, Kafka event bus, Spring Batch processing, Bonita processes, PostgreSQL database, Spring Boot API, Angular micro-frontends, Spark data analysis; below, the squad and its AI tools.',
         nodes: {
           inbound: 'Incoming flows',
           kafka: 'Events',
@@ -160,8 +160,10 @@ export default {
           process: 'Processes',
           store: 'Database',
           api: 'API',
-          ui: 'Delivery',
+          ui: 'Micro-frontends',
           squad: 'Squad of 8',
+          analytics: 'Analysis',
+          ai: 'AI',
         },
       },
       prevoyance: {
@@ -170,7 +172,7 @@ export default {
         pitch: 'A new application for a new product: the insurer\'s income protection. A team of seven developers.',
         problem: 'No legacy: the business model, screens and APIs had to be built together.',
         work: 'Java EE 8, Spring Boot and Hibernate on the back end; Vue.js 2 and Vuex in TypeScript on the front.',
-        outcome: 'Four years on the product, from the first line of code to its evolutions.',
+        outcome: 'Four years on the product, from the first line of code to its evolutions — then I kicked off the development and architecture of the funeral-cover product.',
         figureLabel: 'Layered diagram: Vue.js interface, Spring Boot REST API, Java EE and Hibernate business layer, database.',
         nodes: {
           members: 'Users',
@@ -185,7 +187,7 @@ export default {
         title: 'Travelling salesman solver',
         pitch: 'Discover the travelling salesman problem and the methods that solve it, by playing with it.',
         problem: 'Making an abstract optimisation problem tangible.',
-        work: 'A web application in JavaScript, with p5.js for the drawing.',
+        work: 'A web application in JavaScript, with p5.js for the drawing: the demo is the site itself.',
         outcome: 'Online, with its source code.',
         figureLabel: 'A tour drawn between cities.',
         nodes: {},
@@ -195,7 +197,7 @@ export default {
         title: 'This portfolio',
         pitch: 'The one project anyone can inspect end to end: you are in it. Nuxt 4, no component library.',
         problem: 'A career readable in thirty seconds and a real visual signature, without giving up performance.',
-        work: 'A vertical document, then a section pinned with a CSS view-timeline: the Knight crosses Greenpath with no JavaScript in the scroll.',
+        work: 'A vertical document, then a section pinned with a CSS view-timeline: the Knight crosses Greenpath with no JavaScript in the scroll. Designed and built in tandem with Claude Code.',
         outcome: 'Every delivery passes a Playwright smoke test: console, scene, axe, frame times, budgets.',
         figureLabel: 'Diagram of the site: a vertical document, a scroll-driven pinned section, the Greenpath scene, and the automated checks.',
         nodes: {
@@ -212,9 +214,9 @@ export default {
         title: 'HoloLens point cloud',
         line: 'Final-year project: a 3D point cloud in augmented reality, from the HoloLens sensors.',
       },
-      'ajl': {
-        title: 'AJL Peinture',
-        line: 'A showcase site for a craftsman, built solo.',
+      'pink-amazones': {
+        title: 'Pink Amazones',
+        line: 'The website of an association supporting women affected by breast cancer: events, memberships and donations.',
       },
       'moneybox': {
         title: 'Virtual moneybox',

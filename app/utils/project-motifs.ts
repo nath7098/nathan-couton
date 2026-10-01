@@ -23,7 +23,15 @@ export type MotifKey
   = | 'tour' | 'cloud' | 'stream' | 'layers' | 'coins' | 'wave' | 'wireframe'
     | 'strokes' | 'flow'
 
-export interface MotifDot { kind: 'dot', x: number, y: number, r: number, o: number }
+export interface MotifDot {
+  kind: 'dot'
+  x: number
+  y: number
+  r: number
+  o: number
+  /** Where along an animated path this dot is reached, 0 → 1 (the tour). */
+  at?: number
+}
 export interface MotifBar { kind: 'bar', x: number, y: number, w: number, h: number, o: number }
 /** `len` is the traced length, used for the stroke-dash reveal on hover. */
 export interface MotifPath { kind: 'path', d: string, len: number, o: number }
@@ -71,10 +79,15 @@ function tour(seed: string): MotifShape[] {
   const cx = cities.reduce((s, c) => s + c[0], 0) / cities.length
   const cy = cities.reduce((s, c) => s + c[1], 0) / cities.length
   const ordered = [...cities].sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx))
-  return [
-    polyline(ordered, true),
-    ...cities.map<MotifShape>(([x, y]) => ({ kind: 'dot', x: r1(x), y: r1(y), r: 2.6, o: 0.85 })),
-  ]
+  const path = polyline(ordered, true)
+  // Each city carries how far along the tour it is reached, so the animated
+  // figure can light it the moment the trace gets there.
+  let walked = 0
+  const dots = ordered.map<MotifShape>(([x, y], i) => {
+    if (i > 0) walked += Math.hypot(x - ordered[i - 1]![0], y - ordered[i - 1]![1])
+    return { kind: 'dot', x: r1(x), y: r1(y), r: 2.6, o: 0.85, at: Math.round((walked / path.len) * 1000) / 1000 }
+  })
+  return [path, ...dots]
 }
 
 /** A depth map read as a point cloud: denser and larger as it comes forward. */

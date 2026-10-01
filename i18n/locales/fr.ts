@@ -2,7 +2,7 @@ export default {
   seo: {
     title: 'Développeur fullstack Java',
     jobTitle: 'Développeur fullstack Java',
-    description: 'Nathan Couton, développeur fullstack Java (Spring Boot, Angular, Vue.js) à Tours. Cinq ans en ESN dans l\'assurance et la protection sociale. Parcours, compétences, projets, CV.',
+    description: 'Nathan Couton, développeur fullstack Java (Spring Boot, Angular, Vue.js) à Tours. {years} ans en ESN dans l\'assurance et la protection sociale. Parcours, compétences, projets, CV.',
     keywords: 'développeur fullstack, développeur Java, Spring Boot, Angular, Vue.js, ESN, assurance, Tours, CV, portfolio',
   },
   parcours: {
@@ -14,9 +14,9 @@ export default {
       role: 'Développeur fullstack Java · mission via Catamania',
       summary: 'Tribu Performance Assurance et Solvabilité : les processus prévoyance, emprunteur et santé, du flux entrant à l\'écran.',
       points: [
-        'Java 21 et Spring Boot 4, Kafka, Spring Batch et Spark, PostgreSQL et Hibernate ; écrans en Angular 19.',
+        'Java 21, Spring Boot 4, Kafka et Spring Batch sur PostgreSQL et Hibernate ; micro-fronts en Angular 19 ; Spark pour l\'analyse de données.',
         'Bonita : parti de zéro, j\'ai livré le dernier processus de bout en bout, en autonomie.',
-        'Santé en prod en mars, premiers flux prévoyance en prod — et un agent IA de revue de code pour l\'équipe.',
+        'Santé en prod en mars 2026, premiers flux prévoyance en prod — et l\'IA de plus en plus présente dans l\'équipe, dont un agent de revue de code.',
       ],
     },
     'vue-training': {
@@ -33,7 +33,7 @@ export default {
       points: [
         'Back-end Java EE 8, Spring Boot et Hibernate ; APIs sécurisées par Spring Security.',
         'Front-end Vue.js 2 et Vuex en TypeScript.',
-        'Sprints de trois semaines, revues de code.',
+        'J\'ai aussi initié le développement et l\'architecture du produit obsèques.',
       ],
     },
     'tempo': {
@@ -150,9 +150,9 @@ export default {
         title: 'Intégration des flux',
         pitch: 'Les processus prévoyance, emprunteur et santé de la tribu Performance Assurance et Solvabilité, du flux entrant à l\'écran. Squad Agile de huit.',
         problem: 'Des flux à intégrer en masse, des processus métier à orchestrer, et une refonte santé à livrer en parallèle.',
-        work: 'Kafka et Spring Batch côté flux, Bonita pour les processus, des APIs Spring Boot sur PostgreSQL, des écrans Angular.',
-        outcome: 'Santé en prod depuis mars, premiers flux prévoyance intégrés. Et un agent IA de revue de code (skills, MCP), partagé avec l\'équipe.',
-        figureLabel: 'Schéma de la chaîne : flux entrants, bus d\'événements Kafka, traitements Spring Batch, processus Bonita, base PostgreSQL, API Spring Boot, écrans Angular.',
+        work: 'Kafka et Spring Batch côté flux, Bonita pour les processus, des APIs Spring Boot sur PostgreSQL, des micro-fronts Angular — et Spark en bout de chaîne pour l\'analyse.',
+        outcome: 'Santé en prod depuis mars 2026, premiers flux prévoyance intégrés. Et l\'IA gagne du terrain dans l\'équipe : un agent de revue de code (skills, MCP) que j\'ai partagé.',
+        figureLabel: 'Schéma de la chaîne : flux entrants, bus d\'événements Kafka, traitements Spring Batch, processus Bonita, base PostgreSQL, API Spring Boot, micro-fronts Angular, analyse de données Spark ; en dessous, la squad et ses outils d\'IA.',
         nodes: {
           inbound: 'Flux entrants',
           kafka: 'Événements',
@@ -160,8 +160,10 @@ export default {
           process: 'Processus',
           store: 'Base',
           api: 'API',
-          ui: 'Restitution',
+          ui: 'Micro-fronts',
           squad: 'Squad de 8',
+          analytics: 'Analyse',
+          ai: 'IA',
         },
       },
       prevoyance: {
@@ -170,7 +172,7 @@ export default {
         pitch: 'Une application neuve pour un produit neuf : la prévoyance de la mutuelle. Équipe de sept développeurs.',
         problem: 'Aucun existant : modèle métier, écrans et APIs à construire ensemble.',
         work: 'Java EE 8, Spring Boot et Hibernate en back ; Vue.js 2 et Vuex en TypeScript en front.',
-        outcome: 'Quatre ans sur le produit, de la première ligne de code à ses évolutions.',
+        outcome: 'Quatre ans sur le produit, de la première ligne de code à ses évolutions — puis j\'ai initié le développement et l\'architecture du produit obsèques.',
         figureLabel: 'Schéma en couches : interface Vue.js, API REST Spring Boot, couche métier Java EE et Hibernate, base de données.',
         nodes: {
           members: 'Utilisateurs',
@@ -185,7 +187,7 @@ export default {
         title: 'Solveur du voyageur de commerce',
         pitch: 'Découvrir en jouant le problème du voyageur de commerce et ses méthodes de résolution.',
         problem: 'Rendre tangible un problème d\'optimisation abstrait.',
-        work: 'Une application web en JavaScript, avec p5.js pour le dessin.',
+        work: 'Une application web en JavaScript, avec p5.js pour le dessin : la démo, c\'est le site lui-même.',
         outcome: 'En ligne, avec son code source.',
         figureLabel: 'Une tournée tracée entre des villes.',
         nodes: {},
@@ -195,7 +197,7 @@ export default {
         title: 'Ce portfolio',
         pitch: 'Le seul projet inspectable de bout en bout : vous êtes dedans. Nuxt 4, sans bibliothèque de composants.',
         problem: 'Un parcours lisible en trente secondes et une vraie signature visuelle, sans sacrifier la performance.',
-        work: 'Un document vertical, puis une section épinglée en CSS view-timeline : le Chevalier traverse Greenpath sans JavaScript dans le défilement.',
+        work: 'Un document vertical, puis une section épinglée en CSS view-timeline : le Chevalier traverse Greenpath sans JavaScript dans le défilement. Conçu et codé en binôme avec Claude Code.',
         outcome: 'Chaque livraison passe un smoke test Playwright : console, scène, axe, temps de frame, budgets.',
         figureLabel: 'Schéma du site : un document vertical, une section épinglée pilotée par le défilement, la scène Greenpath, et les vérifications automatiques.',
         nodes: {
@@ -212,9 +214,9 @@ export default {
         title: 'HoloLens, nuage de points',
         line: 'Projet de fin d\'études : un nuage de points 3D en réalité augmentée, à partir des capteurs des HoloLens.',
       },
-      'ajl': {
-        title: 'AJL Peinture',
-        line: 'Site vitrine pour un artisan, réalisé seul.',
+      'pink-amazones': {
+        title: 'Pink Amazones',
+        line: 'Le site d\'une association qui accompagne les femmes touchées par le cancer du sein : événements, adhésions et dons.',
       },
       'moneybox': {
         title: 'Tirelire virtuelle',
