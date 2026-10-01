@@ -20,6 +20,13 @@ const links = SECTIONS.filter(section => section.nav)
 const overArt = computed(() => active.value === 'contact')
 
 const menu = ref<HTMLElement>()
+const palette = useState('nc-palette', () => false)
+
+/** Mac or not decides the key shown; it is decoration until mounted. */
+const isMac = ref(false)
+onMounted(() => {
+  isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)
+})
 
 function follow(event: MouseEvent, id: SectionId) {
   // A plain anchor would work — and does, without JS — but it jumps. This
@@ -83,6 +90,16 @@ function follow(event: MouseEvent, id: SectionId) {
       >
         {{ t('header.resume') }}
       </NcButton>
+
+      <button
+        type="button"
+        class="site-header__palette"
+        :aria-label="t('palette.open')"
+        :title="t('palette.open')"
+        @click="palette = true"
+      >
+        <kbd>{{ isMac ? '⌘' : 'Ctrl' }}</kbd><kbd>K</kbd>
+      </button>
 
       <div class="site-header__prefs">
         <NcLocaleSwitch />
@@ -249,6 +266,30 @@ function follow(event: MouseEvent, id: SectionId) {
   align-items: center;
 }
 
+.site-header__palette {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  color: var(--text-dim);
+}
+
+.site-header__palette kbd {
+  padding: 0.1em 0.4em;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.4;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  transition: color var(--dur-base) var(--ease-out-expo), border-color var(--dur-base) var(--ease-out-expo);
+}
+
+@media (hover: hover) {
+  .site-header__palette:hover kbd {
+    color: var(--brand-ink);
+    border-color: var(--brand);
+  }
+}
+
 .site-header__prefs {
   display: flex;
   gap: var(--space-s);
@@ -317,14 +358,24 @@ function follow(event: MouseEvent, id: SectionId) {
   border-block-start: 1px solid var(--line);
 }
 
-@media (width < 1180px) {
+/* The header must never be wider than the screen: what goes first is what is
+   said elsewhere on the page too (the status is in the hero and the profile),
+   then the palette's key hint (the shortcut still works). */
+@media (width < 1440px) {
   .site-header__now {
+    display: none;
+  }
+}
+
+@media (width < 1180px) {
+  .site-header__palette {
     display: none;
   }
 }
 
 @media (width < 1024px) {
   .site-header__nav,
+  .site-header__palette,
   .site-header__tools > .site-header__prefs {
     display: none;
   }

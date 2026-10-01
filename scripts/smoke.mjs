@@ -184,6 +184,17 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   check(overflow <= 1, `no horizontal overflow at 1440 (${overflow}px)`)
 
+  // Nothing in the header may run past the screen, at any desktop width.
+  for (const width of [1440, 1280, 1024]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.waitForTimeout(150)
+    const spill = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll('.site-header > *, .site-header__tools > *')]
+      .filter(el => getComputedStyle(el).display !== 'none')
+      .map(el => el.getBoundingClientRect().right - window.innerWidth)))
+    check(spill <= 0, `the header fits at ${width}px (${Math.round(spill)}px over)`)
+  }
+  await page.setViewportSize({ width: 1440, height: 900 })
+
   // The CV is one click away from anywhere: the header, the hero, the panel,
   // the footer. And the file behind those links exists.
   const resumes = await page.evaluate(() => [...document.querySelectorAll('a[download]')].map(a => a.getAttribute('href')))
@@ -208,6 +219,20 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
     return { ok, visible: Boolean(range && range.top >= 0 && range.bottom <= window.innerHeight) }
   })
   check(found.ok && found.visible, `find-in-page reaches and shows the Parcours (${JSON.stringify(found)})`)
+
+  // ⌘K: the palette loads on demand, filters, and closes on Escape.
+  await page.keyboard.press('Control+k')
+  await page.waitForSelector('dialog.palette[open]', { timeout: 4000 }).catch(() => {})
+  await page.keyboard.type('mail')
+  const palette = await page.evaluate(() => ({
+    open: Boolean(document.querySelector('dialog.palette[open]')),
+    first: document.querySelector('.palette__item .palette__label')?.textContent?.trim(),
+  }))
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(200)
+  const closed = await page.evaluate(() => !document.querySelector('dialog.palette[open]'))
+  check(palette.open && /mail/i.test(palette.first ?? '') && closed,
+    `⌘K opens the command palette, filters and closes (${JSON.stringify(palette)}, closed ${closed})`)
 
   // Header navigation lands a section under the header, and says so.
   await page.evaluate(() => window.scrollTo(0, 0))

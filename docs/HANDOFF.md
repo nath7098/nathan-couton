@@ -3,31 +3,37 @@
 > Pour l'agent ou le développeur qui reprend ce projet.
 > La **spec fait foi** : [`SPEC.md`](SPEC.md). Ce document dit **où on en est**,
 > **comment vérifier son travail**, et **ce qui fait perdre du temps ici**.
-> Dernière mise à jour : le Chevalier s'assoit — taille de la pose assise,
-> lueur et particules, formulaire qui n'arrive qu'à ce moment (après L6).
+> Dernière mise à jour : refonte « Compile → Run » (L7–L16) — le rail
+> horizontal devient un document vertical suivi d'un final épinglé. Voir
+> SPEC §14 pour les arbitrages.
 
 ---
 
 ## 1. En une minute
 
 Refonte en Nuxt 4 du portfolio [gitlab.com/nath7098/personal-website](https://gitlab.com/nath7098/personal-website).
-Page unique, **défilement horizontal** : on scrolle, le contenu file de gauche à
-droite à travers sept scènes. Aucune librairie de composants UI, tout est écrit
-à la main.
-
-**Les six lots de la spec sont livrés.** Le site est complet et mesuré :
-Lighthouse 98 / 100 / 96 / 100, zéro violation axe sérieuse, budgets tenus.
-Il n'est **pas encore en production** — la bascule DNS reste à faire (§6).
+**Code vertical, monde horizontal** : du hero aux projets, la page défile comme
+un fichier (lisible en diagonale, cherchable au Ctrl+F) ; au seuil du contact,
+`$ npm run contact` se tape dans un terminal, ses volets s'ouvrent sur
+Greenpath, et le Chevalier traverse une scène épinglée pour s'asseoir sur le
+banc. Aucune librairie de composants UI.
 
 | Lot | Contenu | État |
 |---|---|---|
-| L0 | Socle : Nuxt 4, tokens, thèmes, i18n, CI | ✅ |
-| L1 | Rail horizontal, navigation, mode vertical mobile | ✅ |
-| L2 | 12 primitives, sprite de 56 icônes | ✅ |
-| L3 | Contenu des sept scènes, FR + EN | ✅ |
-| L4 | Particules, parallax, grain, curseur, intro | ✅ |
-| L5 | Formulaire de contact, scène Hollow Knight | ✅ |
-| L6 | SEO, en-têtes de sécurité, audits | ✅ |
+| L0–L6 | Socle, rail, primitives, contenu, effets, contact, SEO | ✅ (rail remplacé en L9) |
+| L7–L8 | Polices auto-hébergées, design system (accent stable, 3 voix typo) | ✅ |
+| L9 | Bascule d'axe : document + final épinglé, en-tête, pied de page | ✅ |
+| L10 | Hero (proposition de valeur, `whoami.ts`), intro « npm run build » | ✅ |
+| L11 | Parcours en `git log --graph` | ✅ |
+| L12 | Profil (bio, chiffres, faits, « hors écran » daté) | ✅ |
+| L13 | Compétences en scopes `pom.xml` | ✅ |
+| L14 | Projets : études de cas + figures, archives | ✅ |
+| L15 | Atmosphère (lavis Greenpath, particules), terminal du seuil | ✅ |
+| L16 | ⌘K, CTA magnétique, scripts, doc | ✅ |
+
+Mesures (build local, rendu logiciel) : Lighthouse desktop **93 / 100 / 100 /
+100**, JS critique **124 kB** gzip (136 avant la refonte), smoke vert. Le site
+n'est **pas encore en production** (§6).
 
 ---
 
@@ -37,8 +43,8 @@ Il n'est **pas encore en production** — la bascule DNS reste à faire (§6).
 npm run verify
 ```
 
-Enchaîne lint → typecheck → 71 tests unitaires → build → test d'API →
-38 contrôles runtime → Lighthouse → budgets de poids. **C'est ce que la CI
+Enchaîne lint → typecheck → tests unitaires → build → test d'API →
+contrôles runtime (smoke) → Lighthouse → budgets de poids. **C'est ce que la CI
 exécute.** Rien n'est « livré » tant que ça n'est pas vert.
 
 | Commande | Rôle |
@@ -49,7 +55,7 @@ exécute.** Rien n'est « livré » tant que ça n'est pas vert.
 | `npm run test:api` | exerce `POST /api/contact` sur le bundle déployé |
 | `npm run lighthouse` | audit sur la sortie de build |
 | `npm run icons` | régénère le sprite et `app/utils/icon-names.ts` |
-| `npm run assets:fetch` | rapatrie les pochettes Spotify / IGDB en local |
+| `npm run shots` | captures du parcours complet sur le build (6 configurations) — à regarder |
 
 En local, `CHROMIUM_PATH` pointe un binaire Chromium déjà présent.
 
@@ -89,43 +95,56 @@ l'endroit concerné ; cette liste sert d'index.
 - **Ne pas figer `html lang` dans `nuxt.config`** : ça écrase i18n et `/en`
   s'annonce en français.
 
-### Rail et scroll
+### Document, final et scroll
 
 - **Le fragment d'URL est déjà consommé** quand le `setup` d'un composant
   s'exécute (le router normalise l'URL contre la route prérendue). Il est capturé
-  par un script inline dans le `<head>` → `window.__ncHash`.
-- **Le `scrollBehavior` du router est neutralisé** (`app/router.options.ts`) : il
-  écrasait la position du rail.
-- **Les animations pilotées par le scroll sont exclues de `prefers-reduced-motion`.**
-  `rail-slide` et `scene-sweep` *sont* le rail, pas de la décoration. Les ramener
-  à `0.01ms` projette le track à sa position finale et fige chaque scène — le
-  site cesse de fonctionner. Réduire le mouvement veut dire supprimer ce que
-  l'utilisateur n'a pas demandé, pas le défilement qu'il est en train de faire.
-- **Le scroll de la page n'est pas la course du rail.** Depuis la réécriture de
-  la scène Contact, la barre de défilement porte *deux* choses : la course du
-  track, puis le budget de marche (`WALK_SPAN`). `splitScroll()` est le seul
-  endroit qui fait la conversion, `--rail-lock` la publie au CSS, et
-  `progressForScene() * RAIL_LOCK` est ce qu'un `goTo()` doit viser. Oublier le
-  facteur envoie chaque cible de navigation trop loin.
-- **Ne jamais annuler la course du rail avec une contre-transformation.** La
-  première scène Contact faisait 3 viewports et déplaçait une « caméra » vers la
-  droite d'exactement ce que le track déplaçait vers la gauche. Les deux
-  transformations, l'une portée par le compositeur et l'autre recalculée sur le
-  thread principal, ne tombaient jamais d'accord d'une frame à l'autre : toute la
-  scène tremblait. Si une scène doit rester immobile, il faut arrêter le track,
-  pas le compenser.
+  par un script inline dans le `<head>` → `window.__ncHash`, qui traduit au
+  passage les anciennes ancres (`#experience`, `#education` → `#parcours`).
+- **Le `scrollBehavior` du router est neutralisé** (`app/router.options.ts`) :
+  c'est `useSections` qui place la page.
+- **Rien entre `<html>` et le final ne doit créer de conteneur de défilement**
+  (`overflow` autre que `visible`/`clip` sur l'axe bloc) **ni sauter le rendu**
+  (`content-visibility`). Sinon `sticky` ne colle plus et la `view-timeline
+  --finale` se détache du scroll du document : la scène reste immobile.
+- **Les plages d'animation du final sont relatives à la piste, pas au
+  document.** `--open-from`, `--walk-from`, `--walk-to` viennent de
+  `finaleMarks()` et sont publiées en style inline statique ; ne jamais revenir
+  à des fractions de `scroll(root)`, qui dépendent de la hauteur de tout ce qui
+  précède (langue, largeur, polices).
+- **Ne jamais annuler un mouvement par une contre-transformation.** La première
+  scène Contact compensait la course du rail avec une « caméra » : les deux
+  transformations ne tombaient jamais d'accord et la scène tremblait. Le final
+  est immobile par construction (`sticky`) ; seuls ses calques bougent.
 - **Ne pas animer une propriété personnalisée partagée pour piloter un décor.**
-  `--walk` était animée sur la timeline de scroll et une douzaine de calques
-  plein écran en dérivaient leur `transform`. Une propriété personnalisée
-  n'est pas composable : chaque frame coûtait un recalcul de style complet.
-  Chaque élément anime désormais son propre `transform` entre deux valeurs
-  concrètes. `--walk` ne sert plus qu'au chemin de repli.
+  Une propriété personnalisée animée coûte un recalcul de style complet par
+  frame. Chaque élément anime son propre `transform` entre deux valeurs
+  concrètes ; `--walk`, `--run`, `--open` ne servent qu'au chemin B, écrites
+  sur la section et jamais sur `<html>`.
+- **`scrollIntoView()` atterrit 50 px trop bas sur mobile** (Chromium en
+  émulation mobile y ajoute la barre d'outils). `useSections.goTo()` calcule sa
+  cible et lit le `scroll-margin-top` de la section.
+- **Ne pas cumuler `scroll-padding-top` sur `<html>` et `scroll-margin-top` sur
+  les sections** : les deux s'additionnent.
+
+### Vue et CSS scopé
+
+- **`:global(x) .a .b` dans un style `scoped` devient `x` tout seul.** Vue
+  remplace le sélecteur entier par le contenu de `:global()`. Une règle
+  `:global([data-step='work']) .figure …` a ainsi estompé à 18 % tous les
+  éléments portant `data-step` — les études de cas entières. Écrire
+  `.parent[data-step='work'] :deep(.enfant)` depuis le composant parent, ou
+  `:root[data-theme=…] .classe` pour un attribut racine.
 
 ### CSS et build
 
 - **`postcss.plugins` attend des options, pas des instances de plugins.** Passer
-  une instance ne produit aucune erreur : `@media (--rail)` part brut dans le CSS
-  et le rail ne s'active jamais.
+  une instance ne produit aucune erreur : `@media (--stage-wide)` part brut dans
+  le CSS et la marche du final ne s'active jamais.
+- **Les polices sont commitées** (`public/fonts`, `assets/css/fonts.css`). Le
+  provider `google` de `@nuxt/fonts` échouait sans rien dire quand Google était
+  injoignable depuis la machine de build : aucune `@font-face`, tout le site en
+  monospace système.
 - **`components.pathPrefix: false`** est nécessaire : sans lui, un composant dans
   `components/primitives/` s'auto-importe sous `PrimitivesNcThemeToggle`.
 - **Nuxt inline les styles** de la page prérendue (une trentaine de blocs
@@ -154,23 +173,22 @@ Règle : **mesurer tout effet appliqué à une grande surface avant de le garder
 
 - **Un `z-index` négatif rend les boutons inaccessibles au clic.** Le décor
   Hollow Knight était derrière le contenu, donc l'easter egg était
-  inatteignable.
-- **`align-content: center` réduit la boîte à la hauteur du contenu.** Un décor
-  en `inset: 0` ne couvrait alors que le paragraphe. `.scene__body` a désormais
-  une rangée pleine hauteur et chaque scène centre son propre contenu.
-- **Les scènes larges ne centrent pas leur contenu.** Une scène de plus d'un
-  viewport place son contenu centré hors écran à l'arrivée. Contact ne fait plus
-  qu'un viewport, justement pour ça.
-- **Une scène plein écran doit l'être vraiment.** `.scene` réserve une rangée
-  `auto` pour son titre numéroté et une gouttière de chaque côté ; un décor en
-  `inset: 0` à l'intérieur de `.scene__body` commence donc cent pixels plus bas
-  que le haut de l'écran, avec une bande blanche au-dessus. D'où le drapeau
-  `fullBleed` sur la scène (`app/data/scenes.ts`), qui supprime la rangée et les
-  marges — et uniquement au palier `--rail`, le mode empilé étant une section
-  ordinaire.
+  inatteignable. L'atmosphère est à `z-index: 0` sous un `main` à 1.
+- **Un titre d'un seul mot peut élargir toute la grille.** « Compétences » en
+  `--step-5` faisait 395 px sur un écran de 390 : la colonne implicite `auto`
+  de `.section__inner` suivait. Les grilles de section sont en
+  `minmax(0, 1fr)` et les paliers de titre ont un plancher plus bas.
+- **Un en-tête doit tenir à toutes les largeurs de bureau.** Le smoke vérifie
+  1440, 1280 et 1024 : la pastille de statut part sous 1440, l'indice ⌘K sous
+  1180.
+- **Au-dessus du décor, l'en-tête devient transparent — sur grand écran
+  seulement.** Sous `--stage-wide`, le formulaire suit la scène dans le flux
+  et passerait sous un en-tête transparent.
 
 ### Tests
 
+- **`pkill -f motif` tue aussi le shell qui l'exécute** si la ligne de commande
+  contient le motif (code 144). Tuer par PID.
 - **`overflow: hidden` rend `scrollHeight` aveugle.** Mon premier contrôle de
   débordement affichait un vert rassurant alors qu'une scène dépassait de 540 px.
   Il mesure maintenant les boîtes des enfants.
@@ -188,160 +206,109 @@ Règle : **mesurer tout effet appliqué à une grande surface avant de le garder
 
 ```
 app/
-├── assets/css/     tokens, reset, typographie, rail, breakpoints nommés
+├── assets/css/     fonts, tokens, reset, typographie, sections, breakpoints
 ├── components/
-│   ├── primitives/ les 12 composants de base (NcButton, NcField, NcModal…)
-│   ├── rail/       NcRail, NcScene, NcRailNav — le mécanisme de défilement
-│   ├── effects/    particules, parallax, grain, curseur, intro
-│   └── scenes/     une par section, plus NcTimeline, NcSkillWheel, NcHollowScene
-├── composables/    useRail, useFrameLoop, useMotionPreference, useContactForm…
-├── data/           scènes, timeline, projets, compétences, about, parallax
-└── pages/index.vue page unique, monte les sept scènes dans NcRail
-i18n/               i18n.config.ts + locales/{fr,en}.ts
-server/             api/contact.post.ts + utils (validation, rate-limit)
-scripts/            build-sprite, security-headers, smoke, test-api, lighthouse…
-                    build-ground-strip, check-plate-edges (décor Contact)
+│   ├── primitives/ NcButton, NcTag, NcField, NcModal, NcHeading…
+│   ├── layout/     NcSiteHeader, NcSection, NcSiteFooter, NcNowPill
+│   ├── finale/     NcFinale (piste + scène + dock), NcTerminal, NcContactPanel
+│   ├── scenes/     hero, profil, NcGitGraph, compétences, NcCaseStudy + NcFigure,
+│   │               NcHollowScene (Greenpath)
+│   └── effects/    NcAtmosphere, NcParticleField, NcIntro, NcCursor,
+│                   NcCommandPalette (⌘K, chargée à la demande)
+├── composables/    useSections, useFinale, useFrameLoop, useMagnetic…
+├── data/           sections, now, parcours, skills, projects, about, parallax
+└── utils/          finale-geometry, git-graph, figure-geometry, particles…
 ```
 
 **Principes à ne pas casser :**
 
-- La **structure** vit dans `app/data/` (TypeScript typé), les **mots** dans
-  `i18n/locales/`. Aucun texte en dur dans un composant.
-- **Une seule boucle rAF** pour tout le site (`useFrameLoop`). Pas de rAF par
-  composant.
-- N'animer que `transform`, `opacity`, `filter` et des custom properties.
-- Les composants lisent les **custom properties CSS** du rail (`--rail-progress`,
-  `--scene-progress`), pas l'état JS, quand c'est possible — mais **on n'anime
-  pas** une custom property pour en dériver des transformations plein écran (voir
-  §3, « Rail et scroll »).
-- **Aucun effet de décor ne réagit au pointeur.** La parallaxe est un mouvement
-  de caméra : elle appartient au défilement. `providePointer()` et
-  `NcParallaxLayer` ont été supprimés, SPEC §5.2(b) explique pourquoi.
-- Les icônes passent uniquement par `<NcIcon name="…" />`, dont les noms sont
-  **générés** par `npm run icons`.
+- La **structure** vit dans `app/data/`, les **mots** dans `i18n/locales/`.
+- **Tout ce qui dépend du temps** part de `CONTENT_AS_OF` (`data/now.ts`),
+  jamais de `new Date()` : prérendu et hydratation doivent calculer pareil.
+- **Une seule boucle rAF** (`useFrameLoop`).
+- N'animer que `transform`, `opacity`, `filter`, `clip-path` sur petit élément.
+- **Mesurer tout effet plein écran** avant de le garder (le smoke surveille le
+  temps de frame).
+- Le **contenu est dans le HTML prérendu** et les sections sous la ligne de
+  flottaison ne sont hydratées qu'à l'approche (`hydrate-on-visible`). Le final
+  est hydraté d'emblée : il mesure la page pour le lien « Contact ».
+- Icônes via `<NcIcon name="…" />` uniquement.
 
-### La scène Contact, en détail
-
-C'est la partie la plus dense du site, et celle qui a déjà été refaite une fois.
-Quatre fichiers, quatre responsabilités :
+### Le final, en détail
 
 | Fichier | Ce qu'il décide |
 |---|---|
-| `app/utils/rail-geometry.ts` | `WALK_SPAN` : combien de viewports de scroll viennent **après** la course du track. `splitScroll()` partage la barre entre les deux. |
-| `app/data/parallax.ts` | La table des calques : profondeur, planche, mode de répétition. Et `PAN`, `KNIGHT_START`, `FIGURE_SCALE`. |
-| `app/components/scenes/NcHollowScene.vue` | La mise en scène : une keyframe de `transform` par élément, rangée sur la timeline de scroll. |
-| `app/components/scenes/NcContactScene.vue` | Le formulaire, garé à droite d'une scène qui ne bouge pas. |
+| `app/utils/finale-geometry.ts` | Les segments `run` / `open` / `walk` / `hold`, en hauteurs d'écran, large et étroit. `splitFinale()` et `finaleProgress()`. |
+| `app/composables/useFinale.ts` | `arrived`, `walking`, chemin B, accrochage vers l'avant, position du formulaire pour la navigation. |
+| `app/components/finale/NcFinale.vue` | La piste (`view-timeline --finale`), la scène sticky, le dock du formulaire. |
+| `app/components/finale/NcTerminal.vue` | `$ npm run contact`, les logs, les six volets. |
+| `app/components/scenes/NcHollowScene.vue` | Les calques, le banc, le Chevalier, la lueur et les particules, la musique. |
+| `app/data/parallax.ts` | La table des calques, `PAN`, `KNIGHT_START`, `FIGURE_SCALE`. |
 
-Les invariants sur lesquels tout repose, tous vérifiés par `npm run smoke` :
+Invariants vérifiés par `npm run smoke` : la scène reste épinglée plein écran
+pendant toute la marche ; les calques se séparent par profondeur ; le
+Chevalier finit au milieu du banc, au milieu de l'écran ; le formulaire est
+`inert` et invisible pendant la marche, puis arrive en dégageant le banc ;
+s'asseoir se joue en deux temps (lueur, puis particules) ; en mouvement
+réduit, le final est sa dernière image ; sur téléphone, le Chevalier est assis
+et le formulaire suit dans le flux.
 
-1. Le track est **à l'arrêt** pendant toute la marche — la scène ne bouge pas
-   d'un pixel, donc il n'y a rien qui puisse trembler.
-2. Les calques se séparent **par profondeur** : paroi du fond 120 px, sol
-   1 200 px, ombres de premier plan 2 100 px sur la même marche.
-3. Le Chevalier finit **au milieu du banc, au milieu de l'écran**. Le banc et lui
-   sont épinglés aux mêmes nombres (`--pan`, `--ground`, `--seat` dérivé de la
-   géométrie du banc) : c'est de l'arithmétique, pas du réglage à l'œil. Un écart
-   ici veut dire qu'une modification a cassé la relation.
-4. Le formulaire **n'est pas là de toute la marche** et arrive quand il s'assoit,
-   en dégageant le banc. `inert` autant qu'`opacity` : un formulaire transparent
-   garde ses arrêts de tabulation.
-5. **S'asseoir se joue en deux temps** : il vire au blanc lumineux, puis, une
-   fois redevenu normal, des particules blanches s'échappent de lui. Le smoke les
-   cherche dans cet ordre — le second temps après le premier, jamais en même
-   temps.
-
-Trois pièges dans ces deux fichiers, tous les trois payés une fois :
-
-- **La pose assise n'est pas à l'échelle de la bande de marche.** Elle vit sur sa
-  propre planche de 87 × 146 et se cale sur le **masque** (la coque blanche, 41
-  lignes de profil contre 47 de face), pas sur la largeur — de face une tête est
-  plus large, et s'y fier rapetissait le Chevalier d'un tiers au moment où il
-  s'asseyait. Son ancrage vertical suit ses hanches (ligne 112 sur 146), pas le
-  bas de sa boîte, qui porte 18 lignes vides. `node .nc-mask.mjs` remesure les
-  deux planches si les sprites changent.
-- **Un raccourci `animation` sur un sprite du Chevalier le renvoie à gauche de
-  l'écran.** Sur le chemin A, ses sprites portent déjà `hk-advance` sur la
-  timeline de scroll, et le raccourci réinitialise `animation-timeline`. C'est
-  pour ça que la lueur et les particules sont portées par `.hk__rest`, un élément
-  à part qui reçoit la même course.
-- **`translate` et `transform` sur la même règle : le build en perd un.** Le
-  panneau de contact est centré par `translate: 0 -50%` ; lui adjoindre un
-  `transform` constant pour le glissement d'entrée, et le minifieur replie les
-  deux en un et garde le mauvais. Sur `main` ça passait seulement parce que ce
-  `transform` portait un `var()` et ne pouvait pas être replié. Le centrage et le
-  glissement sont donc **une seule déclaration** (`translate: 2.5rem -50%` →
-  `translate: 0 -50%`). C'est la troisième fois que ce fichier perd une
-  déclaration à ce jeu ; la règle est : ne jamais compter sur une déclaration que
-  le minifieur peut croire redondante.
-
-Deux scripts d'assets, hors build, résultats commités :
-
-- `build-ground-strip.mjs` découpe dans `platform-1` la portion de chemin qui se
-  répète. La planche entière ne le peut pas : elle n'est peinte que sur 21 %–86 %
-  de sa largeur, et deux copies bout à bout laissent 28 vw de vide sous les pieds
-  du Chevalier.
-- `check-plate-edges.mjs` dit, planche par planche, si les copies doivent être
-  simplement répétées ou alternativement retournées. C'est mesuré, pas jugé à
-  l'œil : une couture d'un pixel est invisible sur une capture et évidente dès
-  que le calque bouge.
+Les pièges de la pose assise (échelle calée sur le masque, ancrage sur les
+hanches), du raccourci `animation` sur les sprites et de `translate` +
+`transform` replié par le minifieur restent valables : ils sont commentés dans
+`NcHollowScene.vue` et `NcContactPanel.vue`.
 
 ---
 
 ## 5. Écarts assumés à la spec
 
-Trois, tous documentés dans `SPEC.md` à leur section :
-
-1. **Pas de skew cinétique** (§5.4) — mesuré à la moitié du budget de frame.
-2. **Les projets tiennent sur une rangée, pas deux** (§6.6) — deux rangées
-   débordaient de 540 px en hauteur. Le décalage vertical alterné rend le même
-   effet.
-3. **Snap uniquement à l'entrée de Contact** (§3.4). Le snap général reste
-   écarté — le défilement libre est confortable et un snap mal réglé se bat avec
-   l'utilisateur. Mais la scène Contact doit démarrer sa marche sur une image
-   propre, plein écran : s'arrêter dans la dernière demi-fenêtre avant le point
-   de verrouillage déclenche un `scrollTo` doux qui termine l'approche. Il ne
-   tire **que vers l'avant** (une marche déjà entamée n'est jamais ramenée en
-   arrière) et `npm run smoke` vérifie les deux sens.
+Voir **SPEC §14** : le rail horizontal, les 7 scènes et la règle « contenu v1
+identique » ont été levés par la révision « Compile → Run ». Toujours valable :
+pas de skew cinétique (mesuré à la moitié du budget de frame), et le pointeur
+ne pilote aucun décor (seuls le curseur et le CTA magnétique y réagissent).
 
 ---
 
 ## 6. Ce qui reste à faire
 
-**Avant la bascule DNS** — ces points demandent un accès dont l'agent ne dispose
-pas :
+**Contenu à fournir par le propriétaire :**
 
-1. **Renseigner `NUXT_EMAILJS_*` dans Vercel.** Sans ces variables, le formulaire
-   répond 503 et affiche le message qui rappelle l'adresse directe. La clé privée
-   est optionnelle mais recommandée : elle rend l'appel server-only.
-2. **`npm run assets:fetch`**, puis faire pointer `app/data/about.ts` sur
-   `/img/remote/`. Les pochettes Spotify et les jaquettes IGDB dépendent encore
-   de CDN tiers dont les URL peuvent expirer. Une tuile dont l'image échoue
-   affiche proprement son nom, mais c'est un repli, pas une solution.
-   *C'est aussi ce qui fait plafonner Lighthouse best-practices à 96 : servies
-   localement, le score atteint 100 (vérifié).*
-3. **Réencoder `public/audio/hollow-knight-theme.mp3`** — 4,4 Mo, repris tel quel
-   de v1, aucun outil audio n'était disponible. Il est en `preload="none"`, donc
-   il ne pèse sur aucun chargement de page, mais ~1,5 Mo serait plus décent.
-4. **Valider la preview Vercel, puis basculer les DNS.** Garder le VPS quelques
-   jours en repli. Les redirections 301 doivent être actives avant.
+1. **Le CV PDF est à mettre à jour** : `public/cv/CV_Nathan_Couton.pdf` s'arrête
+   à la Mutuelle de Poitiers (ni Catamania, ni Harmonie Mutuelle). Il est lié
+   depuis l'en-tête, le hero, le panneau de contact, le pied de page et ⌘K.
+2. **Démos des projets publics** (captures ou vidéo de 10–20 s ≤ 1,5 Mo +
+   poster) : solveur TSP, AJL Peinture, HoloLens, SwalloWin. Les études de cas
+   ont leur figure ; un média réel s'ajouterait à côté.
+3. **Statut public** : `NOW.openToOffers` (`app/data/now.ts`) est à `false` —
+   c'est au propriétaire de dire s'il est « ouvert aux échanges ».
+4. **Chiffres sous NDA**, s'il y en a de publiables (volumes, durée des batchs) :
+   les études de cas « Intégration des flux » et « Prévoyance » en gagneraient.
+5. **Dépôt public du site** : l'étude de cas « Ce portfolio » n'a pas de lien
+   vers le code tant que ce n'est pas confirmé.
+6. Logo et couleur de Catamania (le logo `public/img/about/job.png` est utilisé
+   petit, dans le profil).
 
-**Points de vigilance pour la suite :**
+**Avant la bascule DNS :** `NUXT_EMAILJS_*` dans Vercel (sinon le formulaire
+répond 503), réencodage de `public/audio/hollow-knight-theme.mp3` (4,4 Mo),
+validation de la preview, puis DNS — en gardant les 301.
 
-- **Le budget JS est à 136 Ko sur 150 (91 %).** Le plancher de la stack
-  (Vue + Nuxt + router + i18n + color-mode) est à ~107 Ko et n'est pas
-  compressible. Toute fonctionnalité notable demandera de différer l'hydratation
-  des scènes hors champ (`hydrate-on-visible`).
-- **Lighthouse tourne ici en rendu logiciel sans GPU.** Les scores de perf sont
-  pessimistes et les seuils de frame du smoke sont des détecteurs de régression,
-  pas le budget de la spec. La mesure de référence se fait sur une vraie machine.
-- **Le top Spotify est un instantané figé de 2024** (le compte n'existe plus).
-  Ne pas ajouter de mention « en ce moment » qui serait mensongère.
+**Points de vigilance :**
+
+- **Lighthouse performance à 93** en rendu logiciel (98 avant) : le LCP est le
+  nom du hero en Fraunces, à 1,4 s ; l'intro de 1,1 s pèse sur le Speed Index.
+  À remesurer sur une vraie machine.
+- **JS critique 124 kB / 140.** Toute fonctionnalité lourde passe par un
+  chargement à la demande, comme ⌘K.
+- **Le top Spotify est un instantané de 2024**, présenté comme tel.
+- **L'illustration Greenpath appartient à Team Cherry** : elle reste confinée au
+  final, créditée sur la scène et dans le pied de page.
 
 ---
 
 ## 7. Contexte utile
 
-- **Branche de travail** : `claude/serene-albattani-gtubp9`.
+- **Branche de travail** : `refonte-compile-run`, partie de `main` (la branche
+  `claude/serene-albattani-gtubp9` porte l'essai « grotte », écarté).
 - **Historique** : un commit par lot, message détaillé expliquant les décisions
   et les corrections. `git log` est une bonne lecture avant de reprendre.
 - **Source de contenu** : le site v1 reste la référence pour les textes. Une

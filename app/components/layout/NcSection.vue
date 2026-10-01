@@ -122,7 +122,7 @@ const ledeKey = computed(() => `sections.${props.section.id}.lede`)
   }
 
   .section--split .section__title {
-    font-size: clamp(2.4rem, 1.2rem + 2.6vw, 4rem);
+    font-size: clamp(2.2rem, 0.8rem + 2.4vw, 3.6rem);
   }
 
   .section--split .section__lede {

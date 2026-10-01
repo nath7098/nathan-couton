@@ -29,6 +29,9 @@ const card = computed(() => (tm('hero.card') as Array<{ key: unknown, value: unk
     comment: line.comment ? rt(line.comment as never, { client: NOW.client }) : undefined,
   })))
 
+const cta = ref()
+useMagnetic(cta)
+
 function toParcours(event: MouseEvent) {
   event.preventDefault()
   goTo('parcours')
@@ -55,6 +58,7 @@ function toParcours(event: MouseEvent) {
 
       <div class="hero__actions">
         <NcButton
+          ref="cta"
           variant="primary"
           size="lg"
           icon="download"

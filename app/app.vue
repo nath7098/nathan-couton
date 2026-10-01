@@ -6,6 +6,18 @@ const head = useLocaleHead({ seo: true })
 
 useMotionPreference()
 
+// ⌘K / Ctrl+K opens the command palette. The palette's own code is only
+// fetched the first time it is asked for.
+const palette = useState('nc-palette', () => false)
+onMounted(() => {
+  useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault()
+      palette.value = !palette.value
+    }
+  })
+})
+
 useHead(() => ({
   htmlAttrs: head.value.htmlAttrs,
   link: head.value.link,
@@ -37,6 +49,10 @@ useHead(() => ({
     <NcNoise />
     <NcCursor />
     <NcIntro />
+    <LazyNcCommandPalette
+      v-if="palette"
+      @close="palette = false"
+    />
   </div>
 </template>
 
