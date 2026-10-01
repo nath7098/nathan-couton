@@ -41,7 +41,7 @@ npm run dev          # http://localhost:3000
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
 | `npm run shots` | captures du parcours complet sur le build, à regarder |
 | `npm run cv [dossier]` | régénère les CV PDF (fr, en) depuis les données du site ; aperçus PNG dans le dossier donné |
-| `npm run test:api` | exerce `POST /api/contact` sur le bundle construit |
+| `npm run test:api` | exerce `POST /api/contact` et `GET /api/soundtrack` sur le bundle construit |
 | `npm run lighthouse` | audit Lighthouse sur la sortie de build |
 
 `npm run smoke` exige un `npm run build` préalable. En local, `CHROMIUM_PATH`
@@ -57,7 +57,7 @@ app/
 ├── data/           sections, parcours, projets, compétences, now (TypeScript typé)
 └── pages/index.vue page unique : cinq sections, puis le final
 i18n/locales/       fr.json (défaut) · en.json
-server/api/         contact.post.ts — unique fonction serverless
+server/api/         contact.post.ts · soundtrack.get.ts (Last.fm) — les seules fonctions serverless
 ```
 
 La galerie de composants vit sur `/_dev/kitchen-sink` en développement. Sa route
@@ -83,7 +83,7 @@ est retirée du build de production, elle ne coûte donc rien au bundle livré.
   par `npm run icons`. Ajouter une icône = éditer `scripts/build-sprite.mjs`
   (logo de marque) ou déposer un SVG dans `app/assets/icons/ui/`.
 - **Aucune image tierce** : tout ce que la page affiche est servi par le site
-  (CSP `img-src 'self'`). La « bande-son 2024 » est du texte daté.
+  (CSP `img-src 'self'`). La playlist Last.fm est du texte, sans pochettes.
 - **i18n** : les messages sont importés statiquement dans `i18n/i18n.config.ts`.
   Ne pas repasser à `langDir` : le serveur de développement répond alors 404 sur
   les fichiers de locale et chaque `t()` retombe silencieusement sur la clé brute,
@@ -99,6 +99,38 @@ Variables d'environnement : voir `.env.example`. **Sans les identifiants
 EmailJS, le formulaire répond 503** et l'utilisateur voit le message d'erreur
 qui rappelle l'adresse directe — c'est le comportement voulu, mais il faut
 renseigner `NUXT_EMAILJS_*` dans Vercel pour que l'envoi fonctionne.
+
+## Bande-son (Last.fm)
+
+La carte « En rotation » du profil montre les titres et artistes les plus
+écoutés sur les 30 derniers jours. Les écoutes Apple Music sont envoyées à
+Last.fm par un scrobbler, et `GET /api/soundtrack` lit les classements du mois
+(`user.getTopTracks`, `user.getTopArtists`). Pourquoi pas Apple Music
+directement : lire un historique Apple Music exige une clé MusicKit, donc
+l'abonnement payant Apple Developer. L'API Last.fm, elle, est gratuite.
+
+Le prérendu fige la liste au moment du déploiement ; une fois le profil
+hydraté, le navigateur redemande la liste, que le CDN Vercel garde une heure.
+**Sans configuration, ou si Last.fm refuse, la carte affiche la « Bande-son
+2024 » figée** (`app/data/about.ts`) — rien ne casse.
+
+Mise en place (une fois) :
+
+1. **Compte Last.fm** — sur [last.fm](https://www.last.fm/join).
+2. **Scrobbler** — Apple Music n'envoie rien à Last.fm de lui-même. Sur
+   iPhone : l'app officielle Last.fm, ou Finale, FastScrobbler, Marvis Pro… ;
+   sur Mac : un scrobbler compatible avec l'app Musique. Écouter quelques
+   titres et vérifier qu'ils apparaissent sur le profil Last.fm.
+3. **Clé API** — sur [last.fm/api/account/create](https://www.last.fm/api/account/create)
+   (seule la clé sert, pas le secret).
+4. **Vercel** → *Settings* → *Environment Variables*, en Production (et Preview
+   si voulu) : `NUXT_LASTFM_API_KEY` et `NUXT_LASTFM_USER` (le nom
+   d'utilisateur Last.fm), puis **redéployer** : les variables ne s'appliquent
+   qu'aux nouveaux déploiements.
+
+Rien n'expire. Si la clé ou le nom d'utilisateur est faux, la carte reste sur
+2024 et les logs Vercel affichent `[soundtrack] Last.fm … — check
+NUXT_LASTFM_…`, avec la variable à corriger.
 
 Le thème musical (`public/audio/`) pèse 4,4 Mo et est repris tel quel de v1. Il
 se charge uniquement quand on le demande (`preload="none"`), mais un réencodage

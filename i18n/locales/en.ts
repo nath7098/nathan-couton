@@ -108,7 +108,9 @@ export default {
     offscreen: {
       title: 'off screen',
       soundtrack: '{year} soundtrack',
+      rotation: 'On rotation',
       artists: 'Top artists that year: {artists}.',
+      rotationArtists: 'Most played this month: {artists}.',
       gamesFile: 'games/favourite',
       knight: 'The scenery of this site\'s last scene.',
       knightLink: 'Join him',

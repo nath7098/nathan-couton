@@ -986,7 +986,19 @@ indigo, contrepoint chaud rare. Fraunces (display), JetBrains Mono (fil code),
 sans-serif système (texte). Polices auto-hébergées. Tags monochromes. Plancher
 typographique 0,8 rem.
 
-### 14.5 Budgets
+### 14.5 Bande-son Last.fm (01/10/2026)
+
+Lève la règle « données figées » du §9.3 pour la seule playlist : top titres
+et top artistes des 30 derniers jours, lus sur Last.fm (où un scrobbler envoie
+les écoutes Apple Music) via `GET /api/soundtrack` (fonction Vercel, réponse
+gardée une heure par le CDN). Apple Music direct est écarté : MusicKit exige
+l'abonnement payant Apple Developer. Le HTML prérendu porte la liste du jour
+du déploiement ; le navigateur la rafraîchit quand le profil est hydraté.
+Texte seulement (pas de pochettes : `img-src 'self'`). Titre « En rotation »,
+fichier `top-30d.m3u`. Repli : la « Bande-son 2024 » datée, dès que Last.fm ne
+répond pas, est mal configuré ou n'a rien sur le mois.
+
+### 14.6 Budgets
 
 JS critique (script + modulepreload) ≤ 140 kB gzip ; sections différées
 (prefetch) ≤ 40 kB. Les autres budgets du §10.1 sont inchangés.

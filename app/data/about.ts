@@ -5,15 +5,19 @@
  * API are gone (SPEC §13.1), and what was left was a frozen snapshot shown as
  * if it were current, with its artwork hot-linked from Spotify's and IGDB's
  * CDNs — URLs that expire, and that answer 403 from some networks. The page
- * now owns everything it shows: the playlist is text, dated for what it is
- * (a 2024 soundtrack), and the one game that matters is drawn with the
- * Knight's own sprite, because the visitor will meet him at the bottom of the
- * page.
+ * now owns everything it shows: the playlist is text, and the one game that
+ * matters is drawn with the Knight's own sprite, because the visitor will meet
+ * him at the bottom of the page.
+ *
+ * The playlist is live again: this month's most played, Apple Music plays
+ * scrobbled to Last.fm (GET /api/soundtrack) — still text only, no artwork.
+ * What follows is its fallback: the 2024 snapshot, shown and dated as such
+ * whenever Last.fm is unconfigured or unreachable.
  */
 export interface Track {
   artist: string
   title: string
-  href: string
+  href?: string
 }
 
 /** The last known top tracks, frozen in 2024. Never "right now". */
