@@ -317,3 +317,8 @@ validation de la preview, puis DNS — en gardant les 301.
 - **Source de contenu** : le site v1 reste la référence pour les textes. Une
   quinzaine de bugs hérités ont été corrigés au passage — ils sont listés en
   annexe B de `SPEC.md` ; ne pas les réintroduire en recopiant v1.
+- **Mission Harmonie** : complétée en 2026 à partir de l'entretien annuel
+  Catamania (document privé, non versionné). Validé pour publication : Bonita
+  et les processus prévoyance / emprunteur / santé, les mises en production
+  (santé en mars, premiers flux prévoyance), l'agent IA de revue de code.
+  Jamais publié : noms, évaluation, rémunération, projet d'évolution.

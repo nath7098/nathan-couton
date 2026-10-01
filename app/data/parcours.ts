@@ -57,7 +57,7 @@ export const COMMITS: readonly Commit[] = [
     branch: 'catamania',
     kind: 'mission',
     from: '2025-07',
-    stack: ['Java 21', 'Spring Boot 4', 'Spring Batch', 'Kafka', 'Spark', 'Angular 19'],
+    stack: ['Java 21', 'Spring Boot 4', 'Kafka', 'Spring Batch', 'Spark', 'Bonita', 'PostgreSQL', 'Hibernate', 'Angular 19'],
   },
   { id: 'vue-training', branch: 'main', kind: 'training', from: '2023-06', minor: true },
   {

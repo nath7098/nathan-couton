@@ -12,11 +12,11 @@ export default {
       period: 'Jul 2025 — today',
       title: 'Harmonie Mutuelle',
       role: 'Fullstack Java developer · assignment via Catamania',
-      summary: 'Performance, Insurance and Solvency tribe: data-flow integration, from ingestion to delivery.',
+      summary: 'Performance, Insurance and Solvency tribe: income-protection, borrower and health processes, from the incoming flow to the screen.',
       points: [
-        'APIs and batch processing in Java 21, Spring Boot 4 and Spring Batch.',
-        'Spark for large volumes, Kafka between services, screens in Angular 19.',
-        'An Agile squad of eight, code reviews and merge requests.',
+        'Java 21 and Spring Boot 4, Kafka, Spring Batch and Spark, PostgreSQL and Hibernate; screens in Angular 19.',
+        'Bonita: started from zero, shipped the latest process end to end on my own.',
+        'Health went live in March, first income-protection flows in production — plus an AI code-review agent for the team.',
       ],
     },
     'vue-training': {
@@ -87,10 +87,6 @@ export default {
   about: {
     portraitAlt: 'Portrait of Nathan Couton, in black and white',
     employerAlt: 'Catamania logo',
-    bio: [
-      'Fullstack Java developer at Catamania, on assignment at Harmonie Mutuelle. Since 2021, business applications for insurance: batch processing, APIs, screens.',
-      'Off screen: drums, saxophone, guitar, climbing — and Hollow Knight, which lent this site its final scene.',
-    ],
     figures: {
       years: { value: '{value} yrs', label: 'with IT consultancies, since 2021' },
       esn: { value: '{value}', label: 'consultancies: ACII by Audensiel, then Catamania' },
@@ -150,16 +146,16 @@ export default {
       flux: {
         where: 'Harmonie Mutuelle · via Catamania · since July 2025',
         title: 'Data flow integration',
-        pitch: 'Data-flow integration for the Performance, Insurance and Solvency tribe, from ingestion to delivery. An Agile squad of eight.',
-        problem: 'Receiving and processing flows in bulk, under solvency constraints, then making them available.',
-        work: 'The whole chain: Spring Batch and Spark, Kafka between services, Spring Boot APIs, Angular screens.',
-        outcome: 'Ongoing, through merge requests reviewed by the team.',
-        figureLabel: 'Diagram of the chain: incoming flows, Kafka event bus, Spring Batch and Spark processing, database, Spring Boot API, Angular screens.',
+        pitch: 'Income-protection, borrower and health processes for the Performance, Insurance and Solvency tribe, from the incoming flow to the screen. An Agile squad of eight.',
+        problem: 'Flows to integrate in bulk, business processes to orchestrate, and a health overhaul to ship alongside.',
+        work: 'Kafka and Spring Batch for the flows, Bonita for the processes, Spring Boot APIs on PostgreSQL, Angular screens.',
+        outcome: 'Health live since March, first income-protection flows integrated. Plus an AI code-review agent (skills, MCP), shared with the team.',
+        figureLabel: 'Diagram of the chain: incoming flows, Kafka event bus, Spring Batch processing, Bonita processes, PostgreSQL database, Spring Boot API, Angular screens.',
         nodes: {
           inbound: 'Incoming flows',
           kafka: 'Events',
           batch: 'Processing',
-          spark: 'Distributed',
+          process: 'Processes',
           store: 'Database',
           api: 'API',
           ui: 'Delivery',
@@ -172,7 +168,7 @@ export default {
         pitch: 'A new application for a new product: the insurer\'s income protection. A team of seven developers.',
         problem: 'No legacy: the business model, screens and APIs had to be built together.',
         work: 'Java EE 8, Spring Boot and Hibernate on the back end; Vue.js 2 and Vuex in TypeScript on the front.',
-        outcome: 'Four years on the product, from building it to evolving it.',
+        outcome: 'Four years on the product, from the first line of code to its evolutions.',
         figureLabel: 'Layered diagram: Vue.js interface, Spring Boot REST API, Java EE and Hibernate business layer, database.',
         nodes: {
           members: 'Users',
@@ -238,7 +234,7 @@ export default {
   },
   contact: {
     title: 'A role, an assignment? Take a seat.',
-    lede: 'Email, LinkedIn or the form: I answer every one.',
+    lede: 'One line is enough: I answer everyone.',
     name: 'Your name',
     email: 'Your e-mail',
     message: 'Your message',
@@ -290,7 +286,6 @@ export default {
       nav: 'Career',
       title: 'Career',
       file: 'git log --graph',
-      lede: 'Two consultancies, three clients, one engineering degree.',
     },
     skills: {
       nav: 'Skills',
@@ -315,7 +310,7 @@ export default {
   },
   hero: {
     overline: 'Fullstack Java developer · {city}',
-    statement: 'Business applications in Java and Angular / Vue.js, from the batch to the screen. {years} years with IT consultancies, in insurance and social protection.',
+    statement: 'Java, Spring Boot and Angular, from the Kafka stream to the screen. {years} years building the apps that keep personal insurance running.',
     ctaResume: 'Download the resume',
     ctaParcours: 'See the career',
     scroll: 'scroll',

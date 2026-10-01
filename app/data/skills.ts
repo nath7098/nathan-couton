@@ -38,15 +38,16 @@ export const SKILLS: readonly Skill[] = [
   { id: 'ts', name: 'TypeScript', icon: 'ts', tier: 'daily', years: 6, usedIn: ['harmonie', 'mpa'] },
   { id: 'kafka', name: 'Kafka', icon: 'kafka', tier: 'daily', years: 1, usedIn: ['harmonie'] },
   { id: 'spark', name: 'Spark', icon: 'spark', tier: 'daily', years: 1, usedIn: ['harmonie'] },
+  { id: 'bonita', name: 'Bonita (BPM)', tier: 'daily', years: 1, usedIn: ['harmonie'] },
+  { id: 'postgres', name: 'PostgreSQL', icon: 'postgres', tier: 'daily', years: 6, usedIn: ['harmonie'] },
+  { id: 'hibernate', name: 'Hibernate / JPA', tier: 'daily', years: 6, usedIn: ['harmonie', 'mpa', 'tempo'] },
   { id: 'intellij', name: 'IntelliJ IDEA', icon: 'intellij', tier: 'daily', years: 8 },
   { id: 'gitlab', name: 'Git · GitLab', icon: 'gitlab', tier: 'daily', years: 7 },
 
   // ── Used in production, known well ─────────────────────────────────────
   { id: 'vue', name: 'Vue.js', icon: 'vue', tier: 'solid', years: 5, usedIn: ['mpa'] },
   { id: 'security', name: 'Spring Security', icon: 'spring', tier: 'solid', years: 5, usedIn: ['mpa', 'tempo'] },
-  { id: 'hibernate', name: 'Hibernate / JPA', tier: 'solid', years: 5, usedIn: ['mpa', 'tempo'] },
   { id: 'oracle', name: 'Oracle', icon: 'oracle', tier: 'solid', years: 8 },
-  { id: 'postgres', name: 'PostgreSQL', icon: 'postgres', tier: 'solid', years: 6 },
   { id: 'mysql', name: 'MySQL', icon: 'mysql', tier: 'solid', years: 8 },
   { id: 'js', name: 'JavaScript', icon: 'js', tier: 'solid', years: 7 },
   { id: 'html', name: 'HTML · CSS · Sass', icon: 'html', tier: 'solid', years: 8 },
@@ -61,6 +62,7 @@ export const SKILLS: readonly Skill[] = [
   { id: 'firebase', name: 'Firebase', icon: 'firebase', tier: 'explored', years: 1 },
   { id: 'mongo', name: 'MongoDB', icon: 'mongo', tier: 'explored', years: 1 },
   { id: 'android', name: 'Android', icon: 'android', tier: 'explored' },
+  { id: 'ai-agents', name: 'Agents LLM · MCP', tier: 'explored', years: 1, usedIn: ['harmonie'] },
 ]
 
 export function skillsIn(tier: SkillTier): Skill[] {

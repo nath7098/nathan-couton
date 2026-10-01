@@ -12,11 +12,11 @@ export default {
       period: 'juil. 2025 — aujourd\'hui',
       title: 'Harmonie Mutuelle',
       role: 'Développeur fullstack Java · mission via Catamania',
-      summary: 'Tribu Performance Assurance et Solvabilité : l\'intégration des flux, de la réception à la restitution.',
+      summary: 'Tribu Performance Assurance et Solvabilité : les processus prévoyance, emprunteur et santé, du flux entrant à l\'écran.',
       points: [
-        'APIs et traitements de masse en Java 21, Spring Boot 4 et Spring Batch.',
-        'Spark pour les gros volumes, Kafka entre les services, écrans en Angular 19.',
-        'Squad Agile de huit, revues de code et merge requests.',
+        'Java 21 et Spring Boot 4, Kafka, Spring Batch et Spark, PostgreSQL et Hibernate ; écrans en Angular 19.',
+        'Bonita : parti de zéro, j\'ai livré le dernier processus de bout en bout, en autonomie.',
+        'Santé en prod en mars, premiers flux prévoyance en prod — et un agent IA de revue de code pour l\'équipe.',
       ],
     },
     'vue-training': {
@@ -87,10 +87,6 @@ export default {
   about: {
     portraitAlt: 'Portrait de Nathan Couton, en noir et blanc',
     employerAlt: 'Logo de Catamania',
-    bio: [
-      'Développeur fullstack Java chez Catamania, en mission chez Harmonie Mutuelle. Depuis 2021, des applications métier pour l\'assurance : traitements de masse, APIs, écrans.',
-      'Hors écran : batterie, saxophone, guitare, escalade — et Hollow Knight, qui a prêté sa dernière scène à ce site.',
-    ],
     figures: {
       years: { value: '{value} ans', label: 'd\'expérience en ESN, depuis 2021' },
       esn: { value: '{value}', label: 'ESN : ACII by Audensiel, puis Catamania' },
@@ -150,16 +146,16 @@ export default {
       flux: {
         where: 'Harmonie Mutuelle · via Catamania · depuis juillet 2025',
         title: 'Intégration des flux',
-        pitch: 'L\'intégration des flux de la tribu Performance Assurance et Solvabilité, de la réception à la restitution. Squad Agile de huit.',
-        problem: 'Recevoir et traiter des flux en masse, sous les contraintes de la solvabilité, puis les rendre consultables.',
-        work: 'Toute la chaîne : Spring Batch et Spark, Kafka entre les services, APIs Spring Boot, écrans Angular.',
-        outcome: 'Mission en cours, en merge requests relues par l\'équipe.',
-        figureLabel: 'Schéma de la chaîne : flux entrants, bus d\'événements Kafka, traitements Spring Batch et Spark, base, API Spring Boot, écrans Angular.',
+        pitch: 'Les processus prévoyance, emprunteur et santé de la tribu Performance Assurance et Solvabilité, du flux entrant à l\'écran. Squad Agile de huit.',
+        problem: 'Des flux à intégrer en masse, des processus métier à orchestrer, et une refonte santé à livrer en parallèle.',
+        work: 'Kafka et Spring Batch côté flux, Bonita pour les processus, des APIs Spring Boot sur PostgreSQL, des écrans Angular.',
+        outcome: 'Santé en prod depuis mars, premiers flux prévoyance intégrés. Et un agent IA de revue de code (skills, MCP), partagé avec l\'équipe.',
+        figureLabel: 'Schéma de la chaîne : flux entrants, bus d\'événements Kafka, traitements Spring Batch, processus Bonita, base PostgreSQL, API Spring Boot, écrans Angular.',
         nodes: {
           inbound: 'Flux entrants',
           kafka: 'Événements',
           batch: 'Traitements',
-          spark: 'Calcul distribué',
+          process: 'Processus',
           store: 'Base',
           api: 'API',
           ui: 'Restitution',
@@ -172,7 +168,7 @@ export default {
         pitch: 'Une application neuve pour un produit neuf : la prévoyance de la mutuelle. Équipe de sept développeurs.',
         problem: 'Aucun existant : modèle métier, écrans et APIs à construire ensemble.',
         work: 'Java EE 8, Spring Boot et Hibernate en back ; Vue.js 2 et Vuex en TypeScript en front.',
-        outcome: 'Quatre ans sur le produit, de sa construction à ses évolutions.',
+        outcome: 'Quatre ans sur le produit, de la première ligne de code à ses évolutions.',
         figureLabel: 'Schéma en couches : interface Vue.js, API REST Spring Boot, couche métier Java EE et Hibernate, base de données.',
         nodes: {
           members: 'Utilisateurs',
@@ -238,7 +234,7 @@ export default {
   },
   contact: {
     title: 'Un poste, une mission ? Asseyez-vous.',
-    lede: 'E-mail, LinkedIn ou formulaire : je réponds à chacun.',
+    lede: 'Un mot suffit : je réponds à tout le monde.',
     name: 'Votre nom',
     email: 'Votre e-mail',
     message: 'Votre message',
@@ -290,7 +286,6 @@ export default {
       nav: 'Parcours',
       title: 'Parcours',
       file: 'git log --graph',
-      lede: 'Deux ESN, trois clients, un diplôme d\'ingénieur.',
     },
     skills: {
       nav: 'Compétences',
@@ -315,7 +310,7 @@ export default {
   },
   hero: {
     overline: 'Développeur fullstack Java · {city}',
-    statement: 'Applications métier en Java et Angular / Vue.js, du batch à l\'écran. {years} ans en ESN, dans l\'assurance et la protection sociale.',
+    statement: 'Java, Spring Boot et Angular, du flux Kafka jusqu\'à l\'écran. {years} ans à construire les applis qui font tourner l\'assurance de personnes.',
     ctaResume: 'Télécharger le CV',
     ctaParcours: 'Voir le parcours',
     scroll: 'défiler',

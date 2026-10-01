@@ -8,16 +8,14 @@ import { PARALLAX_SIZES } from '~/data/parallax-sizes'
  *
  * It replaces a bento of gadgets (a weather card reading "Tours 37" like a
  * temperature, "Curieux - Esprit d'équipe", a frozen Spotify top shown as if
- * it were live) with what a recruiter reads first: a short bio in the first
- * person, the facts as a definition list, four figures. The personal side is
+ * it were live) with what a recruiter reads first: four figures and the facts
+ * as a definition list — no bio to wade through, the hero already said it. The personal side is
  * still here — lower, smaller, and honest about its dates — under "off
  * screen". Its last card is the Knight, sitting: the visitor will meet him at
  * the bottom of the page.
  */
-const { t, tm, rt } = useI18n()
+const { t } = useI18n()
 const { goTo } = useSections()
-
-const bio = computed(() => (tm('about.bio') as unknown[]).map(line => rt(line as never)))
 
 const figureValue: Record<(typeof FIGURE_IDS)[number], string> = {
   years: String(YEARS_OF_EXPERIENCE),
@@ -46,15 +44,6 @@ const knight = PARALLAX_SIZES['knight-sit']!
     </figure>
 
     <div class="profile__main">
-      <div class="profile__bio nc-reveal">
-        <p
-          v-for="(line, index) in bio"
-          :key="index"
-        >
-          {{ line }}
-        </p>
-      </div>
-
       <ul class="profile__figures nc-reveal">
         <li
           v-for="id in FIGURE_IDS"
@@ -260,24 +249,6 @@ const knight = PARALLAX_SIZES['knight-sit']!
 .profile__main {
   display: grid;
   gap: var(--space-l);
-}
-
-.profile__bio {
-  display: grid;
-  gap: var(--space-s);
-  max-inline-size: 58ch;
-  font-size: var(--step-1);
-  line-height: 1.5;
-  text-wrap: pretty;
-}
-
-.profile__bio p:first-child {
-  color: var(--text);
-}
-
-.profile__bio p + p {
-  font-size: var(--step-0);
-  color: var(--text-dim);
 }
 
 .profile__figures {
