@@ -40,6 +40,7 @@ npm run dev          # http://localhost:3000
 | `npm run verify` | la séquence complète, comme la CI |
 | `npm run icons` | régénère `public/sprite.svg` et `app/utils/icon-names.ts` |
 | `npm run shots` | captures du parcours complet sur le build, à regarder |
+| `npm run cv [dossier]` | régénère les CV PDF (fr, en) depuis les données du site ; aperçus PNG dans le dossier donné |
 | `npm run test:api` | exerce `POST /api/contact` sur le bundle construit |
 | `npm run lighthouse` | audit Lighthouse sur la sortie de build |
 

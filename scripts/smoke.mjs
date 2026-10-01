@@ -157,6 +157,12 @@ const scrollToY = (page, y) => page.evaluate(async (top) => {
 
   const body = await page.locator('body').innerText()
   check(body.includes('Career') && body.includes('Projects'), '/en renders English navigation')
+
+  // The English page offers the English CV, and it exists.
+  const resumes = await page.evaluate(() => [...new Set([...document.querySelectorAll('a[download]')].map(a => a.getAttribute('href')))])
+  const status = await page.evaluate(async href => (await fetch(href)).status, resumes[0])
+  check(resumes.length === 1 && resumes[0].endsWith('_EN.pdf') && status === 200,
+    `/en offers the English CV (${resumes.join(', ')} → ${status})`)
   const lang = await page.getAttribute('html', 'lang')
   check(lang?.startsWith('en'), `/en sets an English lang attribute (got ${lang})`)
   await page.close()

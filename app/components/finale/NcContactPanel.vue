@@ -14,6 +14,7 @@ import { SUBJECTS } from '~/composables/useContactForm'
  * address in plain text, the CV, LinkedIn. The form is for everyone else.
  */
 const { t } = useI18n()
+const resume = useResume()
 const toast = useToast()
 const finale = useFinale()
 const { values, subject, company, errors, status, touch, submit } = useContactForm()
@@ -84,8 +85,8 @@ async function copy(value: string, ok: string, ko: string) {
           variant="primary"
           size="sm"
           icon="download"
-          :href="CONTACT.resume"
-          :download="CONTACT.resumeName"
+          :href="resume.href"
+          :download="resume.name"
           :aria-label="t('a11y.downloadResume')"
         >
           {{ t('header.resume') }}

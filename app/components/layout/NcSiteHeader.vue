@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CONTACT } from '~/data/contact'
 import { SECTIONS, type SectionId } from '~/data/sections'
 
 /**
@@ -14,6 +13,7 @@ import { SECTIONS, type SectionId } from '~/data/sections'
  * light-dismiss and Escape for free.
  */
 const { t } = useI18n()
+const resume = useResume()
 const { active, goTo } = useSections()
 
 const links = SECTIONS.filter(section => section.nav)
@@ -84,8 +84,8 @@ function follow(event: MouseEvent, id: SectionId) {
         variant="primary"
         size="sm"
         icon="download"
-        :href="CONTACT.resume"
-        :download="CONTACT.resumeName"
+        :href="resume.href"
+        :download="resume.name"
         :aria-label="t('a11y.downloadResume')"
       >
         {{ t('header.resume') }}

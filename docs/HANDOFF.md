@@ -276,9 +276,12 @@ ne pilote aucun décor (seuls le curseur et le CTA magnétique y réagissent).
 
 **Contenu à fournir par le propriétaire :**
 
-1. **Le CV PDF est à mettre à jour** : `public/cv/CV_Nathan_Couton.pdf` s'arrête
-   à la Mutuelle de Poitiers (ni Catamania, ni Harmonie Mutuelle). Il est lié
-   depuis l'en-tête, le hero, le panneau de contact, le pied de page et ⌘K.
+1. **Le CV n'est plus un fichier à éditer** : `npm run cv` génère
+   `public/cv/CV_Nathan_Couton.pdf` (fr) et `CV_Nathan_Couton_EN.pdf` (en)
+   depuis `app/data` et les locales, dans la typo et les couleurs du site, et
+   échoue si une page déborde. Après toute modification du parcours, des
+   compétences ou du hero : relancer, regarder, committer les deux PDF. Le
+   site propose celui de la langue affichée (`useResume`).
 2. **Démos des projets publics** (captures ou vidéo de 10–20 s ≤ 1,5 Mo +
    poster) : solveur TSP, AJL Peinture, HoloLens, SwalloWin. Les études de cas
    ont leur figure ; un média réel s'ajouterait à côté.

@@ -11,6 +11,7 @@ import { CONTENT_AS_OF } from '~/data/now'
  * Greenpath artwork is owed.
  */
 const { t } = useI18n()
+const resume = useResume()
 const { goTo } = useSections()
 
 const socialIcon = { linkedin: 'linkedin', github: 'github', gitlab: 'gitlab' } as const
@@ -41,8 +42,8 @@ function top(event: MouseEvent) {
       <ul class="site-footer__links">
         <li>
           <a
-            :href="CONTACT.resume"
-            :download="CONTACT.resumeName"
+            :href="resume.href"
+            :download="resume.name"
             :aria-label="t('a11y.downloadResume')"
           >
             <NcIcon name="download" />

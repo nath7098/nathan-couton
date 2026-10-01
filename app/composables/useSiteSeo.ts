@@ -72,10 +72,10 @@ export function useSiteSeo() {
             ],
             'knowsAbout': [
               'Java', 'Spring Boot', 'Spring Batch', 'Kafka', 'Angular', 'Vue.js',
-              'TypeScript', 'SQL', 'Oracle', 'PostgreSQL', 'Web development',
+              'TypeScript', 'Hibernate', 'Bonita', 'SQL', 'Oracle', 'PostgreSQL', 'Web development',
             ],
             'worksFor': { '@type': 'Organization', 'name': 'Catamania' },
-            'subjectOf': { '@type': 'DigitalDocument', 'name': 'CV', 'url': `${site}${CONTACT.resume}` },
+            'subjectOf': { '@type': 'DigitalDocument', 'name': 'CV', 'url': `${site}${CONTACT.resume[locale.value === 'en' ? 'en' : 'fr']}` },
           },
           {
             '@type': 'WebSite',

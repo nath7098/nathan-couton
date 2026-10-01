@@ -19,6 +19,7 @@ const { t, locale } = useI18n()
 const switchLocalePath = useSwitchLocalePath()
 const colorMode = useColorMode()
 const toast = useToast()
+const resume = useResume()
 const { goTo } = useSections()
 
 interface Command {
@@ -37,8 +38,8 @@ const commands = computed<Command[]>(() => [
     icon: 'download',
     run: () => {
       const link = document.createElement('a')
-      link.href = CONTACT.resume
-      link.download = CONTACT.resumeName
+      link.href = resume.value.href
+      link.download = resume.value.name
       link.click()
     },
   },

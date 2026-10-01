@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CONTACT } from '~/data/contact'
 import { NOW, YEARS_OF_EXPERIENCE } from '~/data/now'
 
 /**
@@ -15,6 +14,7 @@ import { NOW, YEARS_OF_EXPERIENCE } from '~/data/now'
  * which is the page's first line of code and the first thing it will compile.
  */
 const { t, tm, rt } = useI18n()
+const resume = useResume()
 const { goTo } = useSections()
 
 const years = YEARS_OF_EXPERIENCE
@@ -62,8 +62,8 @@ function toParcours(event: MouseEvent) {
           variant="primary"
           size="lg"
           icon="download"
-          :href="CONTACT.resume"
-          :download="CONTACT.resumeName"
+          :href="resume.href"
+          :download="resume.name"
         >
           {{ t('hero.ctaResume') }}
         </NcButton>
